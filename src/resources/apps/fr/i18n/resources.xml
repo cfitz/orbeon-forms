@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright (C) 2010 Orbeon, Inc.
+    Copyright (C) 2008 Orbeon, Inc.
 
-  This program is free software; you can redistribute it and/or modify it under the terms of the
-  GNU Lesser General Public License as published by the Free Software Foundation; either version
-  2.1 of the License, or (at your option) any later version.
+    This program is free software; you can redistribute it and/or modify it under the terms of the
+    GNU Lesser General Public License as published by the Free Software Foundation; either version
+    2.1 of the License, or (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-  See the GNU Lesser General Public License for more details.
+    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+    without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the GNU Lesser General Public License for more details.
 
-  The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
-  -->
-<resources>
+    The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+-->
+<resources xmlns:xhtml="http://www.w3.org/1999/xhtml">
     <resource xml:lang="en">
         <components>
             <labels>
@@ -41,6 +41,10 @@
         </print>
         <summary>
             <titles>
+                <title>Title</title>
+				<creator>Creator</creator>
+				<identifier>Identifier</identifier>
+                <summary-title>Summary</summary-title>
                 <summary-title>Summary</summary-title>
                 <row-number>No.</row-number>
                 <created>Created</created>
@@ -105,7 +109,6 @@
                 <submit-dialog-message>Your information has been submitted, thank you.</submit-dialog-message>
                 <buttons-message/>
                 <saved-locally-open>Click here to open the document. The information you entered will be displayed on the tool as it was in the moment you saved your work.</saved-locally-open>
-                <buttons-placeholder>Your form's buttons will be placed here</buttons-placeholder>
             </messages>
             <labels>
                 <save-document>Save</save-document>
@@ -261,7 +264,6 @@
                 <buttons-message/>
                 <!-- TODO: check translation -->
                 <saved-locally-open>Cliquer ici pour ouvrir le document. Les informations entrées seront affichées telles qu'elles ont été sauvegardées.</saved-locally-open>
-                <buttons-placeholder>Les boutons de votre formulaire seront placés ici</buttons-placeholder>
             </messages>
             <labels>
                 <save-document>Enregistrer</save-document>
@@ -417,7 +419,6 @@
                 <submit-dialog-message>Su información ha sido enviada. Gracias</submit-dialog-message>
                 <buttons-message/>
                 <saved-locally-open>Haga clic aquí para abrir el documento. La herramienta recuperará automáticamente la información que usted ingresó al momento de guardar su documento.</saved-locally-open>
-                <buttons-placeholder>Botones del formulario será colocado aquí</buttons-placeholder>
             </messages>
             <labels>
                 <save-document>Guardar Documento</save-document>

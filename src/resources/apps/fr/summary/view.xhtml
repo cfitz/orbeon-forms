@@ -140,13 +140,18 @@
 
             <!-- Instance to track search results and paging -->
             <xforms:instance id="fr-search-instance">
-                <search xmlns="">
+                <search xmlns="" xmlns:mods="http://www.loc.gov/mods/v3">
                     <!-- Application name -->
                     <app/>
                     <!-- Form name -->
                     <form/>
                     <!-- Free text search query -->
-                    <query/>
+                       <query/>
+					<query name="title" label="title" control="input" path="mods:titleInfo[1]/mods:title[1]" type="xs:string"  search-field="false" match="substring" xmlns:saxon="http://saxon.sf.net/"  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
+					<query name="name" label="name" control="input" path="mods:name[1]/mods:namePart[1]" type="xs:string"  search-field="false" match="substring" xmlns:saxon="http://saxon.sf.net/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
+				<query name="identifier" label="identifier" control="input" path="mods:identifier[1]" type="xs:string"   search-field="false" match="substring" xmlns:saxon="http://saxon.sf.net/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
+				  
+                 
                     <!-- Paging -->
                     <page-size>5</page-size>
                     <page-number>1</page-number>
@@ -581,7 +586,31 @@
                                             <th fr:sortable="false" fr:resizeable="true">
                                                 <xforms:output value="$fr-resources/summary/titles/last-modified"/>
                                             </th>
+                                            <th fr:sortable="true" fr:resizeable="true">
+                                                <xforms:output value="$fr-resources/summary/titles/title"/>
+                                            </th>
+                                            
+                                            <th fr:sortable="true" fr:resizeable="true">
+                                                <xforms:output value="$fr-resources/summary/titles/creator"/>
+                                            </th>
+                                            
+                                            <th fr:sortable="true" fr:resizeable="true">
+                                                <xforms:output value="$fr-resources/summary/titles/identifier"/>
+                                            </th>
                                         </xforms:repeat>
+                                        
+                                      <!--  <th fr:sortable="true" fr:resizeable="true">
+                                            <xforms:output value="$fr-resources/summary/titles/title"/>
+                                        </th>
+                                        
+                                        <th fr:sortable="true" fr:resizeable="true">
+                                            <xforms:output value="$fr-resources/summary/titles/creator"/>
+                                        </th>
+                                        
+                                        <th fr:sortable="true" fr:resizeable="true">
+                                            <xforms:output value="$fr-resources/summary/titles/identifier"/>
+                                        </th>
+                                       -->
                                         <!-- Iterate through specially marked controls and derive resource id then resource -->
                                         <xforms:repeat nodeset="instance('fr-configuration-instance')/*[tokenize(@class, '\s+') = 'fr-summary']" id="fr-summary-repeat-column-number">
                                             <th fr:sortable="false" fr:resizeable="true">

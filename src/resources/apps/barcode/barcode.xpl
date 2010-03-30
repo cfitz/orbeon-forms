@@ -13,20 +13,29 @@
 -->
 <p:config xmlns:p="http://www.orbeon.com/oxf/pipeline"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xmlns:oxf="http://www.orbeon.com/oxf/processors">
+          xmlns:oxf="http://www.orbeon.com/oxf/processors"
+           xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
     <p:param name="data" type="output"/>
+        <p:param type="input" name="instance"/>
 
     <p:processor name="oxf:barcode">
-        <p:input name="data">
-            <input>foobar</input>
+       <p:input name="data" href="#instance#xpointer(/query/input)" debug="barcode">
         </p:input>
         <p:input name="barcode">
             <barcode message="/input">
-                <code39>
-                    <height>10mm</height>
-                    <wide-factor>1.5</wide-factor>
-                </code39>
+                <code128>
+        <quiet-zone enabled="true">2mw</quiet-zone>
+                                        <height>8mm</height>
+                                    <wide-factor>1</wide-factor>
+<human-readable>
+<placement>bottom</placement>
+      <font-name>Helvetica</font-name>
+      <font-size>15pt</font-size>
+      <display-start-stop>true</display-start-stop>
+      <display-checksum>true</display-checksum>
+    </human-readable>
+</code128>
             </barcode>
         </p:input>
         <p:output name="data" ref="data"/>

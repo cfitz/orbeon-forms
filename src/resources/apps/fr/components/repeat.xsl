@@ -41,7 +41,7 @@
             <xhtml:tr>
                 <xsl:if test="not($readonly)">
                     <xforms:group ref=".[not(exforms:readonly(.))]">
-                        <xhtml:td class="fr-repeat-column fr-repeat-column-number"/>
+                        <!--<xhtml:td class="fr-repeat-column fr-repeat-column-number"/>-->
                     </xforms:group>
                 </xsl:if>
                 <xhtml:td class="fr-repeat-column fr-repeat-column-trigger">
@@ -61,8 +61,9 @@
                     </xsl:if>
                 </xhtml:td>
                 <xsl:for-each select="fr:body/(xhtml:tr[1] | fr:tr[1])/(xhtml:td | fr:td)/*[1]">
-                    <xhtml:th>
+                     <xhtml:th colspan="2">
                         <xforms:output value="''" class="fr-hidden"><!-- hide the actual output control -->
+                       <xforms:output value="concat(position(), '. ')"/>
                             <xsl:copy-of select="xforms:label | xforms:help | xforms:hint"/>
                         </xforms:output>
                     </xhtml:th>
@@ -75,18 +76,18 @@
             </xsl:for-each>
             <!-- Repeated rows -->
             <xsl:for-each select="fr:body">
-                <xforms:repeat id="{$fr-repeat/@id}">
+                <xforms:repeat nodeset="{$fr-repeat/@nodeset}" id="{$fr-repeat/@id}">
                     <xsl:if test="$fr-repeat/@nodeset"><xsl:attribute name="nodeset" select="$fr-repeat/@nodeset"/></xsl:if>
                     <xsl:if test="$fr-repeat/@bind"><xsl:attribute name="bind" select="$fr-repeat/@bind"/></xsl:if>
                     <xxforms:variable name="repeat-position" select="position()"/>
                     <!-- First line with data -->
                     <xhtml:tr>
                         <xhtml:th class="fr-repeat-column fr-repeat-column-number">
-                            <xforms:output value="position()"/>
+                             <xforms:output value="concat(position(),'.')"/>
                         </xhtml:th>
                         <xsl:if test="not($readonly)">
                             <xforms:group ref=".[not(exforms:readonly(.))]">
-                                <xhtml:td class="fr-repeat-column fr-repeat-column-trigger">
+                                <xhtml:th class="fr-repeat-column fr-repeat-column-trigger" colspan="2">
                                     <xforms:group>
                                         <!-- Remove trigger -->
                                         <xforms:trigger appearance="minimal" ref="if (
@@ -95,13 +96,16 @@
                                             <!-- TODO: i18n of title -->
                                             <!--<xforms:label><xhtml:img width="16" height="16" src="/apps/fr/style/images/silk/bin.png" alt="Remove" title="Remove"/></xforms:label>-->
                                             <xforms:label><xhtml:img width="16" height="16" src="/apps/fr/style/images/pixelmixer/delete_16.png" alt="Remove" title="Remove"/></xforms:label>
-                                        </xforms:trigger>
+                                        <xforms:alert>Error in section</xforms:alert>
+                                        <xforms:label><xhtml:img width="16" height="16" src="/apps/fr/style/images/silk/bin.png" alt="Remove" title="Remove"/>
+                                       </xforms:label>
+                                    </xforms:trigger>
                                         <xforms:delete ev:event="DOMActivate" nodeset="."/>
                                     </xforms:group>
-                                </xhtml:td>
+                                </xhtml:th>
                             </xforms:group>
                         </xsl:if>
-                        <xsl:apply-templates select="(xhtml:tr[1] | fr:tr[1])/(xhtml:td | fr:td)"/>
+                  <!--      <xsl:apply-templates select="(xhtml:tr[1] | fr:tr[1])/(xhtml:td | fr:td)"/>  -->
                     </xhtml:tr>
                     <!-- Following lines with data if any -->
 
@@ -123,7 +127,7 @@
         <xhtml:tr>
             <xsl:copy-of select="@*"/>
             <xhtml:td/>
-            <xhtml:td/>
+          <!--  <xhtml:td/> -->
             <xsl:apply-templates/>
         </xhtml:tr>
     </xsl:template>
@@ -132,29 +136,53 @@
         <xsl:copy>
             <xsl:copy-of select="@*"/>
             <xhtml:td/>
-            <xhtml:td/>
+           <!-- <xhtml:td/> -->
             <xsl:apply-templates/>
         </xsl:copy>
     </xsl:template>
 
     <!-- TODO: This is not used by FR at the moment, needs a bit of work  -->
     <xsl:template match="fr:optional-element">
-        <xforms:input ref="{@ref}">
-            <xsl:apply-templates select="xforms:label"/>
-        </xforms:input>
+        <xsl:variable name="tokenized-addnode" select="tokenize(@ref, '/')"/>
+        
         <xforms:trigger ref=".[not({@ref})]" appearance="minimal">
             <xforms:label>
-                <xhtml:img width="16" height="16" src="/apps/fr/style/images/pixelmixer/plus_16.png" alt=""/>
-                <!-- TODO: i18n -->
-                Add <xsl:value-of select="lower-case(xforms:label)"/>
+                <xhtml:img width="16" height="16" src="/apps/fr/style/images/silk/add.png" alt=""/>
+                <xsl:copy-of select="xforms:output"/>
+                <!-- TODO: i18n --> 
             </xforms:label>
-            <xforms:insert ev:event="DOMActivate" origin="instance('templates')/{@ref}" nodeset="{@after}"/>
-        </xforms:trigger>
+            
+            <xsl:apply-templates select="descendant::xforms:help | descendant::xforms:alert"/>
+          <!--  <xforms:insert ev:event="DOMActivate" origin="instance('templates')/{@ref}" nodeset="{@after}"/> -->
+            <xforms:insert ev:event="DOMActivate"
+                origin="{if (@origin) then @origin else concat('instance(''mods-insert'')/', $tokenized-addnode[last()])}"
+                context="." nodeset="{if (@after) then @after else @nodeset}"/>  
+            </xforms:trigger>
         <xforms:trigger ref=".[{@ref}]" appearance="minimal">
             <!-- TODO: i18n of title -->
-            <xforms:label><xhtml:img width="16" height="16" src="/apps/fr/images/silk/delete.png" alt="Remove" title="Remove"/></xforms:label>
+            <xforms:label><xhtml:img width="16" height="16" src="/apps/fr/style/remove.gif" alt="Remove" title="Remove"/>
+			<!--<xsl:copy-of select="descendant::xforms:label"/>-->
+ 			</xforms:label>
             <xforms:delete ev:event="DOMActivate" nodeset="{@ref}"/>
         </xforms:trigger>
+      <xsl:if test="xforms:input">
+        <xforms:input ref="{@ref}">
+        	<xforms:label><xsl:copy-of select="descendant-or-self::xforms:label"/></xforms:label>
+            <xsl:apply-templates select="descendant::xforms:label | descendant::xforms:help | descendant::xforms:alert"/>
+        </xforms:input>
+      </xsl:if>
+        <xsl:if test="xforms:textarea">
+            <xforms:textarea ref="{@ref}">
+                <xforms:label><xsl:copy-of select="descendant-or-self::xforms:label"/></xforms:label>
+                <xsl:apply-templates select="descendant::xforms:label | descendant::xforms:help | descendant::xforms:alert | descendant::xforms:alert"/>
+            </xforms:textarea>
+        </xsl:if>
+        <xsl:if test="xforms:select1">
+            <xforms:select1 ref="{@ref}" incremental="false" class="drop-down" id="{if (@id) then @id else @ref} ">
+               <xforms:label><xsl:copy-of select="xforms:output"/></xforms:label>
+                <xsl:apply-templates select="descendant::xforms:help | descendant::xforms:alert | descendant::xforms:itemset"/>
+            </xforms:select1>
+        </xsl:if>
     </xsl:template>
 
 </xsl:stylesheet>

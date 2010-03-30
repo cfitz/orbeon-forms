@@ -57,7 +57,7 @@
 
 /* Display alerts under each control */
 .xforms-alert-active {
-    display: none;
+   /* display: none;*/
     margin-top: .2em;
     margin-left: 0;/* used to have margin here but with new colors no margin seems better */
     height: auto;
@@ -273,16 +273,16 @@ button.xforms-trigger img, .xforms-trigger button img { margin-right: 10px }
 .fr-repeat-table .fr-repeat-last-line { display: none }
 .fr-repeat-table th { background-color: #ddd }
 /* Don't show label, help, hint for controls inside a repeat-table (they are shown in the column header) */
-.fr-repeat-table td .xforms-label { display: none }
+/*.fr-repeat-table td .xforms-label { display: none }
 .fr-repeat-table td .xforms-help-image { display: none }
 .fr-repeat-table td .xforms-help { display: none }
-.fr-repeat-table td .xforms-hint { display: none }
+.fr-repeat-table td .xforms-hint { display: none }*/
 /* But if there is a nested table, show those in the label in the column header of that table */
 .fr-repeat-table tr th .xforms-label { display: block; }
 
 
 .fr-repeat-table .fr-repeat-column-number { width: 1.5em; text-align: right }
-.fr-repeat-table .fr-repeat-column-trigger { width: 1.5em; text-align: center }
+.fr-repeat-table .fr-repeat-column-trigger { width: 1.5em; text-align: left }
 .fr-grid .fr-grid-content .fr-repeat-table .fr-repeat-column-trigger .xforms-trigger { margin-top: 0 }/* because there is a margin set for triggers in grids below */
 
 /* ***** Dialogs **************************************************************************************************** */
@@ -428,7 +428,7 @@ button.xforms-trigger img, .xforms-trigger button img { margin-right: 10px }
 .fr-grid .fr-grid-content button.xforms-trigger, .fr-grid .fr-grid-content input.xforms-trigger,
     .fr-grid .fr-grid-content .xforms-trigger button, .fr-grid .fr-grid-content .xforms-trigger input { margin-top: 1.72em } /* hand-tuned so it appears at about the same pos as input fields*/
 .fr-grid .fr-grid-content button.xforms-trigger, .fr-grid .fr-grid-content .yui-button input.xforms-trigger,
-    .fr-grid .fr-grid-content .xforms-trigger button, .fr-grid .fr-grid-content .yui-button .xforms-trigger input { margin-top: 0 } /* except YUI buttons don't appear right with top margin! */
+    .fr-grid .fr-grid-content .xforms-trigger button, .fr-grid .fr-grid-content .yui-button .xforms-trigger input { margin-top: 0; display: inline } /* except YUI buttons don't appear right with top margin! */
 
 /* Cell widths */
 .fr-grid-td { width: auto; vertical-align: top; overflow: hidden }
