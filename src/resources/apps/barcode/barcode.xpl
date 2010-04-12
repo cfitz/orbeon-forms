@@ -25,13 +25,12 @@
         <p:input name="barcode">
             <barcode message="/input">
                 <code128>
-        <quiet-zone enabled="true">2mw</quiet-zone>
                                         <height>8mm</height>
                                     <wide-factor>1</wide-factor>
 <human-readable>
 <placement>bottom</placement>
       <font-name>Helvetica</font-name>
-      <font-size>15pt</font-size>
+      <font-size>10pt</font-size>
       <display-start-stop>true</display-start-stop>
       <display-checksum>true</display-checksum>
     </human-readable>
