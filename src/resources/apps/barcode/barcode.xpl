@@ -27,7 +27,7 @@
                 <code128>
                                         <height>8mm</height>
                                     <wide-factor>1</wide-factor>
-<human-readable>
+        <human-readable>
 <placement>bottom</placement>
       <font-name>Helvetica</font-name>
       <font-size>10pt</font-size>

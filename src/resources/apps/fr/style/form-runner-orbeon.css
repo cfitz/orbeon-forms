@@ -85,6 +85,52 @@ p, fieldset, table { margin-bottom: 1em }
 
 /* ***** Other ****************************************************************************************************** */
 
+.repeat-container { 
+border-color:#243356 #808080 #808080;
+border-right:1px solid #808080;
+border-style:solid;
+border-width:1px;
+margin: 1em
+}
+
+.repeat-container-header { 
+  background:none repeat scroll 0 0  #C0C0C0; 
+  padding: 1em;
+ 
+  }
+  
+.repeat-container-header span#label { font-size: 110%; color:white; } 
+  
+ .repeat-container-body {
+    background:none repeat scroll 0 0 #EDF5FF;
+ }
+ 
+ .repeat-container-item {
+ border-style:solid;
+border-width:1px;
+padding-bottom:1em;
+padding-top:1em;
+ }
+
+.repeat-container .item-row {
+display: block;
+margin: 1em;
+}
+
+.repeat-container .item-row label { 
+padding-left: 5px;
+}
+
+.repeat-container .item-row input {
+padding-right: 5px
+}
+
+.repeat-container .item-row .xforms-select-appearance-full span { 
+   display: inherit;
+   margin-left: 80px;
+}
+
+
 .fr-top, .fr-footer { background-repeat: no-repeat; clear: both }
 .fr-shadow { height: 10px; _height: 5px; font-size: 0; clear: both; } /* Clear is necessary because the previous block contains floated elements */
 .fr-footer { min-height: 10px } /* help display background image */

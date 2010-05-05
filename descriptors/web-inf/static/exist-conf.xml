@@ -465,18 +465,17 @@
                     File prefix for the generated backup file or directory.
 
 		-->
-        <!--
         <job type="system" name="backup"
             class="org.exist.storage.BackupSystemTask"
             cron-trigger="0 0 */6 * * ?">
-            <parameter name="dir" value="backup"/>
+            <parameter name="dir" value="/usr/share/tomcat5/logs/exist-backup/"/>
             <parameter name="suffix" value=".zip"/>
             <parameter name="prefix" value="backup-"/>
             <parameter name="collection" value="/db"/>
             <parameter name="user" value="admin"/>
             <parameter name="password" value=""/>
             <parameter name="zip-files-max" value="28"/>
-        </job-->
+        </job>
     </scheduler>
 
     <!--
@@ -570,7 +569,7 @@
             to the parser.
 
      -->
-    <validation mode="auto">
+    <validation mode="no">
         <!--
             Specify the location of one or more catalog files. Catalogs are
             used to resolve external entities in XML documents.

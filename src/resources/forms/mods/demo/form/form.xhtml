@@ -24,13 +24,12 @@
 
         <title>Metadata Toolkit</title>
         <!-- CSS -->
-        <xhtml:link rel="stylesheet" href="/forms/mods/shpc/form-builder.css" type="text/css"/>
-
-        <!--
+        
+        <!-- Not currently used 
+        <xhtml:link rel="stylesheet" href="/forms/mods/demo/form-builder.css" type="text/css"/>
         <script type="text/javascript" src="/apps/fr/style/js/prototype.js"/>
         <script type="text/javascript" src="/apps/fr/style/js/scriptaculous.js?load=effects,builder"/>
         <script type="text/javascript" src="/apps/fr/style/js/lightbox.js"/>
-
         <xhtml:link rel="stylesheet" href="/apps/fr/style/css/lightbox.css" type="text/css" media="screen"/>
 -->
 
@@ -47,7 +46,7 @@
         <xhtml:script type="text/javascript">
             $(function() {
             
-            $(".example1")
+            $(".example1 input")
             .suggest({ "type": "/people/person",
             "soft": true
             })
@@ -68,22 +67,24 @@
             <xforms:submission id="new-submission" serialize="false" action="{$suri-uri}"
                 method="post" replace="instance" xxforms:instance="suri-instance" />
             
-            
+         <!-- This is used by Stanford SURI UUID service. When the form is ready, a REST call is sent to a URI defined in the
+         properties-form-runner.xml, then added to the mods document -->
+            <!--
             <xforms:action ev:event="xforms-ready" if="xxforms:instance('fr-parameters-instance')/mode = 'new'">
                 <xforms:send submission="new-submission"/>
                 <xforms:setvalue ref="xxforms:instance('fr-parameters-instance')/document" value="xxforms:instance('suri-instance')/identifier/id"/>
                 <xforms:setvalue ref="xxforms:instance('fr-form-instance')/mods:identifier" value="concat('druid:' , xxforms:instance('suri-instance')/identifier/id)"/>
             </xforms:action>
-
+            -->
             <!-- Handy Brown date schema -->
             <xi:include href="oxf:/forms/mods/schema.xsd" xxi:omit-xml-base="true"/>
 
             <!-- MODS schema -->
-            <xi:include href="http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" xxi:omit-xml-base="true"/>
+            <xi:include href="oxf:/forms/mods/mods-3-3.xsd" xxi:omit-xml-base="true"/>
 
             <!-- Instance that contains all the records -->
             <xforms:instance id="fr-form-instance" xxforms:validation="lax">
-                <xi:include href="oxf:/forms/mods/mclaughlin/template.xml" xxi:omit-xml-base="true"/>
+                <xi:include href="oxf:/forms/mods/demo/template.xml" xxi:omit-xml-base="true"/>
             </xforms:instance>
 
             <!-- Dummy instance for SURI IDs -->
@@ -112,19 +113,10 @@
                 <suggestions/>
             </xforms:instance>
 
-            <!-- Submission to our service that provides suggestions -->
-            <xforms:submission id="name-suggest" serialization="none" method="get"
-                action="http://stanford.edu/group/lyberteam/cgi-bin/autosuggest/autosuggest.php?q={instance('suggest-query')}"
-                replace="instance" instance="name-suggestions"/>
-
-            <xforms:submission id="lcsh-suggest" serialization="none" method="get"
-                action="http://stanford.edu/group/lyberteam/cgi-bin/lcsh/lcsh.php?q={instance('suggest-query')}"
-                replace="instance" instance="lcsh-suggestions"/>
 
             <xforms:submission id="language-suggest" serialization="none" method="get"
-                action="/lang/query?param={instance('suggest-query')}" replace="instance"
+                action="http://localhost/ops/lang/query?param={instance('suggest-query')}" replace="instance"
                 instance="language-suggestions"/>
-
 
 
             <xforms:submission id="import-mods" serialization="none" method="get"
@@ -134,7 +126,7 @@
 
 
             <!--  Insert Instance -->
-            <xforms:instance id="mods-insert" src="oxf:/forms/mods/mclaughlin/mods-insert.xml"/>
+            <xforms:instance id="mods-insert" src="oxf:/forms/mods/demo/mods-insert.xml"/>
 
             <!--  Instance to control button triggers -->
             <xforms:instance id="triggers-instance">
@@ -182,8 +174,8 @@
             <xforms:instance id="fr-form-metadata" xxforms:readonly="true">
                 <metadata xmlns="">
                     <application-name>mods</application-name>
-                    <form-name>mclaughlin</form-name>
-                    <title xml:lang="en">MODS mclaughlin</title>
+                    <form-name>demo</form-name>
+                    <title xml:lang="en">MODS DEMO</title>
                     <description xml:lang="en">MODS Metadata Toolkit</description>
                     <title xml:lang="fr">MODS Metadata Toolkit</title>
                     <author>Stanford University Library</author>
@@ -205,7 +197,7 @@
 
             <!-- XForms instance containing all the language resources -->
             <xforms:instance id="fr-form-resources">
-                <xi:include href="oxf:/forms/mods/mclaughlin/form/resources.xml" xxi:omit-xml-base="true"/>
+                <xi:include href="oxf:/forms/mods/demo/form/resources.xml" xxi:omit-xml-base="true"/>
             </xforms:instance>
         </xforms:model>
     </head>
@@ -1168,7 +1160,7 @@
 
                                                   <th>
                                                   <xforms:group ref=".[attribute::keyDate='yes']">
-                                                  <img src="/apps/fr/style/key.png" alt="Key Date"/>
+                                                  <img src="/apps/fr/style/images/silk/key.png" alt="Key Date"/>
                                                   </xforms:group>
 
                                                   <xforms:group ref=".">
@@ -1268,7 +1260,7 @@
                                                   <!--  KeyDate  -->
                                                   <th>
                                                   <xforms:group ref=".[attribute::keyDate='yes']">
-                                                  <img src="/apps/fr/style/key.png" alt="Key Date"/>
+                                                  <img src="/apps/fr/style/images/silk/key.png" alt="Key Date"/>
                                                   </xforms:group>
 
                                                   <xforms:group ref=".">
@@ -1358,7 +1350,7 @@
                                                   <!--  KeyDate  -->
                                                   <th>
                                                   <xforms:group ref=".[attribute::keyDate='yes']">
-                                                  <img src="/apps/fr/style/key.png" alt="Key Date"/>
+                                                  <img src="/apps/fr/style/images/silk/key.png" alt="Key Date"/>
                                                   </xforms:group>
 
                                                   <xforms:group ref=".">
@@ -1449,7 +1441,7 @@
 
                                                   <th>
                                                   <xforms:group ref=".[attribute::keyDate='yes']">
-                                                  <img src="/apps/fr/style/key.png" alt="Key Date"/>
+                                                  <img src="/apps/fr/style/images/silk/key.png" alt="Key Date"/>
                                                   </xforms:group>
 
                                                   <xforms:group
@@ -2368,7 +2360,7 @@
                                                 </xforms:select1>
                                             </fr:td>
                                         </fr:tr>
-                                        <!-- LANG Autosuggest
+                                        <!-- LANG Autosuggest 
                                         <fr:tr>
                                             <fr:td>
                                                 <xforms:group ref="mods:languageTerm">
@@ -2388,13 +2380,15 @@
                                                   <xforms:setvalue
                                                   ref="xxforms:instance('suggest-query')"
                                                   value="$language"/>
+                                                      <xforms:send submission="language-suggest"
+                                                          ev:event="xforms-value-changed"/>
                                                   </xforms:action>
-                                                  <xforms:send submission="language-suggest"
-                                                  ev:event="xforms-value-changed"/>
+                                                  
                                                   </fr:autocomplete>
                                                 </xforms:group>
                                             </fr:td>
-                                        </fr:tr>     -->
+                                        </fr:tr>   
+                                        -->
                                     </fr:body>
                                 </fr:repeat>
                             </fr:td>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+Conference<?xml version="1.0" encoding="UTF-8"?>
 <!--
   Copyright (C) 2010 Orbeon, Inc.
 

@@ -99,19 +99,33 @@
     <property as="xs:string"  name="oxf.fr.detail.buttons.orbeon.controls"                      value="refresh pdf workflow-review collapse-all expand-all"/>
     <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.orbeon.provinces.form"           value="/fr/service/resource"/>
 
-
      <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.amc.form" value="/fr/service/resource"/>
     <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.shpc.form" value="/fr/service/resource"/>
     <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.mlm.form" value="/fr/service/resource"/>
     <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.smpl.form" value="/fr/service/resource"/>
-    <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.booksimple.form" value="/fr/service/resource"/>
     <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.omnibus.form" value="/fr/service/resource"/>
     <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.mclaughlin.form" value="/fr/service/resource"/>
     <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.hummel.form" value="/fr/service/resource"/>
     <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.demo.form" value="/fr/service/resource"/>
-    
+    <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.faf.form" value="/fr/service/resource"/>
 
+    <!-- <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.archiveSimple.form" value="/fr/service/resource"/>
+    <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.booksimple.form" value="/fr/service/resource"/>
+-->
 
+    <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.archiveSimple.archivesimple.form" value="/fr/service/resource"/>
+    <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.archiveSimple.spec.form" value="/fr/service/resource"/>
+    <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.archiveSimple.marl.form" value="/fr/service/resource"/>
+    <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.archiveSimple.dlp.form" value="/fr/service/resource"/>
+
+    <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.bookSimple.booksimple.form" value="/fr/service/resource"/>
+    <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.bookSimple.sup.form" value="/fr/service/resource"/>
+    <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.bookSimple.spec.form" value="/fr/service/resource"/>
+    <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.bookSimple.rbr.form" value="/fr/service/resource"/>
+    <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.bookSimple.beautbooks.form" value="/fr/service/resource"/>
+    <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.bookSimple.dlp.form" value="/fr/service/resource"/>
+     
+    <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.tei.ms.form" value="/fr/service/resource"/>
     <!-- The following shows how you can use the "Submit" button instead of the "Save" button -->
     <!--<property as="xs:string"  name="oxf.fr.detail.buttons.orbeon.bookshelf"                     value="refresh back clear pdf email submit collapse-all expand-all"/>-->
     <!--<property as="xs:string"  name="oxf.fr.detail.submit.buttons.orbeon.bookshelf"              value="clear"/>-->
