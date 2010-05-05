@@ -1,0 +1,19 @@
+﻿
+<instance>
+  
+  <section>
+    
+      <item>
+        <label>Yes</label>
+        <value>yes</value>    
+    </item>
+    </section>   
+    <section>
+    	
+    <item>
+        <label>No</label>
+        <value>no</value>    
+    </item>
+    
+    </section>     
+</instance>

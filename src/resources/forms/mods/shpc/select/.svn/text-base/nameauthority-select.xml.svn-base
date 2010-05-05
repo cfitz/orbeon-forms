@@ -1,0 +1,16 @@
+<instance>
+    <section>
+    <item>
+        <label>-- Select One --</label>
+        <value></value>    
+    </item>
+    <item>
+        <label>Local</label>
+        <value>local</value>    
+    </item>
+    <item>
+        <label>LCSH</label>
+        <value>lcsh</value>       
+    </item>
+    </section>
+</instance>

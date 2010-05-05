@@ -1,0 +1,29 @@
+
+<instance>
+    <section>
+    <item>
+        <label>-- Select One --</label>
+        <value></value>    
+    </item>
+    </section>
+    <section>
+    <item>
+        <label>Approximate</label>
+        <value>approximate</value>    
+    </item>
+    </section>
+    <section>
+        
+        <item>
+        <label>Inferred</label>
+        <value>inferred</value>    
+    </item>
+    </section>
+    <section>
+        
+        <item>
+        <label>Questionable</label>
+        <value>questionable</value>    
+    </item>
+</section>
+</instance>

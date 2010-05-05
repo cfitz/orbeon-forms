@@ -1,0 +1,13 @@
+<instance> 
+    <section>
+    <item>
+        <label>-- Select One --</label>
+    </item>
+    </section>
+    <section>
+    <item>
+        <label>Electronic</label>
+        <value>electronic</value>    
+    </item> 
+    </section>
+</instance>

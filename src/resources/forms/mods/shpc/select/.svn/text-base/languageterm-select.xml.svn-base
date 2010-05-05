@@ -1,0 +1,106 @@
+<!-- 
+    Copyright (C) 2008 Brown University
+    
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.    
+-->
+<language>
+    <item>
+        <label>-- Select One --</label>
+        <value></value>    
+    </item>  
+    <item>
+        <label>Akkadian</label>
+        <value>akk</value>    
+    </item>
+    <item>
+        <label>Arabic</label>
+        <value>ara</value>    
+    </item>
+    <item>
+        <label>Armenian</label>
+        <value>arm</value>    
+    </item>
+    <item>
+        <label>Chinese</label>
+        <value>chi</value>    
+    </item>
+    <item>
+        <label>Czech</label>
+        <value>cze</value>    
+    </item> 
+    <item>
+        <label>Egyptian</label>
+        <value>egy</value>    
+    </item> 
+    <item>
+        <label>English</label>
+        <value>eng</value>    
+    </item> 
+    <item>
+        <label>French</label>
+        <value>fre</value>    
+    </item> 
+    <item>
+        <label>German</label>
+        <value>ger</value>    
+    </item>
+    <item>
+        <label>Greek, Ancianet (to 1453)</label>
+        <value>grc</value>    
+    </item>
+    <item>
+        <label>Greek, Modern (1453-)</label>
+        <value>gre</value>    
+    </item>
+    <item>
+        <label>Hebrew</label>
+        <value>heb</value>    
+    </item>
+    <item>
+        <label>Italian</label>
+        <value>ita</value>    
+    </item>
+    <item>
+        <label>Japanese</label>
+        <value>jpn</value>    
+    </item>
+    <item>
+        <label>Korean</label>
+        <value>kor</value>    
+    </item>
+    <item>
+        <label>Latin</label>
+        <value>lat</value>    
+    </item>
+    <item>
+        <label>Portuguese</label>
+        <value>por</value>    
+    </item>
+    <item>
+        <label>Russian</label>
+        <value>rus</value>    
+    </item>
+    <item>
+        <label>Sanskrit</label>
+        <value>san</value>    
+    </item>
+    <item>
+        <label>Spanish</label>
+        <value>spa</value>    
+    </item>
+    <item>
+        <label>Swedish</label>
+        <value>swe</value>    
+    </item>
+</language>

@@ -1,0 +1,20 @@
+<instance>
+    <section>
+    <item>
+        <label>-- Select One --</label>
+        <value></value>    
+    </item>
+    <item>
+        <label>Conference</label>
+        <value>conference</value>    
+    </item>
+    <item>
+        <label>Corporate</label>
+        <value>corporate</value>    
+    </item>
+    <item>
+        <label>Personal</label>
+        <value>personal</value>    
+    </item>
+    </section>
+</instance>

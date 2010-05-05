@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Copyright (C) 2010 Orbeon, Inc.
+
+  This program is free software; you can redistribute it and/or modify it under the terms of the
+  GNU Lesser General Public License as published by the Free Software Foundation; either version
+  2.1 of the License, or (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  See the GNU Lesser General Public License for more details.
+
+  The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+  -->
+<mods:mods          xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+                    xmlns:mods="http://www.loc.gov/mods/v3"
+                    xmlns:xforms="http://www.w3.org/2002/xforms">       
+    <mods:identifier type="local" displayLabel="SU DRUID">1234</mods:identifier>
+     <mods:identifier type="local" displayLabel="Film Arts Foundation ID"></mods:identifier>
+    <mods:titleInfo>        
+        <mods:nonSort />
+        <mods:title />
+        <mods:subTitle />
+        <mods:partNumber />
+        <mods:partName /> 
+    </mods:titleInfo> 
+    <mods:originInfo>
+        <mods:place><mods:placeTerm type="text" authority="naf">San Francisco (Calif.)</mods:placeTerm></mods:place>
+        <mods:dateCreated encoding="w3cdtf" keyDate="yes" qualifier="" /> 
+    </mods:originInfo> 
+  <mods:name type="corporate" authority="naf">
+        <mods:namePart >Film Arts Foundation (San Francisco, Calif.)</mods:namePart>
+        <mods:role>
+            <mods:roleTerm type="text" authority="marcrelator">producer</mods:roleTerm>
+        </mods:role>                       
+    </mods:name>
+    <mods:language>
+        <mods:languageTerm type="code" authority="iso639-2b">eng</mods:languageTerm>
+    </mods:language>
+    <mods:typeOfResource>sound recording - nonmusical</mods:typeOfResource>
+    <mods:genre authority="lcsh"></mods:genre>  
+    <mods:physicalDescription>
+    		<mods:internetMediaType>audio/mpeg</mods:internetMediaType>
+    		<mods:extent>1 sound file</mods:extent>
+    		<mods:digitalOrigin>reformatted digital</mods:digitalOrigin>
+            <mods:note></mods:note>
+    </mods:physicalDescription>  
+    <mods:location>
+    	<mods:url usage="primary display" access=""></mods:url>
+    </mods:location>
+    <mods:note/>
+    <mods:accessCondition type="useAndReproduction" >Digital recordings from the Film Arts Foundation sound recordings collection may be accessed freely by members of the Stanford University community. These files may not be reproduced or used for any purpose without permission. For permission requests, please contact the Department of Special Collections, Stanford University ( specialcollections@stanford.edu ).</mods:accessCondition>   
+    <mods:subject authority="lcsh"><mods:topic/></mods:subject>
+    <mods:recordInfo>
+    <mods:recordContentSource>Lyberteam Metadata ToolKit</mods:recordContentSource> 
+    <mods:recordIdentifier source="Suri UUID"></mods:recordIdentifier>  
+    <mods:recordCreationDate encoding="iso8601"></mods:recordCreationDate>
+    </mods:recordInfo>
+    <!--
+    <mods:relatedItem type="host">
+    <mods:titleInfo><mods:title type=''>Stanford Historical Photograph Collection</mods:title><mods:subTitle/></mods:titleInfo>
+    <mods:typeOfResource collection="yes"/>
+    <mods:location><mods:physicalLocation>Department of Special Collections. Stanford University Libraries.</mods:physicalLocation></mods:location>
+    <mods:originInfo><mods:dateIssued point="start">1887</mods:dateIssued><mods:dateIssued point="end">1996</mods:dateIssued></mods:originInfo>
+    <mods:recordInfo></mods:recordInfo><mods:recordIdentifier source="Symphony Catalog Key">4769498</mods:recordIdentifier>
+    </mods:relatedItem>
+    <mods:relatedItem type="series">
+    <mods:titleInfo><mods:title>General Photo</mods:title><mods:subTitle/><mods:partNumber/><mods:partName/></mods:titleInfo>
+    </mods:relatedItem>
+-->
+</mods:mods>

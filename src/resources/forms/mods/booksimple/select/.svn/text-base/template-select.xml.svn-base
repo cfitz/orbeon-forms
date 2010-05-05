@@ -1,0 +1,66 @@
+<!-- 
+    Copyright (C) 2008 Brown University
+    
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.    
+-->
+<type>
+    <item>
+        <label>-- Select One --</label>
+        <value></value>    
+    </item> 
+    <item>
+        <label>text</label>
+        <value>text</value>    
+    </item>
+    <item>
+        <label>cartographic</label>
+        <value>cartographic</value>    
+    </item>
+    <item>
+        <label>notated music</label>
+        <value>notated music</value>    
+    </item>
+    <item>
+        <label>sound recording</label>
+        <value>sound recording</value>    
+    </item>
+ <item>
+        <label>sound recording-musical</label>
+        <value>sound recording-musical</value>
+    </item>
+ <item>
+        <label>sound recording-nonmusical</label>
+        <value>sound recording-nonmuscial</value>
+    </item>
+<item>
+        <label>still image</label>
+        <value>still image</value>
+    </item>
+<item>
+        <label>moving image</label>
+        <value>moving image</value>
+    </item>
+<item>
+        <label>three dimensional resource</label>
+        <value>three dimensional resource</value>
+    </item>
+<item>
+        <label>software multimedia</label>
+        <value>software multimedia</value>
+    </item>
+<item>
+        <label>mixed material</label>
+        <value>mixed material</value>
+    </item>
+</type>

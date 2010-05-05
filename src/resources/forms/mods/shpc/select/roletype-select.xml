@@ -1,0 +1,13 @@
+
+<instance>
+    <section>
+    <item>
+        <label>Photographer</label>
+        <value>photographer</value>
+    </item>
+    <item>
+        <label>Donor</label>
+        <value>donor</value>    
+   </item>
+    </section>
+    </instance>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Copyright (C) 2006 Orbeon, Inc.
+
+    This program is free software; you can redistribute it and/or modify it under the terms of the
+    GNU Lesser General Public License as published by the Free Software Foundation; either version
+    2.1 of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+    without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the GNU Lesser General Public License for more details.
+
+    The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+-->
+
+
+<!-- 
+    This document has all of your langauge resources, if you want to use them. You can hard-code them into the form, or 
+    you can use this document. If your form is mostly static, I suggest hardcording, like in the TEI example. However, there are some
+    values that need to be added for form running to function.
+    
+-->
+    
+<resources xmlns="" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xxi="http://orbeon.org/oxf/xml/xinclude"   xmlns:mods="http://www.loc.gov/mods/v3">
+    <resource xml:lang="en">
+
+        <!--  Hack for summary table headers -->
+        <identifier>
+            <label>Identifier</label>
+        </identifier>
+        <title>
+            <label>Title</label>
+        </title>
+        <name>
+            <label>Name</label>
+        </name>
+        <summary>
+            <titles>
+                <title>Title</title>
+                <resourcetype>Resource Type</resourcetype>
+                <idNumber>Identifcation Number</idNumber>
+                <genre>Genre</genre>
+            </titles>
+        </summary>
+
+
+<!-- Resources that appear on the form -->
+        <detail>
+            <titles>
+                <identifier>Manuscript Identifier</identifier>
+                <title>Manuscript Title</title>
+                <intellectual-content>Intellectual Content</intellectual-content>
+                <physcial-description>Physical Description</physcial-description>
+                <history>History</history>
+                <additional>For further reference</additional>
+            </titles>
+
+            <!-- Triggers labels -->
+            <labels>
+                 
+            </labels>
+
+            <alerts>
+                <identifier>Insert alert text in resources.xml</identifier>
+                <title>Insert alert text in resources.xml</title>
+                <intellectual-content>Insert alert text in resources.xml</intellectual-content>
+                <physcial-description>Insert alert text in resources.xml</physcial-description>
+                <history>Insert alert text in resources.xml</history>
+                <additional></additional>
+                
+            </alerts>
+
+            <help>
+                <identifier>Insert help text in resources.xml</identifier>
+                <title>Insert help text in resources.xml</title>
+                <intellectual-content>Insert help test in resources.xml</intellectual-content>
+                <physcial-description>Insert help test in resources.xml</physcial-description>
+                <history>Insert help text in resources.xml</history>
+                <additional></additional>
+            </help>
+
+        </detail>
+        <lists>
+           <language></language>
+			
+        </lists>
+
+    </resource>
+</resources>

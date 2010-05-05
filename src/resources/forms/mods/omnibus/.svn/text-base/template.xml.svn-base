@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mods:mods          xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+                    xmlns:mods="http://www.loc.gov/mods/v3"
+                    xmlns:xforms="http://www.w3.org/2002/xforms">       
+    <mods:identifier type="local" displayLabel="SU DRUID">123</mods:identifier>    
+    <mods:titleInfo>        
+        <mods:nonSort />
+        <mods:title />
+        <mods:subTitle />
+        <mods:partNumber />
+        <mods:partName />                       
+    </mods:titleInfo> 
+    <mods:typeOfResource>cartographic</mods:typeOfResource>
+    <mods:originInfo>
+        <mods:dateCreated encoding="w3cdtf" keyDate="no" qualifier=" " />
+    </mods:originInfo> 
+  <mods:name type="personal" authority="local">
+        <mods:namePart type=""/>
+        <mods:role>
+            <mods:roleTerm type="text" authority="marcrelator">creator</mods:roleTerm>
+        </mods:role>                       
+    </mods:name>    
+    <mods:genre authority="marcgt" />  
+    <mods:physicalDescription>
+    		<mods:form  authority="marcform"/>
+    		<mods:internetMediaType>image/tiff</mods:internetMediaType>
+    		<mods:extent/>
+    		<mods:digitalOrigin>reformatted digital</mods:digitalOrigin> 
+    </mods:physicalDescription>  
+    <mods:location>
+    	<mods:physicalLocation/>
+    	<mods:url usage="primary display" access=" "></mods:url>
+    </mods:location>    
+    <mods:accessCondition type=" " />   
+    <mods:abstract/>
+    <mods:subject><mods:topic/></mods:subject>
+    <mods:recordInfo>
+    <mods:recordContentSource>LyberTeam MetaData ToolKit Beta</mods:recordContentSource> 
+    <mods:recordIdentifier source="Suri UUID"></mods:recordIdentifier>  
+    <mods:recordCreationDate encoding="iso8601"></mods:recordCreationDate>
+    </mods:recordInfo>
+    
+</mods:mods>

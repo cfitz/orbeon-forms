@@ -1,0 +1,49 @@
+10
+
+dir
+3089
+svn+ssh://lyberdev1.stanford.edu/afs/ir/dev/dlss/svn/mdtoolkit/branch/conneticut/WebContent/WEB-INF/resources/forms/mods/builder
+svn+ssh://lyberdev1.stanford.edu/afs/ir/dev/dlss/svn
+delete
+
+
+2008-12-09T00:31:41.942736Z
+1531
+cfitz
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+e0eb17dc-060e-4555-9e78-273a5d168c06
+
+form
+dir
+
+
+
+delete
+
+images
+dir
+
+
+
+delete
+
+resources
+dir
+
+
+
+delete
+

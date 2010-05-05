@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fr:section id="name-section"
+	xmlns:xhtml="http://www.w3.org/1999/xhtml"
+	xmlns:xforms="http://www.w3.org/2002/xforms"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xmlns:xi="http://www.w3.org/2001/XInclude"
+	xmlns:xxi="http://orbeon.org/oxf/xml/xinclude"
+	xmlns:ev="http://www.w3.org/2001/xml-events"
+	xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+	xmlns:mods="http://www.loc.gov/mods/v3"
+	xmlns:fr="http://orbeon.org/oxf/xml/form-runner">
+	
+   
+   	
+	<xforms:label ref="$form-resources/detail/titles/name"/>
+	<xforms:help ref="$form-resources/detail/help/name"/>
+	
+	<xforms:select1 ref="@type" class="drop-down">
+		<xforms:label  ref="$form-resources/detail/titles/nametype"/> 
+		<xforms:alert  ref="$form-resources/detail/alerts/nametype" />
+		<xforms:help  ref="$form-resources/detail/help/nametype" />
+		<xforms:itemset nodeset="$form-resources/lists/nametype/instance//(section|item)" style="width:10em;">
+			<xforms:label ref="label"/>
+			<xforms:value ref="value"/>
+		</xforms:itemset>
+	</xforms:select1>	
+	
+	
+	
+	<fr:grid>
+		<fr:tr>
+			<fr:td colspan="2">
+				
+	
+       <!-- <th class="dmv-heading-column">
+         <xforms:group ref="instance('triggers-instance')/add-name-trigger">
+                                    <xforms:action ev:event="DOMActivate">
+                                       <xforms:insert ev:event="DOMActivate" context="instance('document-instance')" nodeset="instance('document-instance')/mods:name[last()]" at="index('name-repeat')" position="after" origin="instance('name-instance')/mods:name" />                                      
+                                   </xforms:action>
+                                    <xforms:trigger appearance="minimal" ref=".">
+                                        <xforms:label>
+                                            <img src="/apps/fr/style/add.gif" alt="Add"/>
+                           					 <xforms:output  value="$form-resources/detail/titles/name" mediatype="text/html"/>
+                                        </xforms:label>
+                                    </xforms:trigger>
+                                </xforms:group>
+        
+     			
+     			</th> 
+				 
+					
+			   	
+				<xforms:group ref="">
+                                <xforms:action ev:event="DOMActivate">
+                                <xforms:delete ev:event="DOMActivate"  context="instance('document-instance')" nodeset="instance('document-instance')/mods:name[position()]" at="index('name-repeat')"/>
+                                </xforms:action>
+                                <xforms:trigger appearance="minimal" ref=".">
+                                    <xforms:label>
+                                        <img src="/apps/fr/style/remove.gif" alt="Remove Type Of Resouce"/>
+                                    </xforms:label>
+                                </xforms:trigger>
+                 </xforms:group>
+                      -->      
+	
+       			</fr:td>
+             	</fr:tr>
+             					
+             	<fr:tr>
+             	<fr:td>
+            	<xforms:group ref=".">
+             		<xforms:action ev:event="DOMActivate">
+             			<xforms:insert ev:event="DOMActivate" context="." at="index('namePart-repeat[position()]')" position="after" origin="xxforms:instance('mods-insert')/insert[@name = 'nameRole']/child::*" />              
+             		</xforms:action>						
+             		<xforms:trigger  bind="buttons-triggers" >
+             			<xforms:label>
+             				<img src="/apps/fr/style/add.gif" alt="Add"/>
+             				<xforms:output  value="$form-resources/detail/titles/namerole" mediatype="text/html"/>
+             			</xforms:label>
+             		</xforms:trigger>
+             	</xforms:group>
+             	</fr:td>
+             	<fr:td>
+             	<xforms:group ref="."> 
+             		<xforms:action ev:event="DOMActivate">
+             			<xforms:insert ev:event="DOMActivate" context="." at="index('namePart-repeat[position()]')" position="after" origin="xxforms:instance('mods-insert')/insert[@name = 'namePart']/child::*" />              
+             		</xforms:action>						
+             	
+             		<xforms:trigger  bind="buttons-triggers" >
+             			<xforms:label>
+             				<img src="/apps/fr/style/add.gif" alt="Add"/>
+             				<xforms:output  value="$form-resources/detail/titles/namePart" mediatype="text/html"/>
+             			</xforms:label>
+             		</xforms:trigger>
+             	</xforms:group> 
+             	</fr:td> 
+             	</fr:tr>
+		
+		
+		<fr:tr>
+			<fr:td class="labels">
+				<xforms:repeat nodeset="mods:role[position()]" id="nameRole-repeat[position()]">
+  		
+					
+  	
+							<xforms:group ref=".">
+                                <xforms:action ev:event="DOMActivate">
+                                <xforms:delete ev:event="DOMActivate"  nodeset="." />
+                                </xforms:action>
+                                <xforms:trigger appearance="minimal"  bind="buttons-triggers">
+                                    <xforms:label>
+                                        <img src="/apps/fr/style/remove.gif" alt="Remove Name Role"/>
+                                    </xforms:label>
+                                </xforms:trigger>
+                            </xforms:group>
+             
+  		    <b><xforms:output value="position()" mediatype="text/html"/>.</b>
+			
+			
+
+             	<xforms:select1 ref="mods:roleTerm" class="drop-down">
+             		<xforms:label/>
+             		<xforms:alert  ref="$form-resources/detail/alerts/namerole" />
+             		<xforms:help  ref="$form-resources/detail/help/namerole" />
+             		<xforms:itemset nodeset="$form-resources/lists/roletype/instance//(section|item)">
+             			<xforms:label ref="label"/>
+             			<xforms:value ref="value"/>
+             		</xforms:itemset>
+             	</xforms:select1>
+  		  
+  		  </xforms:repeat>
+			</fr:td>
+		</fr:tr>
+  		  
+
+		<fr:tr>
+			<fr:td class="labels">
+ 				<xforms:repeat nodeset="mods:namePart[position()]" id="namePart-repeat[position()]">
+							
+							<xforms:group ref=".">
+								<xforms:action ev:event="DOMActivate">
+                                <xforms:delete ev:event="DOMActivate"  nodeset="." />
+                                </xforms:action>
+                                <xforms:trigger appearance="minimal"  bind="buttons-triggers">
+                                    <xforms:label>
+                                        <img src="/apps/fr/style/remove.gif" alt="Remove Name Part"/>
+                                    </xforms:label>
+                                </xforms:trigger>
+                            </xforms:group>
+                                   
+			<b><xforms:output value="position()" mediatype="text/html"/>.  </b>
+			
+						
+			
+							<xforms:textarea ref="." incremental="true" id="additionalPart-name[position()]">
+								<xforms:label>
+								</xforms:label>
+								<xforms:alert  ref="$form-resources/detail/alerts/namePart" />
+								<xforms:help  ref="$form-resources/detail/help/namePart" />
+							</xforms:textarea>
+			
+			
+							<xforms:select1 ref="@type" class="drop-down">
+								<xforms:label value="$form-resources/detail/titles/namePartType" mediatype="text/html"/>
+								<xforms:alert  ref="$form-resources/detail/alerts/namePartType" />
+								<xforms:help  ref="$form-resources/detail/help/namePartType" />
+								<xforms:itemset nodeset="$form-resources/lists/nameparttype/instance//(section|item)">
+									<xforms:label ref="label"/>
+									<xforms:value ref="value"/>
+								</xforms:itemset>
+							</xforms:select1>
+							
+	
+							
+				</xforms:repeat>  		
+			</fr:td>
+		</fr:tr>
+
+		
+	</fr:grid>
+</fr:section>

@@ -1,0 +1,24 @@
+<instance>
+    <section>
+    <item>
+        <label>-- Select One --</label>
+        <value> </value>    
+    </item>
+    <item>
+        <label>Given</label>
+        <value>given</value>    
+    </item>
+    <item>
+        <label>Family</label>
+        <value>family</value>    
+    </item>
+    <item>
+        <label>Date</label>
+        <value>date</value>    
+    </item>
+    <item>
+        <label>Term Of Address</label>
+        <value>termsOfAddress</value>
+        </item>
+    </section>
+    </instance>
