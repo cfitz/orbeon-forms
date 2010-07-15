@@ -132,7 +132,7 @@
 
             <!--  Xforms Binds to MODS -->
             <xforms:bind id="fr-form-binds" nodeset=".">
-
+                <xforms:bind id="recordCreationDate" nodeset="mods:recordInfo/mods:recordCreationDate" calculate="now()" readonly="true()"/>                
                 <xforms:bind id="identifier-bind" nodeset="mods:identifier" required="true()"/>
                 <xforms:bind id="identifier-type" nodeset="mods:identifier/@type" required="true()"/>
                 <xforms:bind id="suri-bind" nodeset="mods:identifier[@displayLabel='SU DRUID']"
@@ -1639,6 +1639,30 @@
                                                 </xforms:group>
                                             </fr:td>
                                         </fr:tr>
+
+                                       <!-- <fr:tr>
+                                            <fr:td>
+                                                <xforms:select1 ref="@authority">
+                                                  <xforms:label
+                                                  ref="$form-resources/detail/titles/authority"/>
+
+                                                  <xforms:alert
+                                                  ref="$form-resources/detail/alerts/authority"/>
+                                                  <xforms:help
+                                                  ref="$form-resources/detail/help/authority"/>
+                                                  <xforms:itemset
+                                                  nodeset="$form-resources/lists/genreauthority/instance//(section|item)">
+
+                                                  <xforms:label ref="label"/>
+                                                  <xforms:value ref="value"/>
+                                                  </xforms:itemset>
+                                                </xforms:select1>
+
+
+
+                                            </fr:td>
+                                        </fr:tr>  -->
+
                                         <fr:tr>
                                             <fr:td colspan="2">
 
@@ -1665,7 +1689,7 @@
                                                 <xforms:group ref=".">
                                                   <xforms:insert ev:event="DOMActivate" context="."
                                                   position="after" at="subject-genre"
-                                                  origin="instance('mods-insert')/insert[@name =  'genre']/child::*"/>
+                                                  origin="instance('mods-insert')/insert[@name =  'subjectgenre']/child::*"/>
                                                   <xforms:trigger ref=".">
                                                   <xforms:label>
                                                   <img src="/apps/fr/style/images/silk/film_add.png"
@@ -2206,7 +2230,28 @@
 
                                             </fr:td>
                                         </fr:tr>
+                                        <fr:tr>
+                                            <fr:td>
+                                                <xforms:select1 ref="@authority">
+                                                  <xforms:label
+                                                  ref="$form-resources/detail/titles/genreauthority"/>
 
+                                                  <xforms:alert
+                                                  ref="$form-resources/detail/alerts/genreauthority"/>
+                                                  <xforms:help
+                                                  ref="$form-resources/detail/help/genreauthority"/>
+                                                  <xforms:itemset
+                                                  nodeset="$form-resources/lists/genreauthority/instance//(section|item)">
+
+                                                  <xforms:label ref="label"/>
+                                                  <xforms:value ref="value"/>
+                                                  </xforms:itemset>
+                                                </xforms:select1>
+
+
+
+                                            </fr:td>
+                                        </fr:tr>
                                         <fr:tr>
                                             <fr:td>
                                                 <xforms:select1 ref="." class="drop-down">

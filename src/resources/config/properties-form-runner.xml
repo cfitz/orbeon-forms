@@ -108,6 +108,8 @@
     <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.hummel.form" value="/fr/service/resource"/>
     <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.demo.form" value="/fr/service/resource"/>
     <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.faf.form" value="/fr/service/resource"/>
+    <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.ssc.form" value="/fr/service/resource"/>
+    <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.caricatures.form" value="/fr/service/resource"/>
 
     <!-- <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.archiveSimple.form" value="/fr/service/resource"/>
     <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.booksimple.form" value="/fr/service/resource"/>

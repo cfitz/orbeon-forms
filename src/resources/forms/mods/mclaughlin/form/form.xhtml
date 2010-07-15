@@ -284,9 +284,11 @@
 
 
                                             <fr:td rowspan="2">
-                                            <!--    <xforms:output mediatype="text/html"
+                                                <xforms:group ref=".[@displayLabel='SU DRUID']">
+                                                <xforms:output mediatype="text/html"
                                                     value="concat('&lt;img', ' class=&#34;mods-barcode&#34;', ' src=&#34;/barcode/', replace(., 'druid:', '') ,'&#34; /&gt;')"
-                                                /> -->
+                                                />
+                                                </xforms:group>
                                             </fr:td>
                                         </fr:tr>
 

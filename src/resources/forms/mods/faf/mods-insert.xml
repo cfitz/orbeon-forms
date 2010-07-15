@@ -102,7 +102,7 @@
 
 
  <insert name="subject">
-  <mods:subjec authority="lcsh"/>
+  <mods:subject authority="lcsh"/>
  </insert>
 
      <insert name="namesubject">
@@ -142,6 +142,10 @@
   <mods:genre authority="lcsh"/>
  </insert>
 
+
+ <insert name="genre">
+  <mods:genre/>
+ </insert>
 
  <insert name="language">
   <mods:language>

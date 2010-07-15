@@ -106,6 +106,8 @@
                 <removeidentifier>Remove Identifier</removeidentifier>
                 <identifiertype>Type Of Identifier</identifiertype>
                 <displayLabel>Display Label</displayLabel>
+                <genreauthority>Genre Authority</genreauthority>
+                <authority>Authority</authority>
                 <note>Note</note>
                 <namePart>Name Part</namePart>
                 <nametype>Name Type</nametype>
@@ -203,6 +205,8 @@
                 <seriesInfo>Series Information</seriesInfo>
                 <relatedItemTitle>Series Type</relatedItemTitle>
                 <relatedItemSubtitle>Box or Drawer</relatedItemSubtitle>
+                  <genreauthority>Genre Authority</genreauthority>
+                <authority>Authority</authority>
             </alerts>
 
             <help>
@@ -293,8 +297,9 @@
                     for Relators and Roles.</namerole>
                 <genre>The genre element is recommended in these guidelines and should be used to
                     characterize the content of the digital resource rather than the digital
-                    resource itself. Currently, these values are from the Getty's Art and
-                    Architecture Thesaurus.</genre>
+                    resource itself.</genre>
+                  <genreauthority>Genre Authority Help</genreauthority>
+                  <authority> Authority Help</authority>
                 <form>This subelement specifies the physical form or medium of the material for a
                     resource. This list include values from Source Codes for Forms (smd) maintained
                     by the Library of Congress.</form>
@@ -721,17 +726,108 @@
                     </section>
                     <section>
                         <item>
-                            <label>Speeches</label>
-                            <value>speeches</value>
+                            <label>Biographical radio programs</label>
+                            <value>Biographical radio programs</value>
+                        </item>
+                          <item>
+                            <label>Book review radio programs</label>
+                            <value>Book review radio programs</value>
                         </item>
                         <item>
-                            <value>addresses</value>
-                            <label>Addresses</label>
+                            <label>Community affairs radio programs</label>
+                            <value>Community affairs radio programs</value>
+                        </item>
+                        <item>
+                            <label>Documentary radio programs</label>
+                            <value>Documentary radio programs</value>
+                        </item>
+                        <item>
+                            <label>Educational radio programs</label>
+                            <value>Educational radio programs</value>
+                        </item>
+                        <item>
+                            <label>Fiction radio programs</label>
+                            <value>Fiction radio programs</value>
+                        </item>
+                        <item>
+                            <label>Interviews (Sound recordings)</label>
+                            <value>Interviews (Sound recordings)</value>
+                        </item>
+                        <item>
+                            <label>Literary readings (Radio programs)</label>
+                            <value>Literary readings (Radio programs)</value>
+                        </item>
+                        <item>
+                            <label>Literary readings (Sound recordings)</label>
+                            <value>Literary readings (Sound recordings)</value>
+                        </item>
+                        <item>
+                            <label>Live sound recordings</label>
+                            <value>Live sound recordings</value>
+                        </item>
+                        <item>
+                            <label>Nonfiction radio programs</label>
+                            <value>Nonfiction radio programs</value>
+                        </item>
+                        <item>
+                            <label>Oral histories</label>
+                            <value>Oral histories</value>
+                        </item>
+                        <item>
+                            <label>Public affairs radio programs</label>
+                            <value>Public affairs radio programs</value>
+                        </item>
+                        <item>
+                            <label>Radio interviews</label>
+                            <value>Radio interviews</value>
+                        </item>
+                        <item>
+                            <label>Radio news bulletins</label>
+                            <value>Radio news bulletins</value>
+                        </item>
+                        <item>
+                            <label>Radio news programs</label>
+                            <value>Radio news programs</value>
+                        </item>
+                        <item>
+                            <label>Radio panel discussions</label>
+                            <value>Radio panel discussions</value>
+                        </item>
+                        <item>
+                            <label>Radio speeches</label>
+                            <value>Radio speeches</value>
+                        </item>
+                        <item>
+                            <label>Speeches (Sound recordings)</label>
+                            <value>Speeches (Sound recordings)</value>
                         </item>
                     </section>
                 </instance>
             </genre>
-
+              <genreauthority>
+                  <instance>
+                      <section>
+                          <item>
+                               <label>-- Select One --</label>
+                            <value/>
+                          </item>
+                      </section>
+                      <section>
+                          <item>
+                              <label>LCSH</label>
+                              <value>lcsh</value>
+                          </item>
+                          <item>
+                              <label>AAT</label>
+                              <value>aat</value>
+                          </item>
+                          <item>
+                              <label>LOCAL</label>
+                              <value>local</value>
+                          </item>
+                      </section>
+                  </instance>
+                 </genreauthority>
             <form>
                 <instance>
                     <section>
