@@ -79,7 +79,7 @@
         <p:input name="config" href="components/components.xsl"/>
         <p:input name="request" href="#request"/>
 
-        <p:output name="data" id="after-components"/>
+        <p:output debug="comp" name="data" id="after-components"/>
 
         <!-- This is here just so that we can reload the form when the properties or the resources change -->
         <p:input name="properties-xforms" href="oxf:/config/properties-xforms.xml"/>

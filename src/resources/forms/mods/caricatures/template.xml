@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (C) 2010 Orbeon, Inc.
+
+  This program is free software; you can redistribute it and/or modify it under the terms of the
+  GNU Lesser General Public License as published by the Free Software Foundation; either version
+  2.1 of the License, or (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  See the GNU Lesser General Public License for more details.
+
+  The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+  -->
+<mods:mods     xmlns:xxforms="http://orbeon.org/oxf/xml/xforms" xmlns:mods="http://www.loc.gov/mods/v3"
+    xmlns:xforms="http://www.w3.org/2002/xforms">       
+    <mods:identifier type="local" displayLabel="SU DRUID">1234</mods:identifier>
+     <mods:identifier type="local" displayLabel="Collection ID">M0690</mods:identifier>
+
+     <mods:identifier type="local" displayLabel="Item Number"></mods:identifier>  
+    
+    <mods:titleInfo>        
+        <mods:title />
+        <mods:subTitle/>
+        <mods:partNumber />
+        <mods:partName /> 
+    </mods:titleInfo>
+    <mods:originInfo>
+        <mods:place><mods:placeTerm type="text">Stanford, CA</mods:placeTerm></mods:place>
+        <mods:publisher>Stanford Special Collections</mods:publisher>
+        <mods:dateCreated encoding="w3cdtf" keyDate="yes" qualifier="" />
+       </mods:originInfo> 
+ <mods:location>
+    	<mods:physicalLocation></mods:physicalLocation>
+    </mods:location>   
+     <mods:accessCondition type="useAndReproduction" >Digital images from the Memorial Library of Music may be viewed freely. These images may not be reproduced or used for any purpose without permission. For permission requests please contact the Department of Special Collections, Stanford University ( specialcollections@stanford.edu )</mods:accessCondition>   
+     <mods:recordInfo>
+    <mods:recordContentSource>Lyberteam Metadata ToolKit</mods:recordContentSource> 
+    <mods:recordCreationDate encoding="iso8601"></mods:recordCreationDate>
+    </mods:recordInfo>
+
+</mods:mods>

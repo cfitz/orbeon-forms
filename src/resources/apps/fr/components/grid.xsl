@@ -37,11 +37,11 @@
                 </xhtml:div>
             </xsl:when>
             <xsl:otherwise>
-                <xhtml:table class="fr-grid fr-grid-{@columns}-columns{ if (@class) then concat(' ', @class) else ()}">
+                <xhtml:div class="fr-grid fr-grid-{@columns}-columns{ if (@class) then concat(' ', @class) else ()}">
                     <!-- Grid content -->
                     <xsl:apply-templates select="xhtml:* except xforms:label" mode="grid-content"/>
                     <xsl:apply-templates select="fr:* except xforms:label"/>
-                </xhtml:table>
+                </xhtml:div>
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
@@ -53,9 +53,9 @@
                 <xsl:apply-templates select="@* | node()"/>
             </xsl:when>
             <xsl:otherwise>
-                <xhtml:tr>
+                <xhtml:div class="table-row">
                     <xsl:apply-templates select="@* | node()"/>
-                </xhtml:tr>
+                </xhtml:div>
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
@@ -72,12 +72,12 @@
                 </xhtml:div>
             </xsl:when>
             <xsl:otherwise>
-                <xhtml:td class="{string-join(('fr-grid-td', @class), ' ')}">
+                <xhtml:div  class="{string-join(('fr-grid-td', @class), ' ')}">
                     <xsl:apply-templates select="@*"/>
                     <xhtml:div class="fr-grid-content">
                         <xsl:apply-templates select="node()"/>
                     </xhtml:div>
-                </xhtml:td>
+                </xhtml:div>
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>

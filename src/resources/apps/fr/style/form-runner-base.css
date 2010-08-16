@@ -260,7 +260,7 @@ button.xforms-trigger img, .xforms-trigger button img { margin-right: 10px }
 /* Repeats: shows as sections (can have multiple lines per iteration; repeated field labels) */
 .fr-repeat-sections th { display: none }
 .fr-repeat-sections .xforms-label { margin-top: 0 }
-.fr-repeat-sections .xforms-control { display: block } /* Otherwise control shows on same line as label in certain cases */
+.fr-repeat-sections .xforms-control { /* display: block  */ } /* CF: We want that. Otherwise control shows on same line as label in certain cases */
 
 /* Repeats: shows as table (1 line per iteration; labels used as header of table) */
 .fr-repeat-table {
@@ -349,14 +349,14 @@ button.xforms-trigger img, .xforms-trigger button img { margin-right: 10px }
 .fr-grid-content .xforms-label {
     margin-top: .25em;      /* Space between control and the one on top of this one */
     margin-bottom: 0;       /* Space between label control and control "field" */
-    display: block;         /* So the margin has an effect */
+    /*display: block; CF: Trying to get spacing better */         /* So the margin has an effect */
 }
 
 /* Style controls or component groups */
 .fr-grid-content .xforms-control, .fr-grid-content .fr-component-group {
-    display: block;     /* So control is not displayed next to the help icon but on a new line */
+    /* display: block; CF: I want it on one line... */     /* So control is not displayed next to the help icon but on a new line */
     margin-top: 0.3em;  /* Insert some space between the label / help and the control */
-    clear: both;
+    /* clear: both; */
 }
 
 /* Restore defaults for controls within component */
@@ -428,7 +428,7 @@ button.xforms-trigger img, .xforms-trigger button img { margin-right: 10px }
 .fr-grid .fr-grid-content button.xforms-trigger, .fr-grid .fr-grid-content input.xforms-trigger,
     .fr-grid .fr-grid-content .xforms-trigger button, .fr-grid .fr-grid-content .xforms-trigger input { margin-top: 1.72em } /* hand-tuned so it appears at about the same pos as input fields*/
 .fr-grid .fr-grid-content button.xforms-trigger, .fr-grid .fr-grid-content .yui-button input.xforms-trigger,
-    .fr-grid .fr-grid-content .xforms-trigger button, .fr-grid .fr-grid-content .yui-button .xforms-trigger input { margin-top: 0; display: inline } /* except YUI buttons don't appear right with top margin! */
+    .fr-grid .fr-grid-content .xforms-trigger button, .fr-grid .fr-grid-content .yui-button .xforms-trigger input { width:100%; margin-top: 0; display: inline } /* CF ADDING WIDTH SO THE ENTIRE SPAN IS ACTIVE */ /* except YUI buttons don't appear right with top margin! */
 
 /* Cell widths */
 .fr-grid-td { width: auto; vertical-align: top; overflow: hidden }

@@ -39,7 +39,7 @@
         <mods:languageTerm type="code" authority="iso639-2b">eng</mods:languageTerm>
     </mods:language>
     <mods:typeOfResource>sound recording - nonmusical</mods:typeOfResource>
-    <mods:genre authority="lcsh">Speeches (Sound recordings)</mods:genre>  
+    <mods:genre authority="local">Speeches (Sound recordings)</mods:genre>  
     <mods:physicalDescription>
     		<mods:internetMediaType>audio/mpeg</mods:internetMediaType>
     		<mods:extent>1 sound file</mods:extent>

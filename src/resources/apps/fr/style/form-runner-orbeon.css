@@ -85,6 +85,27 @@ p, fieldset, table { margin-bottom: 1em }
 
 /* ***** Other ****************************************************************************************************** */
 
+
+
+/*
+
+.table-header { 
+  background:none repeat scroll 0 0  #C0C0C0; 
+  padding: 1em;
+  }
+
+.table-header span#label { font-size: 110%; color:white; } 
+
+
+.table-header-cell .xforms-control {
+	clear:none;
+	padding: 0 1.5em;
+}
+
+
+*/
+
+
 .repeat-container { 
 border-color:#243356 #808080 #808080;
 border-right:1px solid #808080;
@@ -100,22 +121,32 @@ margin: 1em
   }
   
 .repeat-container-header span#label { font-size: 110%; color:white; } 
+
+
   
  .repeat-container-body {
     background:none repeat scroll 0 0 #EDF5FF;
  }
  
  .repeat-container-item {
- border-style:solid;
+/*	display: block;
+ */ border-style:solid;
 border-width:1px;
-padding-bottom:1em;
-padding-top:1em;
+padding-bottom: .25em;
+padding-top:.25em;
  }
 
 .repeat-container .item-row {
-display: block;
-margin: 1em;
+/*display: block; */
+  padding: .5em;
 }
+
+.repeat-container .button-row {
+	width:100%;
+	
+}
+
+.button-row button { width: 20%; text-align: center;}
 
 .repeat-container .item-row label { 
 padding-left: 5px;
@@ -125,11 +156,84 @@ padding-left: 5px;
 padding-right: 5px
 }
 
-.repeat-container .item-row .xforms-select-appearance-full span { 
-   display: inherit;
-   margin-left: 80px;
+
+.repeat-container  .item-cell {
+
+	display: inline-block;
+	/*width: 33.3%;*/	
 }
 
+.repeat-container .item-cell .bordered {
+	border-style:solid;
+	border-color:gray;
+	border-width:.5px;
+}
+
+.repeat-container .item-cell label { 
+padding: 5px;
+}
+
+.repeat-container .item-cell input {
+padding: 5px
+}
+
+
+.repeat-container .item-row .xforms-select-appearance-full span { 
+  /* display: inherit;
+  */ margin-left: 80px;
+}
+
+
+.repeat-header {
+		padding: 0 .5em;
+		height: 15px;
+
+}
+
+.repeat-header-add {
+	/*display:inline;
+	*/ float: left;
+	margin:0 0.5em 0 -1px;
+	padding:0;
+	vertical-align:middle;
+}
+
+.repeat-remove {
+	margin: 0 0.5em;
+	
+}
+
+.repeat-remove img {
+	float: left;
+}
+
+.repeat-item-header {
+/*	display:inline; */
+	vertical-align:middle;
+}
+
+.repeat-item-header img {
+	margin-left: .5em;
+	float: left;
+}
+
+.repeat-item-header span { 
+	clear: none;}
+
+.barcode {
+	float: right;
+	
+}
+
+.nested-repeatable-header-cell {
+	margin: .25em .5em;
+}
+
+.add-xforms-label {
+	padding-top: 3px;
+	font-size: 17px;
+	color: #F8F8F8;
+}
 
 .fr-top, .fr-footer { background-repeat: no-repeat; clear: both }
 .fr-shadow { height: 10px; _height: 5px; font-size: 0; clear: both; } /* Clear is necessary because the previous block contains floated elements */
