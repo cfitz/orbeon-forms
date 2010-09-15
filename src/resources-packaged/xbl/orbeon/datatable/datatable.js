@@ -223,7 +223,7 @@ YAHOO.xbl.fr.Datatable.prototype = {
         } else {
             this.table = tables[0];
         }
-
+    
         this.thead = YAHOO.util.Selector.query('thead', this.headerTable, true);
         this.tbody = YAHOO.util.Selector.query('tbody', this.table, true);
         this.getAndSetColumns();
@@ -497,7 +497,13 @@ YAHOO.xbl.fr.Datatable.prototype = {
                 liner = childDiv;
             }
 
-            var width = (this.columnWidths[j] - 20) + 'px';
+			var widthTest = this.columnWidths[j] - 20
+			if (widthTest < 355 ) {
+				var width = widthTest + 'px' }
+		    else {
+		    	var width = '355px' } 
+
+            // var width = (this.columnWidths[j] - 20) + 'px';
             var rule;
             // See _setColumnWidth in YUI datatable.js...
             if (YAHOO.env.ua.ie == 0) {

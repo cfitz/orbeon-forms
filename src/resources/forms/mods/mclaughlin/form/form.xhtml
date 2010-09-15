@@ -20,7 +20,7 @@
 	xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
 	xmlns:mods="http://www.loc.gov/mods/v3" xmlns:fr="http://orbeon.org/oxf/xml/form-runner"
 	xmlns:dl="http://dl.lib.brown.edu/editor/mods/dl" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-	xmlns:sparql="http://www.w3.org/2005/sparql-results#">
+	xmlns:sparql="http://www.w3.org/2005/sparql-results#" xmlns:xlink="http://www.w3.org/1999/xlink">
 	<head>
 
 		<title>Metadata Toolkit</title>
@@ -44,7 +44,8 @@
 				<xforms:send submission="new-submission"/>
 				<xforms:setvalue ref="xxforms:instance('fr-parameters-instance')/document"
 					value="xxforms:instance('suri-instance')/identifier/id"/>
-				<xforms:setvalue ref="xxforms:instance('fr-form-instance')/mods:identifier[@displayLabel = 'SU DRUID']"
+				<xforms:setvalue
+					ref="xxforms:instance('fr-form-instance')/mods:identifier[@displayLabel = 'SU DRUID']"
 					value="concat('druid:' , xxforms:instance('suri-instance')/identifier/id)"/>
 			</xforms:action>
 
@@ -140,6 +141,13 @@
 				<xforms:bind nodeset="mods:accessCondition" required="true()" type="xs:string"/>
 				<xforms:bind nodeset="mods:accessCondition/@type" required="true()" type="xs:string"/>
 				<xforms:bind nodeset="mods:note/@displayLabel" type="xs:string"/>
+
+
+				<xforms:bind nodeset="mods:relatedItem/mods:identifier"/>
+				<xforms:bind nodeset="mods:relatedItem/@type" />
+				<xforms:bind nodeset="mods:relatedItem/@displayLabel" />
+				<xforms:bind nodeset="mods:relatedItem/@xlink:href" calculate="concat('https://mdtoolkit-dev.stanford.edu/orbeon/fr/mods/mclaughlin/edit/', 'mods:identifier[@displayLabel = ''SU DRUID'']')"/>
+				
 			</xforms:bind>
 
 
@@ -155,11 +163,11 @@
 					<author>Stanford University Library</author>
 					<logo mediatype="image/png" filename="banner.gif" size=""
 						>/apps/fr/style/banner.gif</logo>
-					
+
 					<logo mediatype="" filename="" size=""/>
 				</metadata>
 			</xforms:instance>
-			
+
 			<xforms:instance id="fr-form-attachments">
 				<attachments xmlns="">
 					<css mediatype="text/css" filename="" size=""/>
@@ -339,8 +347,7 @@
 												<xforms:alert
 												ref="$form-resources/detail/alerts/label"/>
 												<xforms:help
-												ref="$form-resources/detail/help/label"
-												/>
+												ref="$form-resources/detail/help/label"/>
 												</xforms:input>
 												</div>
 												<div class="item-cell">
@@ -361,6 +368,90 @@
 					</fr:grid>
 				</fr:section>
 				<!-- END IDENTIFIER -->
+				<!-- START RELATED ITEM -->
+				<fr:section id="relatedItem" bind="fr-form-binds">
+					<xforms:label ref="$form-resources/detail/titles/relatedItem"/>
+					<xforms:help ref="$form-resources/detail/help/relatedItem"/>
+					<fr:grid>
+						<fr:tr>
+							<fr:td>
+								<fr:repeat nodeset="mods:relatedItem" id="relatedItem-repeat"
+									origin="xxforms:instance('mods-insert')/insert[@name = 'relatedItem']/mods:relatedItem">
+									<fr:body>
+										<fr:tr>
+											<fr:td>
+												<xforms:group ref=".">
+												<xforms:label class="add-xforms-label"
+												value="concat('Add ', $form-resources/detail/titles/relatedItem)"
+												/>
+												</xforms:group>
+											</fr:td>
+										</fr:tr>
+										<fr:tr>
+											<fr:td>
+												<div class="item-row">
+												<div class="item-cell">
+													<a href="https://mdtoolkit.stanford.edu/ops/fr/mods/mclaughlin/edit/{replace(mods:identifier[@displayLabel = 'SU DRUID'], 'druid:', '')}" target="_blank"><img
+												src="/apps/fr/style/images/silk/eye.png"
+												/></a>
+												</div>
+												<div class="item-cell">
+												<xforms:select1 ref="@type" class="drop-down">
+												<xforms:label
+												ref="$form-resources/detail/titles/relatedItemType"
+												class="forms-hidden"/>
+												<xforms:alert
+												ref="$form-resources/detail/alerts/relatedItemType"/>
+												<xforms:help
+												ref="$form-resources/detail/help/relatedItemType"/>
+												<xforms:itemset
+												nodeset="$form-resources/lists/typeOfRelatedItem/instance//(section|item)">
+												<xforms:label ref="label"/>
+												<xforms:value ref="value"/>
+												</xforms:itemset>
+												</xforms:select1>
+												</div>
+												<div class="item-cell">
+												<xforms:input incremental="true"
+												ref="@displayLabel">
+												<xforms:label
+												ref="$form-resources/detail/labels/label"/>
+												<xforms:alert
+												ref="$form-resources/detail/alerts/label"/>
+												<xforms:help
+												ref="$form-resources/detail/help/label"/>
+												</xforms:input>
+												</div>
+												<xforms:group
+												ref="mods:identifier[@displayLabel = 'SU DRUID']">
+												<div class="item-cell">
+												<xforms:input incremental="true" ref=".">
+												<xforms:label ref="@displayLabel"/>
+												<xforms:alert
+												ref="$form-resources/detail/alerts/identifier"/>
+												</xforms:input>
+												</div>
+												</xforms:group>
+												<xforms:group
+												ref="mods:identifier[@displayLabel = 'entry_number']">
+												<div class="item-cell"> </div>
+												<div class="item-cell">
+												<xforms:input incremental="true" ref=".">
+												<xforms:label ref="@displayLabel"/>
+												<xforms:alert
+												ref="$form-resources/detail/alerts/identifier"/>
+												</xforms:input>
+												</div>
+												</xforms:group>
+												</div> </fr:td>
+										</fr:tr>
+									</fr:body>
+								</fr:repeat>
+							</fr:td>
+						</fr:tr>
+					</fr:grid>
+				</fr:section>
+				<!-- END RELATED ITEM -->
 				<!-- START TITLEINFO -->
 				<fr:section id="titleInfo-section" bind="fr-form-binds">
 					<xforms:label ref="$form-resources/detail/titles/titleInfo"/>
@@ -496,6 +587,8 @@
 						</fr:tr>
 					</fr:grid>
 				</fr:section>
+				<!-- END TITLEINFO -->
+				<!-- START NAME -->
 				<fr:section id="name-section" bind="fr-form-binds">
 					<xforms:label ref="$form-resources/detail/titles/name"/>
 					<xforms:help ref="$form-resources/detail/help/name"/>
@@ -567,15 +660,13 @@
 												</div>
 												<div class="item-cell">
 												<xforms:input ref="." selection="open"
-												incremental="true"
-												>
+												incremental="true">
 												<xforms:label
 												value="$form-resources/detail/titles/nameParts"/>
 												<xforms:alert
 												ref="$form-resources/detail/alerts/namepart"/>
 												<xforms:help
 												ref="$form-resources/detail/help/namepart"/>
-												
 												</xforms:input>
 												</div>
 												<!-- NamePart @type -->
@@ -2327,9 +2418,9 @@
 												<fr:optional-element id="note-label"
 												ref="@displayLabel" nodeset="mods:note"
 												origin="xxforms:instance('mods-insert')/insert[@name = 'note']/mods:note/@displayLabel">
-													<xforms:output
-														ref="$form-resources/detail/labels/label"/>
-													<xforms:input ref="@displayLabel">
+												<xforms:output
+												ref="$form-resources/detail/labels/label"/>
+												<xforms:input ref="@displayLabel">
 												<xforms:label
 												ref="$form-resources/detail/labels/label"/>
 												<xforms:alert

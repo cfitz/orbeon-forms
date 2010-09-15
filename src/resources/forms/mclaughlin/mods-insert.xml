@@ -9,12 +9,19 @@
  <insert name="identifier">
   <mods:identifier type="local"></mods:identifier> 
  </insert>
- 
+
+                             
+ <insert name="relatedItem">
+       <mods:relatedItem displayLabel="Has Related Item" type="otherVersion">
+		<mods:identifier type="local" displayLabel="SU DRUID"></mods:identifier>
+		<mods:identifier displayLabel="entry_number" type="local"></mods:identifier>
+	</mods:relatedItem>
+ </insert>
  <insert name="titleInfo">
     <mods:titleInfo type="">
         <mods:title/>
         <mods:subTitle/>
-        <mods:nonSort/>
+          <mods:nonSort/>
         <mods:partNumber/>
         <mods:partName/>        
     </mods:titleInfo> 

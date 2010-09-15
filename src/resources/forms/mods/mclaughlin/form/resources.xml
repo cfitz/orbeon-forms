@@ -89,7 +89,7 @@
                 <namePart>Name Parts</namePart>
                 <namePartType>Type</namePartType>
                 <seriesInfo>Series Information</seriesInfo>
-                <relatedItemTitle>Series Information</relatedItemTitle>
+               
                 <relatedItemSubtitle>Box or Drawer Name</relatedItemSubtitle>
                 <relatedItemPartName>Folder Name</relatedItemPartName>
                 <relatedItemPartNumber>Folder Number</relatedItemPartNumber>
@@ -108,7 +108,7 @@
                 <nametype>Name Type</nametype>
                 <roleTerm>Role Term</roleTerm>
                 <seriesInfo>Series Information</seriesInfo>
-                <relatedItemTitle>Series Title</relatedItemTitle>
+                <relatedItem>Related Item</relatedItem>
                 <relatedItemSubtitle>Series Type</relatedItemSubtitle>
                 <relatedItemSubtitle>Box or Drawer Name</relatedItemSubtitle>
                 <relatedItemPartName>Folder Name</relatedItemPartName>
@@ -119,6 +119,7 @@
 				<label>Label</label>
 				<manuscript>Manuscript</manuscript>
 				<druid>Druid</druid>
+               
             </titles>
 
             <!-- Triggers labels -->
@@ -995,7 +996,35 @@
                     </section>
                 </instance>
             </nameparttype>
-
+            <typeOfRelatedItem>
+                <instance>
+                    <section>
+                        <item>
+                            <label>-- Select One --</label>
+                            <value/>
+                        </item>
+                    </section>
+                    <section>
+                        <item>
+                            <label>Host</label>
+                            <value>host</value>
+                        </item>
+                        <item>
+                            <label>Consituent</label>
+                            <value>consituent</value>
+                        </item>
+                        <item>
+                            <label>Series</label>
+                            <value>series</value>
+                        </item>
+                        <item>
+                            <label>Other Version</label>
+                            <value>otherVersion</value>
+                        </item>
+                        </section>
+                </instance>
+                
+            </typeOfRelatedItem>
             <typeofresource>
                 <instance>
                     <section>
