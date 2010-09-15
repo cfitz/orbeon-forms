@@ -26,15 +26,11 @@ import org.orbeon.oxf.xforms.event.events.XFormsInsertEvent;
 import org.orbeon.oxf.xforms.xbl.XBLBindings;
 import org.orbeon.oxf.xml.dom4j.Dom4jUtils;
 import org.orbeon.saxon.dom4j.DocumentWrapper;
-import org.orbeon.saxon.om.Item;
-import org.orbeon.saxon.om.NodeInfo;
-import org.orbeon.saxon.om.SequenceIterator;
+import org.orbeon.saxon.om.*;
 import org.orbeon.saxon.trans.XPathException;
 import org.orbeon.saxon.value.BooleanValue;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * 9.3.5 The insert Element
@@ -56,7 +52,7 @@ public class XFormsInsertAction extends XFormsAction {
         final String contextAttribute = actionElement.attributeValue("context");
 
         // Extension: allow position to be an AVT
-        final String resolvedPositionAttribute = actionInterpreter.resolveAVT(propertyContext, actionElement, "position", false);
+        final String resolvedPositionAttribute = actionInterpreter.resolveAVT(propertyContext, actionElement, "position");
 
         // "2. The Node Set Binding node-set is determined."
         final List<Item> collectionToBeUpdated; {
@@ -416,7 +412,7 @@ public class XFormsInsertAction extends XFormsAction {
         // "XForms Actions that change the tree structure of instance data result in setting all four flags to true"
         if (didInsertNodes && modifiedInstance  != null) {
             // NOTE: Can be null if document into which delete is performed is not in an instance, e.g. in a variable
-            modifiedInstance.getModel(containingDocument).setAllDeferredFlags(true);
+            modifiedInstance.getModel(containingDocument).markStructuralChange();
         }
 
         // "4. If the insert is successful, the event xforms-insert is dispatched."
@@ -432,7 +428,7 @@ public class XFormsInsertAction extends XFormsAction {
 //                } else {
 //                    // Otherwise, hard to get to the wrapper, so create a new one
 //                    final Document insertDocument = ((Node) insertedNodes.get(0)).getDocument();
-//                    documentWrapper = new DocumentWrapper(insertDocument, null, new Configuration());
+//                    documentWrapper = new DocumentWrapper(insertDocument, null, xpathConfiguration);
 //                }
 
                 insertedNodeInfos = new ArrayList<Item>(insertedNodes.size());

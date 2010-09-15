@@ -18,7 +18,6 @@ import org.orbeon.oxf.common.ValidationException;
 import org.orbeon.oxf.util.PropertyContext;
 import org.orbeon.oxf.xforms.XFormsContainingDocument;
 import org.orbeon.oxf.xforms.XFormsModel;
-import org.orbeon.oxf.xforms.XFormsUtils;
 import org.orbeon.oxf.xforms.action.XFormsAction;
 import org.orbeon.oxf.xforms.action.XFormsActionInterpreter;
 import org.orbeon.oxf.xforms.event.XFormsEvent;
@@ -40,14 +39,14 @@ public class XFormsRefreshAction extends XFormsAction {
         final XBLContainer container = actionInterpreter.getXBLContainer();
         final XFormsContainingDocument containingDocument = actionInterpreter.getContainingDocument();
 
-        final String modelId = XFormsUtils.namespaceId(containingDocument, actionElement.attributeValue("model"));
+        final String modelId = actionElement.attributeValue("model");
         final XFormsModel model = actionInterpreter.resolveModel(propertyContext, actionElement, modelId);
 
         if (model == null)
             throw new ValidationException("Invalid model id: " + modelId, (LocationData) actionElement.getData());
 
-        // Because of inter-model dependencies, we consider for now that the action must force the operation
-        container.requireRefresh();
+        // NOTE: We no longer need to force the refresh flag here because the refresh flag is global. If a change in any
+        // model occurred, then the flag will be already set and we are safe. Otherwise, it is safe not to do anything.
         container.dispatchEvent(propertyContext, new XFormsRefreshEvent(containingDocument, model));
     }
 }

@@ -1,27 +1,30 @@
 /**
- *  Copyright (C) 2004 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify it under the terms of the
- *  GNU Lesser General Public License as published by the Free Software Foundation; either version
- *  2.1 of the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU Lesser General Public License as published by the Free Software Foundation; either version
+ * 2.1 of the License, or (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *  See the GNU Lesser General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Lesser General Public License for more details.
  *
- *  The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+ * The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
  */
 package org.orbeon.oxf.processor.transformer;
 
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
 import org.orbeon.oxf.processor.Processor;
 import org.orbeon.oxf.processor.ProcessorImpl;
 import org.orbeon.oxf.processor.generator.URLGenerator;
+import org.orbeon.oxf.processor.transformer.xslt.XSLTTransformer;
 import org.orbeon.oxf.resources.URLFactory;
 import org.orbeon.oxf.xml.ForwardingXMLReader;
 import org.orbeon.oxf.xml.ProcessorOutputXMLReader;
-import org.orbeon.oxf.xml.TeeContentHandler;
+import org.orbeon.oxf.xml.SimpleForwardingXMLReceiver;
+import org.orbeon.oxf.xml.TeeXMLReceiver;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
@@ -110,26 +113,32 @@ public class TransformerURIResolver implements URIResolver {
                     // with HTTP and HTTPS. When would it make sense to use local caching?
                     final String protocol = url.getProtocol();
                     final boolean cacheUseLocalCache = !(protocol.equals("http") || protocol.equals("https"));
-                    final Processor urlGenerator = new URLGenerator(url, null, false, null, false, false, false, handleXInclude, mode, null, null, cacheUseLocalCache);
+                    final Processor urlGenerator = new URLGenerator(url, null, false, null, false, false, false, handleXInclude, true, mode, null, null, cacheUseLocalCache);
                     xmlReader = new ProcessorOutputXMLReader(pipelineContext, urlGenerator.createOutput(ProcessorImpl.OUTPUT_DATA));
                     systemId = url.toExternalForm();
                 }
             }
 
-            // Also send data to listener, if there is one
             final URIResolverListener uriResolverListener =
-                    (URIResolverListener) pipelineContext.getAttribute(PipelineContext.XSLT_STYLESHEET_URI_LISTENER);
+                    (URIResolverListener) pipelineContext.getAttribute(XSLTTransformer.XSLT_STYLESHEET_URI_LISTENER);
             if (uriResolverListener != null) {
+
+                // Also send data to listener, if there is one
+                // NOTE: As of 2010-06-25, this is only used by XSLTTransformer
+
                 xmlReader = new ForwardingXMLReader(xmlReader) {
 
                     private ContentHandler originalHandler;
 
+                    @Override
                     public void setContentHandler(ContentHandler handler) {
                         originalHandler = handler;
-                        List contentHandlers = Arrays.asList(new Object[]{uriResolverListener.getContentHandler(), handler});
-                        super.setContentHandler(new TeeContentHandler(contentHandlers));
+                        // NOTE: We don't need to handle comments in the source stylesheets so we can use new SimpleForwardingXMLReceiver() below
+                        final List<XMLReceiver> xmlReceivers = Arrays.asList(uriResolverListener.getXMLReceiver(), new SimpleForwardingXMLReceiver(handler));
+                        super.setContentHandler(new TeeXMLReceiver(xmlReceivers));
                     }
 
+                    @Override
                     public ContentHandler getContentHandler() {
                         return originalHandler;
                     }

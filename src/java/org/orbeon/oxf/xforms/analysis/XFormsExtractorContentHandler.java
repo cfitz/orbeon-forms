@@ -15,28 +15,24 @@ package org.orbeon.oxf.xforms.analysis;
 
 import org.dom4j.QName;
 import org.orbeon.oxf.common.ValidationException;
-import org.orbeon.oxf.pipeline.api.ExternalContext;
-import org.orbeon.oxf.servlet.OrbeonXFormsFilter;
-import org.orbeon.oxf.xforms.XFormsConstants;
-import org.orbeon.oxf.xforms.XFormsProperties;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
+import org.orbeon.oxf.xforms.*;
 import org.orbeon.oxf.xforms.action.XFormsActions;
 import org.orbeon.oxf.xml.*;
+import org.orbeon.oxf.xml.XMLUtils;
 import org.orbeon.oxf.xml.dom4j.LocationData;
-import org.xml.sax.Attributes;
-import org.xml.sax.ContentHandler;
-import org.xml.sax.Locator;
-import org.xml.sax.SAXException;
+import org.xml.sax.*;
 import org.xml.sax.helpers.AttributesImpl;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * This ContentHandler extracts XForms information from an XHTML document and creates a static state document.
+ *
+ * NOTE: This must be independent from the actual request (including request path, etc.) so the state can be reused
+ * between different requests. Request information, if needed, must go into the dynamic state.
  *
  * The static state document contains only models and controls, without interleaved XHTML elements in order to save
  * memory and to facilitate visiting controls. The exceptions are:
@@ -54,7 +50,7 @@ import java.util.Stack;
  *
  * Structure:
  *
- * <static-state xmlns:xxforms="..." xml:base="..." deployment="integrated" context-path="/orbeon" container-type="servlet" container-namespace="">
+ * <static-state xmlns:xxforms="..." system-id="..." ...>
  *   <!-- E.g. AVT on xhtml:html -->
  *   <xxforms:attribute .../>
  *   <!-- E.g. xforms:output within xhtml:title -->
@@ -75,7 +71,7 @@ import java.util.Stack;
  *   <last-id id="123"/>
  * </static-state>
  */
-public class XFormsExtractorContentHandler extends ForwardingContentHandler {
+public class XFormsExtractorContentHandler extends ForwardingXMLReceiver {
 
     public static final QName LAST_ID_QNAME = new QName("last-id");
 
@@ -91,58 +87,45 @@ public class XFormsExtractorContentHandler extends ForwardingContentHandler {
     private boolean mustOutputFirstElement = true;
 
     private final boolean isTopLevel;
-    private final ExternalContext externalContext;
-    private final XFormsAnnotatorContentHandler.Metadata metadata;
+    private final XFormsStaticState.Metadata metadata;
     private final boolean ignoreRootElement;
 
-    private Stack<URI> xmlBaseStack = new Stack<URI>();
-    private XFormsConstants.DeploymentType deploymentType;
-    private String requestContextPath;
+    private static class XMLBaseLang {
+        public final String id;
+        public final URI xmlBase;
+        public final String xmlLang;
+
+        private XMLBaseLang(String id, URI xmlBase, String xmlLang) {
+            this.id = id;
+            this.xmlBase = xmlBase;
+            this.xmlLang = xmlLang;
+        }
+    }
+
+    private Stack<XMLBaseLang> xmlBaseLangStack = new Stack<XMLBaseLang>();
 
     private boolean inXFormsOrExtension;       // whether we are in a model
     private int xformsLevel;
-    private boolean inPreserve;     // whether we are in a label, etc., schema or instance
-    private int preserveLevel;
+    private boolean inPreserve;     // whether we are in a schema, instance, or xbl:xbl
+    private boolean inLHHA;         // whether we are in an LHHA element
+    private int preserveOrLHHALevel;
 
     /**
      * Constructor for top-level document.
      *
-     * @param externalContext   external context to obtain request path, properties, etc.
-     * @param contentHandler    resulting static state document
+     * @param xmlReceiver       resulting static state document
      * @param metadata          metadata
      */
-    public XFormsExtractorContentHandler(ExternalContext externalContext, ContentHandler contentHandler,
-                                         XFormsAnnotatorContentHandler.Metadata metadata) {
-        super(contentHandler);
+    public XFormsExtractorContentHandler(XMLReceiver xmlReceiver, XFormsStaticState.Metadata metadata) {
+        super(xmlReceiver);
 
         this.isTopLevel = true;
-        this.externalContext = externalContext;
         this.metadata = metadata;
         this.ignoreRootElement = false;
 
-        final ExternalContext.Request request = externalContext.getRequest();
-
-        // Remember if filter provided separate deployment information
-        final String rendererDeploymentType = (String) request.getAttributesMap().get(OrbeonXFormsFilter.RENDERER_DEPLOYMENT_ATTRIBUTE_NAME);
-        deploymentType = "separate".equals(rendererDeploymentType) ? XFormsConstants.DeploymentType.separate
-                    : "integrated".equals(rendererDeploymentType) ? XFormsConstants.DeploymentType.integrated
-                    : XFormsConstants.DeploymentType.plain;
-
-        // Try to get request context path
-        requestContextPath = request.getClientContextPath("/");
-
         // Create xml:base stack
         try {
-            final String rootXMLBase;
-            {
-                // It is possible to override the base URI by setting a request attribute. This is used by OPSXFormsFilter.
-                final String rendererBaseURI = (String) request.getAttributesMap().get(OrbeonXFormsFilter.RENDERER_BASE_URI_ATTRIBUTE_NAME);
-                if (rendererBaseURI != null)
-                    rootXMLBase = rendererBaseURI;
-                else
-                    rootXMLBase = request.getRequestPath();
-            }
-            xmlBaseStack.push(new URI(null, null, rootXMLBase, null));
+            xmlBaseLangStack.push(new XMLBaseLang(null, new URI(null, null, ".", null), null));
         } catch (URISyntaxException e) {
             throw new ValidationException(e, new LocationData(locator));
         }
@@ -151,23 +134,22 @@ public class XFormsExtractorContentHandler extends ForwardingContentHandler {
     /**
      * Constructor for nested document (XBL templates).
      *
-     * @param contentHandler    resulting static state document
+     * @param xmlReceiver       resulting static state document
      * @param metadata          metadata
      * @param ignoreRootElement whether root element must just be skipped
      * @param baseURI           base URI
      */
-    public XFormsExtractorContentHandler(ContentHandler contentHandler, XFormsAnnotatorContentHandler.Metadata metadata,
+    public XFormsExtractorContentHandler(XMLReceiver xmlReceiver, XFormsStaticState.Metadata metadata,
                                          boolean ignoreRootElement, String baseURI) {
-        super(contentHandler, contentHandler != null);
+        super(xmlReceiver);
 
         this.isTopLevel = false;
-        this.externalContext = null;
         this.metadata = metadata;
         this.ignoreRootElement = ignoreRootElement;
 
         try {
             assert baseURI != null;
-            xmlBaseStack.push(new URI(null, null, baseURI, null));
+            xmlBaseLangStack.push(new XMLBaseLang(null, new URI(null, null, baseURI, null), null));
         } catch (URISyntaxException e) {
             throw new ValidationException(e, new LocationData(locator));
         }
@@ -180,19 +162,6 @@ public class XFormsExtractorContentHandler extends ForwardingContentHandler {
     private void outputFirstElementIfNeeded() throws SAXException {
         if (mustOutputFirstElement) {
             final AttributesImpl attributesImpl = new AttributesImpl();
-
-            if (externalContext != null) {// null in case of nested document (XBL templates)
-                // Add xml:base attribute
-                attributesImpl.addAttribute(XMLConstants.XML_URI, "base", "xml:base", ContentHandlerHelper.CDATA, externalContext.getResponse().rewriteRenderURL((xmlBaseStack.get(0)).toString()));
-                // Add deployment attribute
-                attributesImpl.addAttribute(XMLConstants.XML_URI, "deployment", "deployment", ContentHandlerHelper.CDATA, deploymentType.name());
-                // Add context path attribute
-                attributesImpl.addAttribute(XMLConstants.XML_URI, "context-path", "context-path", ContentHandlerHelper.CDATA, requestContextPath);
-                // Add container-type attribute
-                attributesImpl.addAttribute("", "container-type", "container-type", ContentHandlerHelper.CDATA, externalContext.getRequest().getContainerType());
-                // Add container-namespace attribute
-                attributesImpl.addAttribute("", "container-namespace", "container-namespace", ContentHandlerHelper.CDATA, externalContext.getRequest().getContainerNamespace());
-            }
 
             // Add location information
             if (locationData != null) {
@@ -259,18 +228,36 @@ public class XFormsExtractorContentHandler extends ForwardingContentHandler {
         final boolean isXFormsOrExtension = isXForms || isXXForms || isEXForms || isXBL || isExtension;
 
 
-        // Handle xml:base
+        // Handle outer xml:base and xml:lang
         if (!inXFormsOrExtension) {
             final String xmlBaseAttribute = attributes.getValue(XMLConstants.XML_URI, "base");
-            if (xmlBaseAttribute == null) {
-                xmlBaseStack.push(xmlBaseStack.peek());
+            final String xmlLangAttribute = attributes.getValue(XMLConstants.XML_URI, "lang");
+            if (xmlBaseAttribute == null && xmlLangAttribute == null) {
+                xmlBaseLangStack.push(xmlBaseLangStack.peek());
             } else {
-                try {
-                    final URI currentXMLBaseURI = xmlBaseStack.peek();
-                    xmlBaseStack.push(currentXMLBaseURI.resolve(new URI(xmlBaseAttribute)).normalize());// normalize to remove "..", etc.
-                } catch (URISyntaxException e) {
-                    throw new ValidationException("Error creating URI from: '" + xmlBaseStack.peek() + "' and '" + xmlBaseAttribute + "'.", e, new LocationData(locator));
+                final XMLBaseLang currentXMLBaseLang = xmlBaseLangStack.peek();
+
+                final URI newBase;
+                if (xmlBaseAttribute != null) {
+                    try {
+                        // Resolve
+                        newBase = currentXMLBaseLang.xmlBase.resolve(new URI(xmlBaseAttribute)).normalize();// normalize to remove "..", etc.
+                    } catch (URISyntaxException e) {
+                        throw new ValidationException("Error creating URI from: '" + xmlBaseLangStack.peek() + "' and '" + xmlBaseAttribute + "'.", e, new LocationData(locator));
+                    }
+                } else {
+                    newBase = currentXMLBaseLang.xmlBase;
                 }
+
+                final String newLang;
+                if (xmlLangAttribute != null) {
+                    // Override
+                    newLang = xmlLangAttribute;
+                } else {
+                    newLang = currentXMLBaseLang.xmlLang;
+                }
+
+                xmlBaseLangStack.push(new XMLBaseLang(attributes.getValue("", "id"), newBase, newLang));
             }
         }
 
@@ -303,6 +290,22 @@ public class XFormsExtractorContentHandler extends ForwardingContentHandler {
                 // Add xml:base on element
                 attributes = XMLUtils.addOrReplaceAttribute(attributes, XMLConstants.XML_URI, "xml", "base", getCurrentBaseURI());
 
+                // Add xml:lang on element if found
+                final String xmlLang = xmlBaseLangStack.peek().xmlLang;
+                if (xmlLang != null) {
+                    final String newXMLLang;
+                    if (XFormsUtils.maybeAVT(xmlLang)) {
+                        // In this case there is a control representing the AVT
+                        // Put a special value for xml:lang so we know where to find the dynamic value
+                        newXMLLang = "#" + xmlBaseLangStack.peek().id;
+                    } else {
+                        // No AVT
+                        newXMLLang = xmlLang;
+                    }
+
+                    attributes = XMLUtils.addOrReplaceAttribute(attributes, XMLConstants.XML_URI, "xml", "lang", newXMLLang);
+                }
+
                 sendStartPrefixMappings();
             }
 
@@ -324,23 +327,28 @@ public class XFormsExtractorContentHandler extends ForwardingContentHandler {
                 }
 
                 // Preserve as is the content of labels, etc., instances, and schemas
-                if ((XFormsConstants.LABEL_HINT_HELP_ALERT_ELEMENT.contains(localname) // labels, etc. may contain XHTML
-                        || "instance".equals(localname)) && isXForms // XForms instances
-                        || "schema".equals(localname) && XMLConstants.XSD_URI.equals(uri) // XML schemas
-                        || "xbl".equals(localname) && isXBL // preserve everything under xbl:xbl so that templates may be processed by static state
-                        || isExtension) {
-                    inPreserve = true;
-                    preserveLevel = level;
+                if (!inLHHA) {
+                    if (XFormsConstants.LABEL_HINT_HELP_ALERT_ELEMENT.contains(localname) && isXForms) {// labels, etc. may contain XHTML)
+                        inLHHA = true;
+                        preserveOrLHHALevel = level;
+                    } else if ("instance".equals(localname) && isXForms                         // XForms instance
+                            || "schema".equals(localname) && XMLConstants.XSD_URI.equals(uri)   // XML schema
+                            || "xbl".equals(localname) && isXBL // preserve everything under xbl:xbl so that templates may be processed by static state
+                            || isExtension) {
+                        inPreserve = true;
+                        preserveOrLHHALevel = level;
+                    }
                 }
 
-                // Callback for XForms elements
-                if (isXFormsOrExtension) {
+                // Callback for elements of interest
+                if (isXFormsOrExtension || inLHHA) {
+                    // NOTE: We call this also for HTML elements within LHHA so we can gather scope information for AVTs
                     startXFormsOrExtension(uri, localname, qName, attributes);
                 }
             }
 
             // We are within preserved content or we output regular XForms content
-            if (inXFormsOrExtension && (inPreserve || isXFormsOrExtension)) {
+            if (inXFormsOrExtension && (inPreserve || inLHHA || isXFormsOrExtension)) {
                 super.startElement(uri, localname, qName, attributes);
             }
         } else {
@@ -354,7 +362,7 @@ public class XFormsExtractorContentHandler extends ForwardingContentHandler {
     }
 
     private String getCurrentBaseURI() {
-        final URI currentXMLBaseURI = xmlBaseStack.peek();
+        final URI currentXMLBaseURI = xmlBaseLangStack.peek().xmlBase;
         return currentXMLBaseURI.toString();
     }
 
@@ -391,18 +399,21 @@ public class XFormsExtractorContentHandler extends ForwardingContentHandler {
 
         if (level > 0 || !ignoreRootElement) {
             // We are within preserved content or we output regular XForms content
-            if (inXFormsOrExtension && (inPreserve || isXFormsOrExtension)) {
+            if (inXFormsOrExtension && (inPreserve || inLHHA || isXFormsOrExtension)) {
                 super.endElement(uri, localname, qName);
             }
 
-            if (inPreserve && level == preserveLevel) {
-                // Leaving preserved content
-                inPreserve = false;
+            if (inXFormsOrExtension && !inPreserve) {
+                // Callback for elements of interest
+                if (isXFormsOrExtension || inLHHA) {
+                    endXFormsOrExtension(uri, localname, qName);
+                }
             }
 
-            // Callback for XForms elements
-            if (isXFormsOrExtension && !inPreserve) {
-                endXFormsOrExtension(uri, localname, qName);
+            if ((inPreserve || inLHHA) && level == preserveOrLHHALevel) {
+                // Leaving preserved content
+                inPreserve = false;
+                inLHHA = false;
             }
 
             if (inXFormsOrExtension && level == xformsLevel) {
@@ -417,7 +428,7 @@ public class XFormsExtractorContentHandler extends ForwardingContentHandler {
         }
 
         if (!inXFormsOrExtension) {
-            xmlBaseStack.pop();
+            xmlBaseLangStack.pop();
         }
 
         namespaceSupport.endElement();
@@ -457,5 +468,42 @@ public class XFormsExtractorContentHandler extends ForwardingContentHandler {
 
     protected void endXFormsOrExtension(String uri, String localname, String qName) {
         // NOP
+    }
+
+    @Override
+    public void startDTD(String name, String publicId, String systemId) throws SAXException {
+        // NOP
+    }
+
+    @Override
+    public void endDTD() throws SAXException {
+        // NOP
+    }
+
+    @Override
+    public void startEntity(String name) throws SAXException {
+        // NOP
+    }
+
+    @Override
+    public void endEntity(String name) throws SAXException {
+        // NOP
+    }
+
+    @Override
+    public void startCDATA() throws SAXException {
+        // NOP
+    }
+
+    @Override
+    public void endCDATA() throws SAXException {
+        // NOP
+    }
+
+    @Override
+    public void comment(char[] ch, int start, int length) throws SAXException {
+        if (inPreserve) {
+            super.comment(ch, start, length);
+        }
     }
 }

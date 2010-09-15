@@ -45,6 +45,17 @@ html body .xforms-form br.xforms-disabled,
     display: none;
 }
 
+html body .xforms-form .xforms-disabled a,
+    html body .xforms-form a.xforms-disabled,
+    html body .xforms-form .xforms-case-deselected a,
+    html body .xforms-form a.xforms-case-deselected {
+
+    /* Prevent links from being able to get the focus. See bug:
+       [ #315198 ] Non-relevant links and minimal triggers can get the focus
+       http://forge.ow2.org/tracker/index.php?func=detail&aid=315198&group_id=168&atid=350207 */
+    display: none;
+}
+
 html body .xforms-form input.xforms-disabled,
     html body .xforms-form select.xforms-disabled,
     html body .xforms-form button.xforms-disabled,
@@ -145,6 +156,12 @@ html body .xforms-form tr.xforms-disabled,
     border: none;
     background: transparent;
     cursor: hand;
+    *width: auto;  *overflow: visible; /* IE 6/7 HACK: remove funny variable padding within button */
+}
+
+/* Special rule for Firefox to remove extra padding inside noscript buttons working as links */
+button.xforms-trigger-appearance-xxforms-minimal::-moz-focus-inner, .xforms-trigger-appearance-xxforms-minimal button::-moz-focus-inner {
+    border: 0; padding: 0;
 }
 
 .xforms-input input.xforms-type-date {
@@ -297,7 +314,6 @@ a.xforms-readonly, .xforms-trigger-readonly a { color: gray; cursor: default }
 	top: -7px;
 	width: 25px;
 }
-
 
 /* ***** Repeats **************************************************************************************************** */
 

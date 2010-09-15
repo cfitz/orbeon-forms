@@ -17,15 +17,12 @@ import org.apache.commons.lang.StringUtils;
 import org.dom4j.Element;
 import org.dom4j.QName;
 import org.orbeon.oxf.pipeline.api.ExternalContext;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
 import org.orbeon.oxf.resources.ResourceManagerWrapper;
 import org.orbeon.oxf.xforms.*;
-import org.orbeon.oxf.xml.ContentHandlerHelper;
-import org.orbeon.oxf.xml.ElementHandlerController;
-import org.orbeon.oxf.xml.XMLConstants;
-import org.orbeon.oxf.xml.XMLUtils;
-import org.xml.sax.Attributes;
-import org.xml.sax.ContentHandler;
-import org.xml.sax.SAXException;
+import org.orbeon.oxf.xforms.state.XFormsStateManager;
+import org.orbeon.oxf.xml.*;
+import org.xml.sax.*;
 
 import java.util.Map;
 
@@ -54,9 +51,9 @@ public class XHTMLBodyHandler extends XFormsBaseHandler {
         attributes = XMLUtils.appendToClassAttribute(attributes, "yui-skin-sam");
 
         // Start xhtml:body
-        final ContentHandler contentHandler = handlerContext.getController().getOutput();
-        contentHandler.startElement(uri, localname, qName, attributes);
-        helper = new ContentHandlerHelper(contentHandler);
+        final XMLReceiver xmlReceiver = handlerContext.getController().getOutput();
+        xmlReceiver.startElement(uri, localname, qName, attributes);
+        helper = new ContentHandlerHelper(xmlReceiver);
 
         final XFormsControls xformsControls = containingDocument.getControls();
         final String htmlPrefix = XMLUtils.prefixFromQName(qName);
@@ -70,8 +67,8 @@ public class XHTMLBodyHandler extends XFormsBaseHandler {
         {
             final ExternalContext.Request request = handlerContext.getExternalContext().getRequest();
             requestPath = request.getRequestPath();
-            if (staticState.getDeploymentType() != XFormsConstants.DeploymentType.plain) {
-                // Integrated or separate deployment mode
+            if (containingDocument.getDeploymentType() != XFormsConstants.DeploymentType.plain || request.getContainerType().equals("portlet")) {
+                // Integrated or separate deployment mode or portlet
                 xformsSubmissionPath =  "/xforms-server-submit";// TODO: read property?
             } else {
                 // Plain deployment mode: submission posts to URL of the current page and xforms-xml-submission.xpl intercepts that
@@ -102,11 +99,23 @@ public class XHTMLBodyHandler extends XFormsBaseHandler {
         {
             // Output encoded static and dynamic state
             helper.element(htmlPrefix, XMLConstants.XHTML_NAMESPACE_URI, "input", new String[] {
-                    "type", "hidden", "name", "$static-state", "value", handlerContext.getEncodedClientState().getStaticState()
+                    "type", "hidden", "name", "$uuid", "value", containingDocument.getUUID()
             });
-            helper.element(htmlPrefix, XMLConstants.XHTML_NAMESPACE_URI, "input", new String[]{
-                    "type", "hidden", "name", "$dynamic-state", "value", handlerContext.getEncodedClientState().getDynamicState()
-            });
+            // NOTE: Keep empty static state and dynamic state until client is able to deal without them
+            final String clientEncodedStaticState = XFormsStateManager.instance().getClientEncodedStaticState(pipelineContext, containingDocument);
+//            if (clientEncodedStaticState != null) {
+                helper.element(htmlPrefix, XMLConstants.XHTML_NAMESPACE_URI, "input", new String[] {
+                        "type", "hidden", "name", "$static-state",
+                        "value", clientEncodedStaticState
+                });
+//            }
+            final String clientEncodedDynamicState = XFormsStateManager.instance().getClientEncodedDynamicState(pipelineContext, containingDocument);
+//            if (clientEncodedDynamicState != null) {
+                helper.element(htmlPrefix, XMLConstants.XHTML_NAMESPACE_URI, "input", new String[] {
+                        "type", "hidden", "name", "$dynamic-state",
+                        "value", clientEncodedDynamicState
+                });
+//            }
         }
 
         if (!handlerContext.isNoScript()) {
@@ -177,12 +186,12 @@ public class XHTMLBodyHandler extends XFormsBaseHandler {
                 // HACK: We would be ok with just one template, but IE 6 doesn't allow setting the input/@type attribute properly
 
                 // xforms:select[@appearance = 'full'], xforms:input[@type = 'xs:boolean']
-                XFormsSelect1Handler.outputItemFullTemplate(pipelineContext, handlerContext, contentHandler, htmlPrefix, spanQName,
+                XFormsSelect1Handler.outputItemFullTemplate(pipelineContext, handlerContext, xmlReceiver, htmlPrefix, spanQName,
                         containingDocument, reusableAttributes, attributes,
                         "xforms-select-full-template", TEMPLATE_ID, true, "checkbox");
 
                 // xforms:select1[@appearance = 'full']
-                XFormsSelect1Handler.outputItemFullTemplate(pipelineContext, handlerContext, contentHandler, htmlPrefix, spanQName,
+                XFormsSelect1Handler.outputItemFullTemplate(pipelineContext, handlerContext, xmlReceiver, htmlPrefix, spanQName,
                         containingDocument, reusableAttributes, attributes,
                         "xforms-select1-full-template", TEMPLATE_ID, true, "radio");
             }
@@ -229,7 +238,7 @@ public class XHTMLBodyHandler extends XFormsBaseHandler {
         final ElementHandlerController.Matcher triggerSubmitMinimalMatcher = controller.new Matcher() {
             public boolean match(Attributes attributes) {
                 final QName appearance = getAppearance(attributes);
-                return appearance != null && !staticState.isNoScript() // is noscript mode, use the full appearance
+                return appearance != null && !staticState.isNoscript() // is noscript mode, use the full appearance
                         && (XFormsConstants.XFORMS_MINIMAL_APPEARANCE_QNAME.equals(appearance)    // minimal appearance
                             || XFormsConstants.XXFORMS_LINK_APPEARANCE_QNAME.equals(appearance)); // legacy appearance
             }

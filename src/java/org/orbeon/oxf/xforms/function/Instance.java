@@ -16,13 +16,8 @@ package org.orbeon.oxf.xforms.function;
 import org.apache.commons.lang.StringUtils;
 import org.orbeon.oxf.xforms.XFormsInstance;
 import org.orbeon.oxf.xforms.XFormsModel;
-import org.orbeon.oxf.xforms.XFormsUtils;
-import org.orbeon.saxon.expr.Expression;
-import org.orbeon.saxon.expr.PathMap;
-import org.orbeon.saxon.expr.XPathContext;
-import org.orbeon.saxon.om.EmptyIterator;
-import org.orbeon.saxon.om.SequenceIterator;
-import org.orbeon.saxon.om.SingletonIterator;
+import org.orbeon.saxon.expr.*;
+import org.orbeon.saxon.om.*;
 import org.orbeon.saxon.trans.XPathException;
 
 /**
@@ -32,9 +27,10 @@ import org.orbeon.saxon.trans.XPathException;
  */
 public class Instance extends XFormsFunction {
 
+    @Override
     public SequenceIterator iterate(XPathContext xpathContext) throws XPathException {
         // Get instance id
-        
+
         // "If the argument is omitted or is equal to the empty string, then the root element node (also called the
         // document element node) is returned for the default instance in the model that contains the current context
         // node."
@@ -42,15 +38,15 @@ public class Instance extends XFormsFunction {
         final String instanceId;
         {
             if (instanceIdExpression != null) {
-                final String tempId = instanceIdExpression.evaluateAsString(xpathContext).trim();
-                instanceId = (StringUtils.isNotBlank(tempId)) ? XFormsUtils.namespaceId(getContainingDocument(xpathContext), tempId) : null;
+                final String tempId = instanceIdExpression.evaluateAsString(xpathContext).toString().trim();
+                instanceId = (StringUtils.isNotBlank(tempId)) ? tempId : null;
             } else {
                 instanceId = null;
             }
         }
 
         // Get model and instance with given id for that model only
-        
+
         // "If a match is located, and the matching instance data is associated with the same XForms Model as the
         // current context node, this function returns a node-set containing just the root element node (also called
         // the document element node) of the referenced instance data. In all other cases, an empty node-set is
@@ -71,7 +67,10 @@ public class Instance extends XFormsFunction {
         }
     }
 
-    public PathMap.PathMapNode addToPathMap(PathMap pathMap, PathMap.PathMapNode pathMapNode) {
-        return addDocToPathMap(pathMap, pathMapNode);
+    @Override
+    public PathMap.PathMapNodeSet addToPathMap(PathMap pathMap, PathMap.PathMapNodeSet pathMapNodeSet) {
+        if (argument.length > 0)
+            argument[0].addToPathMap(pathMap, pathMapNodeSet);
+        return new PathMap.PathMapNodeSet(pathMap.makeNewRoot(this));
     }
 }

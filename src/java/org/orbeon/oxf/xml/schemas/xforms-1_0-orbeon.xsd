@@ -120,8 +120,10 @@
         </xsd:annotation>
         <xsd:complexType>
             <xsd:sequence minOccurs="0" maxOccurs="unbounded">
-                <xsd:element ref="xforms:header"/>
-                <xsd:group ref="xforms:Action"/>
+                <xsd:choice>
+                    <xsd:element ref="xforms:header"/>
+                    <xsd:group ref="xforms:Action"/>
+                </xsd:choice>
             </xsd:sequence>
             <xsd:attributeGroup ref="xforms:Common.Attributes"/>
             <xsd:attribute name="ref" type="xforms:XPathExpression"/>
@@ -232,6 +234,8 @@
                 </xsd:choice>
             </xsd:sequence>
             <xsd:attributeGroup ref="xforms:Common.Attributes"/>
+            <!-- XForms 1.2 deprecates @nodeset -->
+            <xsd:attribute name="ref" type="xforms:XPathExpression" use="optional"/>
             <xsd:attribute name="nodeset" type="xforms:XPathExpression" use="optional"/>
             <xsd:attribute name="name" type="xsd:QName" use="optional"/>
             <xsd:attribute name="type" type="xsd:QName" use="optional"/>
@@ -273,7 +277,10 @@
     </xsd:attributeGroup>
     <xsd:attributeGroup name="Nodeset.Binding.Attributes">
         <xsd:attribute name="model" type="xsd:NMTOKEN" use="optional"/>
+        <!-- XForms 1.2 deprecates @nodeset -->
+        <xsd:attribute name="ref" type="xforms:XPathExpression" use="optional"/>
         <xsd:attribute name="nodeset" type="xforms:XPathExpression" use="optional"/>
+        <xsd:attribute name="ref" type="xforms:XPathExpression" use="optional"/>
         <xsd:attribute name="bind" type="xsd:NMTOKEN" use="optional"/>
     </xsd:attributeGroup>
     <xsd:attributeGroup name="UI.Common.Attrs">
@@ -360,6 +367,8 @@
                 <xsd:element ref="xforms:value"/>
                 <xsd:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
             </xsd:sequence>
+            <!-- XForms 1.2 deprecates @nodeset -->
+            <xsd:attribute name="ref" type="xforms:XPathExpression" use="optional"/>
             <xsd:attribute name="nodeset" type="xforms:XPathExpression" use="optional"/>
         </xsd:complexType>
     </xsd:element>
@@ -396,7 +405,6 @@
     </xsd:element>
     <xsd:element name="itemset">
         <xsd:complexType>
-
             <xsd:sequence>
                 <xsd:element ref="xforms:label"/>
                 <xsd:choice>
@@ -406,7 +414,6 @@
                 <xsd:group ref="xforms:UI.Common" minOccurs="0" maxOccurs="unbounded"/>
             </xsd:sequence>
             <xsd:attributeGroup ref="xforms:Common.Attributes"/>
-
             <xsd:attributeGroup ref="xforms:Nodeset.Binding.Attributes"/>
         </xsd:complexType>
     </xsd:element>
@@ -443,7 +450,7 @@
     <xsd:element name="input">
         <xsd:complexType>
             <xsd:sequence>
-                <xsd:element ref="xforms:label"/>
+                <xsd:element ref="xforms:label" minOccurs="0"/>
                 <xsd:group ref="xforms:UI.Common" minOccurs="0" maxOccurs="unbounded"/>
             </xsd:sequence>
             <xsd:attributeGroup ref="xforms:Common.Attributes"/>
@@ -458,7 +465,7 @@
 
         <xsd:complexType>
             <xsd:sequence>
-                <xsd:element ref="xforms:label"/>
+                <xsd:element ref="xforms:label" minOccurs="0"/>
                 <xsd:group ref="xforms:UI.Common" minOccurs="0" maxOccurs="unbounded"/>
             </xsd:sequence>
             <xsd:attributeGroup ref="xforms:Common.Attributes"/>
@@ -514,7 +521,7 @@
     <xsd:element name="select1">
         <xsd:complexType>
             <xsd:sequence>
-                <xsd:element ref="xforms:label"/>
+                <xsd:element ref="xforms:label" minOccurs="0"/>
                 <xsd:group ref="xforms:List.UI.Common" maxOccurs="unbounded"/>
                 <xsd:group ref="xforms:UI.Common" minOccurs="0" maxOccurs="unbounded"/>
             </xsd:sequence>
@@ -540,7 +547,7 @@
         <xsd:complexType>
 
             <xsd:sequence>
-                <xsd:element ref="xforms:label"/>
+                <xsd:element ref="xforms:label" minOccurs="0"/>
                 <xsd:group ref="xforms:List.UI.Common" maxOccurs="unbounded"/>
                 <xsd:group ref="xforms:UI.Common" minOccurs="0" maxOccurs="unbounded"/>
             </xsd:sequence>
@@ -591,8 +598,8 @@
         <xsd:complexType>
             <xsd:sequence minOccurs="0">
                 <xsd:element ref="xforms:label"/>
-                <xsd:element ref="xforms:mediatype"/>
-                <xsd:element ref="xforms:filename"/>
+                <xsd:element ref="xforms:mediatype" minOccurs="0"/>
+                <xsd:element ref="xforms:filename" minOccurs="0"/>
                 <xsd:group ref="xforms:UI.Common" minOccurs="0" maxOccurs="unbounded"/>
             </xsd:sequence>
             <xsd:attributeGroup ref="xforms:Common.Attributes"/>
@@ -877,7 +884,7 @@
         </xsd:complexType>
     </xsd:element>
     <xsd:element name="group">
-        <xsd:complexType>
+        <xsd:complexType mixed="true">
             <xsd:sequence>
                 <xsd:element ref="xforms:label" minOccurs="0"/>
                 <xsd:sequence minOccurs="0" maxOccurs="unbounded">
@@ -892,7 +899,6 @@
                     </xsd:choice>
                 </xsd:sequence>
             </xsd:sequence>
-
             <xsd:attributeGroup ref="xforms:Common.Attributes"/>
             <xsd:attributeGroup ref="xforms:Single.Node.Binding.Attributes"/>
             <xsd:attributeGroup ref="xforms:UI.Common.Attrs"/>
@@ -914,7 +920,7 @@
             <xsd:sequence>
 
                 <xsd:element ref="xforms:label" minOccurs="0"/>
-                <xsd:sequence maxOccurs="unbounded">
+                <xsd:sequence minOccurs="0" maxOccurs="unbounded">
                     <xsd:choice>
                         <xsd:group ref="xforms:Form.Controls"/>
                         <xsd:element ref="xforms:group"/>

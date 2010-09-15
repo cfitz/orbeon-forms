@@ -13,23 +13,16 @@
  */
 package org.orbeon.oxf.xforms.processor.handlers;
 
-import org.dom4j.Element;
 import org.dom4j.QName;
 import org.orbeon.oxf.common.ValidationException;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
 import org.orbeon.oxf.xforms.*;
-import org.orbeon.oxf.xforms.control.XFormsControl;
-import org.orbeon.oxf.xforms.control.XFormsControlFactory;
-import org.orbeon.oxf.xforms.control.XFormsSingleNodeControl;
-import org.orbeon.oxf.xforms.control.XFormsValueControl;
-import org.orbeon.oxf.xml.ContentHandlerHelper;
-import org.orbeon.oxf.xml.ElementHandler;
-import org.orbeon.oxf.xml.XMLConstants;
-import org.orbeon.oxf.xml.XMLUtils;
+import org.orbeon.oxf.xforms.analysis.controls.ControlAnalysis;
+import org.orbeon.oxf.xforms.control.*;
+import org.orbeon.oxf.xml.*;
 import org.orbeon.saxon.om.FastStringBuffer;
-import org.xml.sax.Attributes;
-import org.xml.sax.ContentHandler;
-import org.xml.sax.SAXException;
+import org.xml.sax.*;
 import org.xml.sax.helpers.AttributesImpl;
 
 import java.util.HashMap;
@@ -99,8 +92,10 @@ public abstract class XFormsBaseHandler extends ElementHandler {
         return control != null && !control.isRelevant() || control == null && !handlerContext.isTemplate();
     }
 
-    public static void  handleReadOnlyAttribute(AttributesImpl newAttributes, XFormsContainingDocument containingDocument, XFormsSingleNodeControl xformsControl) {
-        if (xformsControl != null && xformsControl.isReadonly() && !XFormsProperties.isStaticReadonlyAppearance(containingDocument)) {
+    public static void handleDisabledAttribute(AttributesImpl newAttributes, XFormsContainingDocument containingDocument, XFormsSingleNodeControl xformsControl) {
+        if ((xformsControl != null && xformsControl.isReadonly() && !XFormsProperties.isStaticReadonlyAppearance(containingDocument))
+                || (xformsControl == null || !xformsControl.isRelevant())) {
+
             // @disabled="disabled"
 
             // HTML 4: @disabled supported on: input, button, select, optgroup, option, and textarea. 
@@ -165,6 +160,17 @@ public abstract class XFormsBaseHandler extends ElementHandler {
 
                         sb.append("xforms-type-");
                         sb.append(typeName);
+                    } else {
+                        // Output custom type class
+                       final String customTypeName = singleNodeControl.getTypeLocalName();
+                       if (customTypeName != null) {
+                           // Control is bound to a custom schema type
+                           if (sb.length() > 0)
+                               sb.append(' ');
+
+                           sb.append("xforms-type-custom-");
+                           sb.append(customTypeName);
+                       }
                     }
                 }
             } else if (!handlerContext.isTemplate()) {
@@ -206,15 +212,15 @@ public abstract class XFormsBaseHandler extends ElementHandler {
     }
 
     protected AttributesImpl getAttributes(Attributes elementAttributes, String classes, String effectiveId) {
-        return getAttributes(reusableAttributes, elementAttributes, classes, effectiveId);
+        return getAttributes(containingDocument, reusableAttributes, elementAttributes, classes, effectiveId);
     }
 
-    protected static AttributesImpl getAttributes(AttributesImpl reusableAttributes, Attributes elementAttributes, String classes, String effectiveId) {
+    protected static AttributesImpl getAttributes(XFormsContainingDocument containingDocument, AttributesImpl reusableAttributes, Attributes elementAttributes, String classes, String effectiveId) {
         reusableAttributes.clear();
 
         // Copy "id"
         if (effectiveId != null) {
-            reusableAttributes.addAttribute("", "id", "id", ContentHandlerHelper.CDATA, effectiveId);
+            reusableAttributes.addAttribute("", "id", "id", ContentHandlerHelper.CDATA, XFormsUtils.namespaceId(containingDocument, effectiveId));
         }
         // Create "class" attribute if necessary
         {
@@ -249,7 +255,7 @@ public abstract class XFormsBaseHandler extends ElementHandler {
                 final String value;
                 if (attributeValue != null) {
 
-                    if (attributeValue.indexOf('{') == -1) {
+                    if (!XFormsUtils.maybeAVT(attributeValue)) {
                         // Definitely not an AVT
                         value = attributeValue;
                     } else {
@@ -363,14 +369,9 @@ public abstract class XFormsBaseHandler extends ElementHandler {
 
     protected void handleLabelHintHelpAlert(String controlEffectiveId, String forEffectiveId, LHHAC lhhaType, XFormsControl control, boolean isTemplate, boolean addIds) throws SAXException {
 
+        // NOTE: We used to not handle alerts and help in read-only mode. We now prefer to controls this with CSS.
         final boolean isHint = lhhaType == LHHAC.HINT;
         final boolean isAlert = lhhaType == LHHAC.ALERT;
-
-        // Don't handle alerts and help in read-only mode
-        // TODO: Removing hints and help could be optional depending on appearance
-        if (isStaticReadonly(control) && (isAlert || isHint))
-            return;
-
         final boolean isLabel = lhhaType == LHHAC.LABEL;
         final boolean isHelp = lhhaType == LHHAC.HELP;
 
@@ -406,25 +407,25 @@ public abstract class XFormsBaseHandler extends ElementHandler {
         {
             // Statically obtain attributes information
             final XFormsStaticState staticState = containingDocument.getStaticState();
-            final Element lhhaElement;
+            final ControlAnalysis.LHHAAnalysis lhhaAnalysis;
             final String forPrefixedId = XFormsUtils.getPrefixedId(controlEffectiveId);
             if (isLabel) {
                 elementName = handlerContext.getLabelElementName();
-                lhhaElement = staticState.getLabelElement(forPrefixedId);
+                lhhaAnalysis = staticState.getLabel(forPrefixedId);
             } else if (isHelp) {
                 elementName = handlerContext.getHelpElementName();
-                lhhaElement = staticState.getHelpElement(forPrefixedId);
+                lhhaAnalysis = staticState.getHelp(forPrefixedId);
             } else if (isHint) {
                 elementName = handlerContext.getHintElementName();
-                lhhaElement = staticState.getHintElement(forPrefixedId);
+                lhhaAnalysis = staticState.getHint(forPrefixedId);
             } else if (isAlert) {
                 elementName = handlerContext.getAlertElementName();
-                lhhaElement = staticState.getAlertElement(forPrefixedId);
+                lhhaAnalysis = staticState.getAlert(forPrefixedId);
             } else {
                 throw new IllegalStateException("Illegal type requested");
             }
 
-            labelHintHelpAlertAttributes = (lhhaElement != null) ? XMLUtils.convertAttributes(lhhaElement) : null;
+            labelHintHelpAlertAttributes = (lhhaAnalysis != null) ? XMLUtils.getSAXAttributes(lhhaAnalysis.element) : null;
         }
 
         if (labelHintHelpAlertAttributes != null || isAlert) {
@@ -496,7 +497,7 @@ public abstract class XFormsBaseHandler extends ElementHandler {
                     // Start <a href="#my-control-id-help">
 
                     final AttributesImpl aAttributes = new AttributesImpl();
-                    aAttributes.addAttribute("", "href", "href", ContentHandlerHelper.CDATA, "#" + getLHHACId(controlEffectiveId, LHHAC_CODES.get(LHHAC.HELP)));
+                    aAttributes.addAttribute("", "href", "href", ContentHandlerHelper.CDATA, "#" + getLHHACId(containingDocument, controlEffectiveId, LHHAC_CODES.get(LHHAC.HELP)));
                     aAttributes.addAttribute("", "class", "class", ContentHandlerHelper.CDATA, "xforms-help-anchor");
 
                     final String aQName = XMLUtils.buildQName(xhtmlPrefix, "a");
@@ -508,7 +509,7 @@ public abstract class XFormsBaseHandler extends ElementHandler {
 
                 final AttributesImpl imgAttributes = new AttributesImpl();
                 if (addIds)
-                    imgAttributes.addAttribute("", "id", "id", ContentHandlerHelper.CDATA, getLHHACId(controlEffectiveId, "i"));
+                    imgAttributes.addAttribute("", "id", "id", ContentHandlerHelper.CDATA, getLHHACId(containingDocument, controlEffectiveId, "i"));
                 imgAttributes.addAttribute("", "class", "class", ContentHandlerHelper.CDATA, helpImageClasses);
                 imgAttributes.addAttribute("", "src", "src", ContentHandlerHelper.CDATA, XFormsConstants.HELP_IMAGE_URI);
                 imgAttributes.addAttribute("", "title", "title", ContentHandlerHelper.CDATA, "");// do we need a title for screen readers?
@@ -537,14 +538,20 @@ public abstract class XFormsBaseHandler extends ElementHandler {
     }
 
     protected static void outputLabelFor(HandlerContext handlerContext, Attributes attributes, String controlEffectiveId,
-                                         String forEffectiveId, LHHAC lhha, String elementName, String value,
+                                         String forEffectiveId, LHHAC lhha, String elementName, String labelValue,
                                          boolean mustOutputHTMLFragment, boolean addIds) throws SAXException {
+        outputLabelForStart(handlerContext, attributes, controlEffectiveId, forEffectiveId, lhha, elementName, addIds);
+        outputLabelForEnd(handlerContext, elementName, labelValue, mustOutputHTMLFragment);
+    }
+
+    protected static void outputLabelForStart(HandlerContext handlerContext, Attributes attributes, String controlEffectiveId,
+                                              String forEffectiveId, LHHAC lhha, String elementName, boolean addIds) throws SAXException {
 
         // Replace id attribute to be foo-label, foo-hint, foo-help, or foo-alert
         final AttributesImpl newAttribute;
         if (addIds && lhha != null && controlEffectiveId != null) {
             // Add or replace existing id attribute
-            newAttribute = XMLUtils.addOrReplaceAttribute(attributes, "", "", "id", getLHHACId(controlEffectiveId, LHHAC_CODES.get(lhha)));
+            newAttribute = XMLUtils.addOrReplaceAttribute(attributes, "", "", "id", getLHHACId(handlerContext.getContainingDocument(), controlEffectiveId, LHHAC_CODES.get(lhha)));
         } else {
             // Remove existing id attribute if any
             newAttribute = XMLUtils.removeAttribute(attributes, "", "id");
@@ -559,29 +566,37 @@ public abstract class XFormsBaseHandler extends ElementHandler {
         final ContentHandler contentHandler = handlerContext.getController().getOutput();
 
         contentHandler.startElement(XMLConstants.XHTML_NAMESPACE_URI, elementName, labelQName, newAttribute);
+    }
+
+    protected static void outputLabelForEnd(HandlerContext handlerContext, String elementName, String labelValue, boolean mustOutputHTMLFragment) throws SAXException {
+
+        final String xhtmlPrefix = handlerContext.findXHTMLPrefix();
+        final String labelQName = XMLUtils.buildQName(xhtmlPrefix, elementName);
+        final XMLReceiver xmlReceiver = handlerContext.getController().getOutput();
+
         // Only output content when there value is non-empty
-        if (value != null && !value.equals("")) {
+        if (labelValue != null && !labelValue.equals("")) {
             if (mustOutputHTMLFragment) {
-                XFormsUtils.streamHTMLFragment(contentHandler, value, null, xhtmlPrefix);
+                XFormsUtils.streamHTMLFragment(xmlReceiver, labelValue, null, xhtmlPrefix);
             } else {
-                contentHandler.characters(value.toCharArray(), 0, value.length());
+                xmlReceiver.characters(labelValue.toCharArray(), 0, labelValue.length());
             }
         }
-        contentHandler.endElement(XMLConstants.XHTML_NAMESPACE_URI, elementName, labelQName);
+        xmlReceiver.endElement(XMLConstants.XHTML_NAMESPACE_URI, elementName, labelQName);
     }
 
-    protected static String getLHHACId(String controlEffectiveId, String suffix) {
+    protected static String getLHHACId(XFormsContainingDocument containingDocument, String controlEffectiveId, String suffix) {
         // E.g. foo$bar.1-2-3 -> foo$bar$$alert.1-2-3
-        return XFormsUtils.appendToEffectiveId(controlEffectiveId, XFormsConstants.LHHAC_SEPARATOR + suffix);
+        return XFormsUtils.namespaceId(containingDocument, XFormsUtils.appendToEffectiveId(controlEffectiveId, XFormsConstants.LHHAC_SEPARATOR + suffix));
     }
 
-    protected static void outputLabelText(ContentHandler contentHandler, XFormsControl xformsControl, String value, String xhtmlPrefix, boolean mustOutputHTMLFragment) throws SAXException {
+    protected static void outputLabelText(XMLReceiver xmlReceiver, XFormsControl xformsControl, String value, String xhtmlPrefix, boolean mustOutputHTMLFragment) throws SAXException {
         // Only output content when there value is non-empty
         if (value != null && !value.equals("")) {
             if (mustOutputHTMLFragment)
-                XFormsUtils.streamHTMLFragment(contentHandler, value, xformsControl != null ? xformsControl.getLocationData() : null, xhtmlPrefix);
+                XFormsUtils.streamHTMLFragment(xmlReceiver, value, xformsControl != null ? xformsControl.getLocationData() : null, xhtmlPrefix);
             else
-                contentHandler.characters(value.toCharArray(), 0, value.length());
+                xmlReceiver.characters(value.toCharArray(), 0, value.length());
         }
     }
 

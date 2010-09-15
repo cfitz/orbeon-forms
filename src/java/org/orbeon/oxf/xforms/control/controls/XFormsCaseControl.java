@@ -15,6 +15,7 @@ package org.orbeon.oxf.xforms.control.controls;
 
 import org.dom4j.Element;
 import org.orbeon.oxf.util.PropertyContext;
+import org.orbeon.oxf.xforms.XFormsUtils;
 import org.orbeon.oxf.xforms.control.XFormsControl;
 import org.orbeon.oxf.xforms.control.XFormsNoSingleNodeContainerControl;
 import org.orbeon.oxf.xforms.control.XFormsPseudoControl;
@@ -27,14 +28,13 @@ import org.orbeon.oxf.xforms.xbl.XBLContainer;
  */
 public class XFormsCaseControl extends XFormsNoSingleNodeContainerControl implements XFormsPseudoControl {
 
-    private boolean defaultSelected;
-
     public XFormsCaseControl(XBLContainer container, XFormsControl parent, Element element, String name, String id) {
         super(container, parent, element, name, id);
+    }
 
-        // Just keep the value
+    public static boolean isDefaultSelected(Element element) {
         final String selectedAttribute = element.attributeValue("selected");
-        this.defaultSelected = "true".equals(selectedAttribute);
+        return "true".equals(selectedAttribute);
     }
 
     @Override
@@ -49,17 +49,10 @@ public class XFormsCaseControl extends XFormsNoSingleNodeContainerControl implem
     }
 
     /**
-     * Return whether this case has selected="true".
-     */
-    public boolean isDefaultSelected() {
-        return defaultSelected;
-    }
-
-    /**
      * Return whether this is the currently selected case within the current switch.
      */
     public boolean isSelected() {
-        return getSwitch().getSelectedCase() == this;
+        return XFormsUtils.compareStrings(getSwitch().getSelectedCaseEffectiveId(), getEffectiveId());
     }
 
     /**

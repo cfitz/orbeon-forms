@@ -14,29 +14,30 @@
 package org.orbeon.oxf.xforms;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.pool.ObjectPool;
 import org.apache.log4j.Logger;
 import org.dom4j.Document;
 import org.dom4j.Element;
+import org.orbeon.oxf.cache.Cacheable;
 import org.orbeon.oxf.common.ValidationException;
+import org.orbeon.oxf.common.Version;
 import org.orbeon.oxf.pipeline.api.ExternalContext;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
+import org.orbeon.oxf.processor.PageFlowControllerProcessor;
+import org.orbeon.oxf.servlet.OrbeonXFormsFilter;
 import org.orbeon.oxf.util.*;
 import org.orbeon.oxf.xforms.action.XFormsActions;
-import org.orbeon.oxf.xforms.control.XFormsControl;
-import org.orbeon.oxf.xforms.control.XFormsSingleNodeControl;
-import org.orbeon.oxf.xforms.control.XFormsValueControl;
+import org.orbeon.oxf.xforms.analysis.XPathDependencies;
+import org.orbeon.oxf.xforms.control.*;
 import org.orbeon.oxf.xforms.control.controls.XFormsOutputControl;
 import org.orbeon.oxf.xforms.control.controls.XFormsTriggerControl;
 import org.orbeon.oxf.xforms.event.*;
 import org.orbeon.oxf.xforms.event.events.*;
 import org.orbeon.oxf.xforms.processor.XFormsServer;
 import org.orbeon.oxf.xforms.processor.XFormsURIResolver;
-import org.orbeon.oxf.xforms.state.XFormsState;
-import org.orbeon.oxf.xforms.submission.AsynchronousSubmissionManager;
-import org.orbeon.oxf.xforms.submission.XFormsModelSubmission;
+import org.orbeon.oxf.xforms.state.*;
+import org.orbeon.oxf.xforms.submission.*;
 import org.orbeon.oxf.xforms.xbl.XBLContainer;
-import org.orbeon.oxf.xml.ContentHandlerHelper;
+import org.orbeon.oxf.xml.*;
 import org.orbeon.oxf.xml.dom4j.Dom4jUtils;
 import org.orbeon.oxf.xml.dom4j.ExtendedLocationData;
 import org.orbeon.saxon.om.Item;
@@ -45,6 +46,7 @@ import org.orbeon.saxon.value.SequenceExtent;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.Callable;
 
 /**
  * Represents an XForms containing document.
@@ -55,7 +57,7 @@ import java.util.*;
  * o Contains XForms controls
  * o Handles event handlers hierarchy
  */
-public class XFormsContainingDocument extends XBLContainer {
+public class XFormsContainingDocument extends XBLContainer implements XFormsDocumentLifecycle, Cacheable {
 
     // Special id name for the top-level containing document
     public static final String CONTAINING_DOCUMENT_PSEUDO_ID = "#document";
@@ -89,14 +91,13 @@ public class XFormsContainingDocument extends XBLContainer {
         }
     }
 
-    private String uuid;
+    private String uuid;        // UUID of this document
+    private int changeSequence; // number of state changes that have touched this document
+
     private final IndentedLogger indentedLogger = getIndentedLogger(LOGGING_CATEGORY);
 
     // Global XForms function library
     private static XFormsFunctionLibrary functionLibrary = new XFormsFunctionLibrary();
-
-    // Object pool this object must be returned to, if any
-    private ObjectPool sourceObjectPool;
 
     // Whether this document is currently being initialized
     private boolean isInitializing;
@@ -107,13 +108,24 @@ public class XFormsContainingDocument extends XBLContainer {
     // Transient OutputStream for xforms:submission[@replace = 'all'], or null if not available
     private ExternalContext.Response response;
 
+    // Asynchronous submission manager
+    private AsynchronousSubmissionManager asynchronousSubmissionManager;
+
     // A document refers to the static state and controls
     private XFormsStaticState xformsStaticState;
     private XFormsControls xformsControls;
 
+    // Request information
+    private XFormsConstants.DeploymentType deploymentType;
+    private String requestContextPath;
+    private String requestPath;
+    private String containerType;
+    private String containerNamespace;
+    private List<URLRewriterUtils.PathMatcher> versionedPathMatchers;
+
     // Client state
-    private XFormsModelSubmission activeSubmission;
-    private boolean gotSubmission;
+    private XFormsModelSubmission activeSubmissionFirstPass;
+    private Callable<SubmissionResult> replaceAllCallable;
     private boolean gotSubmissionSecondPass;
     private boolean gotSubmissionReplaceAll;
     private List<Message> messagesToRun;
@@ -123,7 +135,13 @@ public class XFormsContainingDocument extends XBLContainer {
     private String helpEffectiveControlId;
     private List<DelayedEvent> delayedEvents;
 
-    private boolean goingOffline;
+    // Annotated page template for noscript and full updates mode
+    // NOTE: We used to keep this in the static state, but the static state must now not depend on external HTML anymore
+    private SAXStore annotatedTemplate;
+
+//    private boolean goingOffline;
+
+    private final XPathDependencies xpathDependencies;
 
     /**
      * Return the global function library.
@@ -133,14 +151,16 @@ public class XFormsContainingDocument extends XBLContainer {
     }
 
     /**
-     * Create an XFormsContainingDocument from an XFormsEngineStaticState object.
+     * Create an XFormsContainingDocument from an XFormsStaticState object.
+     *
+     * Used by XFormsToXHTML.
      *
      * @param pipelineContext           current context
      * @param xformsStaticState         static state object
      * @param uriResolver               optional URIResolver for loading instances during initialization (and possibly more, such as schemas and "GET" submissions upon initialization)
      */
-    public XFormsContainingDocument(PipelineContext pipelineContext, XFormsStaticState xformsStaticState, XFormsURIResolver uriResolver) {
-        super(CONTAINING_DOCUMENT_PSEUDO_ID, CONTAINING_DOCUMENT_PSEUDO_ID, CONTAINING_DOCUMENT_PSEUDO_ID, "", null);
+    public XFormsContainingDocument(PipelineContext pipelineContext, XFormsStaticState xformsStaticState, SAXStore annotatedTemplate, XFormsURIResolver uriResolver) {
+        super(CONTAINING_DOCUMENT_PSEUDO_ID, CONTAINING_DOCUMENT_PSEUDO_ID, CONTAINING_DOCUMENT_PSEUDO_ID, "", null, null);
 
         // Remember location data
         setLocationData(xformsStaticState.getLocationData());
@@ -148,10 +168,36 @@ public class XFormsContainingDocument extends XBLContainer {
         // Create UUID for this document instance
         this.uuid = UUIDUtils.createPseudoUUID();
 
+        // Initialize request information
+        {
+            initializeRequestInformation(pipelineContext);
+            this.versionedPathMatchers = (List<URLRewriterUtils.PathMatcher>) pipelineContext.getAttribute(PageFlowControllerProcessor.PATH_MATCHERS);
+        }
+
         indentedLogger.startHandleOperation("initialization", "creating new ContainingDocument (static state object provided).", "uuid", this.uuid);
         {
             // Remember static state
             this.xformsStaticState = xformsStaticState;
+
+            // Remember annotated page template if needed based on static state information
+            {
+                if (xformsStaticState.isNoscript()) {
+                    // Use provided template SAXStore if noscript mode is requested
+                    this.annotatedTemplate = annotatedTemplate;
+                } else if (xformsStaticState.getMetadata().hasTopLevelMarks()) {
+                    // Use provided template SAXStore if we have top-level marks
+                    this.annotatedTemplate = annotatedTemplate;
+                } else {
+                    // Otherwise there is no need to keep the template
+                    this.annotatedTemplate = null;
+                }
+
+                if (this.annotatedTemplate != null && indentedLogger.isDebugEnabled()) {
+                    indentedLogger.logDebug("", "keeping XHTML tree", "approximate size (bytes)", Long.toString(this.annotatedTemplate.getApproximateSize()));
+                }
+            }
+
+            this.xpathDependencies = Version.instance().createUIDependencies(this);
 
             // Remember URI resolver for initialization
             this.uriResolver = uriResolver;
@@ -172,29 +218,80 @@ public class XFormsContainingDocument extends XBLContainer {
         indentedLogger.endHandleOperation();
     }
 
-    /**
-     * Restore an XFormsContainingDocument from XFormsState and XFormsStaticState.
-     *
-     * @param pipelineContext         current context
-     * @param xformsState             static and dynamic state information
-     * @param xformsStaticState       static state object, or null if not available
-     */
-    public XFormsContainingDocument(PipelineContext pipelineContext, XFormsState xformsState, XFormsStaticState xformsStaticState) {
-        super(CONTAINING_DOCUMENT_PSEUDO_ID, CONTAINING_DOCUMENT_PSEUDO_ID, CONTAINING_DOCUMENT_PSEUDO_ID, "", null);
+    private void initializeRequestInformation(PipelineContext pipelineContext) {
+        final ExternalContext.Request request = XFormsUtils.getExternalContext(pipelineContext).getRequest();
 
-        if (xformsStaticState != null) {
-            // Use passed static state object
-            indentedLogger.startHandleOperation("initialization", "restoring containing document (static state object provided).");
-            this.xformsStaticState = xformsStaticState;
-        } else {
-            // Create static state object
-            // TODO: Handle caching of XFormsStaticState object? Anything that can be done here?
-            indentedLogger.startHandleOperation("initialization", "restoring containing document (static state object not provided).");
-            this.xformsStaticState = new XFormsStaticState(pipelineContext, xformsState.getStaticState());
+        // Remember if filter provided separate deployment information
+        final String rendererDeploymentType = (String) request.getAttributesMap().get(OrbeonXFormsFilter.RENDERER_DEPLOYMENT_ATTRIBUTE_NAME);
+        this.deploymentType = "separate".equals(rendererDeploymentType) ? XFormsConstants.DeploymentType.separate
+                    : "integrated".equals(rendererDeploymentType) ? XFormsConstants.DeploymentType.integrated
+                    : XFormsConstants.DeploymentType.plain;
+
+        // Try to get request context path
+        this.requestContextPath = request.getClientContextPath("/");
+
+        // Base URI for path resolution
+        {
+            // It is possible to override the base URI by setting a request attribute. This is used by OrbeonXFormsFilter.
+            final String rendererBaseURI = (String) request.getAttributesMap().get(OrbeonXFormsFilter.RENDERER_BASE_URI_ATTRIBUTE_NAME);
+            // NOTE: We used to have response.rewriteRenderURL() on this, but why?
+            if (rendererBaseURI != null)
+                this.requestPath = rendererBaseURI;
+            else
+                this.requestPath = request.getRequestPath();
         }
+
+        this.containerType = request.getContainerType();
+        this.containerNamespace = StringUtils.defaultIfEmpty(request.getContainerNamespace(), "");
+    }
+
+    /**
+     * Restore an XFormsContainingDocument from XFormsState only.
+     *
+     * Used by XFormsStateManager.
+     *
+     * @param pipelineContext   current context
+     * @param xformsState       XFormsState containing static and dynamic state
+     */
+    public XFormsContainingDocument(PipelineContext pipelineContext, XFormsState xformsState) {
+        super(CONTAINING_DOCUMENT_PSEUDO_ID, CONTAINING_DOCUMENT_PSEUDO_ID, CONTAINING_DOCUMENT_PSEUDO_ID, "", null, null);
+
+        // Create static state object
+        {
+            final String staticStateDigest = xformsState.getStaticStateDigest();
+
+            if (staticStateDigest != null) {
+                final XFormsStaticState cachedState = XFormsStaticStateCache.instance().getDocument(pipelineContext, staticStateDigest);
+                if (cachedState != null) {
+                    // Found static state in cache
+                    indentedLogger.logDebug("", "found static state by digest in cache");
+                    this.xformsStaticState = cachedState;
+                } else {
+                    // Not found static state in cache, create static state from input
+                    indentedLogger.logDebug("", "did not find static state by digest in cache");
+                    this.xformsStaticState = new XFormsStaticState(pipelineContext, staticStateDigest, xformsState.getStaticState());
+
+                    // Store in cache
+                    XFormsStaticStateCache.instance().storeDocument(pipelineContext, this.xformsStaticState);
+                }
+
+                assert this.xformsStaticState.isServerStateHandling();
+            } else {
+                // Not digest provided, create static state from input
+                indentedLogger.logDebug("", "did not find static state by digest in cache");
+                this.xformsStaticState = new XFormsStaticState(pipelineContext, null, xformsState.getStaticState());
+
+                assert this.xformsStaticState.isClientStateHandling();
+            }
+        }
+
+        indentedLogger.startHandleOperation("initialization", "restoring containing document (static state object not provided).");
+
         {
             // Make sure there is location data
             setLocationData(this.xformsStaticState.getLocationData());
+
+            this.xpathDependencies = Version.instance().createUIDependencies(this);
 
             // Restore the containing document's dynamic state
             final String encodedDynamicState = xformsState.getDynamicState();
@@ -213,36 +310,16 @@ public class XFormsContainingDocument extends XBLContainer {
         indentedLogger.endHandleOperation();
     }
 
-    /**
-     * Restore an XFormsContainingDocument from XFormsState only.
-     *
-     * @param pipelineContext   current context
-     * @param xformsState       XFormsState containing static and dynamic state
-     */
-    public XFormsContainingDocument(PipelineContext pipelineContext, XFormsState xformsState) {
-        this(pipelineContext, xformsState,  null);
-    }
-
-    public XFormsState getXFormsState(PipelineContext pipelineContext) {
-
-        // Encode state
-        return new XFormsState(xformsStaticState.getEncodedStaticState(pipelineContext), createEncodedDynamicState(pipelineContext, false));
-    }
-
-    public void setSourceObjectPool(ObjectPool sourceObjectPool) {
-        this.sourceObjectPool = sourceObjectPool;
-    }
-
-    public ObjectPool getSourceObjectPool() {
-        return sourceObjectPool;
-    }
-
     public XFormsURIResolver getURIResolver() {
         return uriResolver;
     }
 
     public String getUUID() {
         return uuid;
+    }
+
+    public void updateChangeSequence() {
+        changeSequence++;
     }
 
     public boolean isInitializing() {
@@ -266,6 +343,63 @@ public class XFormsContainingDocument extends XBLContainer {
         return xformsControls;
     }
 
+    public XFormsConstants.DeploymentType getDeploymentType() {
+        return deploymentType;
+    }
+
+    /**
+     * Return the context path of the request that generated the XForms page.
+     */
+    public String getRequestContextPath() {
+        return requestContextPath;
+    }
+
+    /**
+     * Return the path of the request that generated the XForms page.
+     */
+    public String getRequestPath() {
+        return requestPath;
+    }
+
+    /**
+     * Return the container type that generated the XForms page, either "servlet" or "portlet".
+     */
+    public String getContainerType() {
+        return containerType;
+    }
+
+    /**
+     * Return the container namespace that generated the XForms page. Always "" for servlets.
+     */
+    public String getContainerNamespace() {
+        return containerNamespace;
+    }
+
+    /**
+     * Return path matchers for versioned resources mode.
+     *
+     * @return  List of PathMatcher
+     */
+    public List<URLRewriterUtils.PathMatcher> getVersionedPathMatchers() {
+        return versionedPathMatchers;
+    }
+
+    /**
+     * Return dependencies implementation.
+     */
+    public final XPathDependencies getXPathDependencies() {
+        return xpathDependencies;
+    }
+
+    /**
+     * Return the annotated page template if available. Only for noscript mode and full updates.
+     *
+     * @return  SAXStore containing annotated page template or null
+     */
+    public SAXStore getAnnotatedTemplate() {
+        return annotatedTemplate;
+    }
+
     /**
      * Whether the document is dirty since the last request.
      *
@@ -276,7 +410,7 @@ public class XFormsContainingDocument extends XBLContainer {
     }
 
     /**
-     * Return the XFormsEngineStaticState.
+     * Return the static state of this document.
      */
     public XFormsStaticState getStaticState() {
         return xformsStaticState;
@@ -287,20 +421,6 @@ public class XFormsContainingDocument extends XBLContainer {
      */
     public Map<String, String> getScripts() {
         return xformsStaticState.getScripts();
-    }
-
-    /**
-     * Return the container type that generate the XForms page, either "servlet" or "portlet".
-     */
-    public String getContainerType() {
-        return xformsStaticState.getContainerType();
-    }
-
-    /**
-     * Return the container namespace that generate the XForms page. Always "" for servlets.
-     */
-    public String getContainerNamespace() {
-        return xformsStaticState.getContainerNamespace();
     }
 
     /**
@@ -352,8 +472,12 @@ public class XFormsContainingDocument extends XBLContainer {
     /**
      * Return the active submission if any or null.
      */
-    public XFormsModelSubmission getClientActiveSubmission() {
-        return activeSubmission;
+    public XFormsModelSubmission getClientActiveSubmissionFirstPass() {
+        return activeSubmissionFirstPass;
+    }
+
+    public Callable<SubmissionResult> getReplaceAllCallable() {
+        return replaceAllCallable;
     }
 
     /**
@@ -362,8 +486,8 @@ public class XFormsContainingDocument extends XBLContainer {
     private void clearClientState() {
         this.isInitializing = false;
 
-        this.activeSubmission = null;
-        this.gotSubmission = false;
+        this.activeSubmissionFirstPass = null;
+        this.replaceAllCallable = null;
         this.gotSubmissionSecondPass = false;
         this.gotSubmissionReplaceAll = false;
 
@@ -374,42 +498,41 @@ public class XFormsContainingDocument extends XBLContainer {
         this.helpEffectiveControlId = null;
         this.delayedEvents = null;
 
-        this.goingOffline = false;
+//        this.goingOffline = false;
     }
 
     /**
-     * Set the active submission.
+     * Add a two-pass submission.
      *
      * This can be called with a non-null value at most once.
      */
-    public void setClientActiveSubmission(XFormsModelSubmission activeSubmission) {
-        if (this.activeSubmission != null)
-            throw new ValidationException("There is already an active submission.", activeSubmission.getLocationData());
+    public void setActiveSubmissionFirstPass(XFormsModelSubmission submission) {
+        if (this.activeSubmissionFirstPass != null)
+            throw new ValidationException("There is already an active submission.", submission.getLocationData());
 
         if (loadsToRun != null)
-            throw new ValidationException("Unable to run a two-pass submission and xforms:load within a same action sequence.", activeSubmission.getLocationData());
+            throw new ValidationException("Unable to run a two-pass submission and xforms:load within a same action sequence.", submission.getLocationData());
 
         if (messagesToRun != null)
-            throw new ValidationException("Unable to run a two-pass submission and xforms:message within a same action sequence.", activeSubmission.getLocationData());
+            throw new ValidationException("Unable to run a two-pass submission and xforms:message within a same action sequence.", submission.getLocationData());
 
         // scriptsToRun: it seems reasonable to run scripts up to the point where the submission takes place
 
         if (focusEffectiveControlId != null)
-            throw new ValidationException("Unable to run a two-pass submission and xforms:setfocus within a same action sequence.", activeSubmission.getLocationData());
+            throw new ValidationException("Unable to run a two-pass submission and xforms:setfocus within a same action sequence.", submission.getLocationData());
 
         if (helpEffectiveControlId != null)
-            throw new ValidationException("Unable to run a two-pass submission and xforms-help within a same action sequence.", activeSubmission.getLocationData());
+            throw new ValidationException("Unable to run a two-pass submission and xforms-help within a same action sequence.", submission.getLocationData());
 
-        this.activeSubmission = activeSubmission;
+        // Remember submission
+        this.activeSubmissionFirstPass = submission;
     }
 
-    public boolean isGotSubmission() {
-        return gotSubmission;
+    public void setReplaceAllCallable(Callable<SubmissionResult> callable) {
+        this.replaceAllCallable = callable;
     }
 
-    public void setGotSubmission() {
-        this.gotSubmission = true;
-    }
+    public void setGotSubmission() {}
 
     public boolean isGotSubmissionSecondPass() {
         return gotSubmissionSecondPass;
@@ -435,8 +558,8 @@ public class XFormsContainingDocument extends XBLContainer {
      */
     public void addMessageToRun(String message, String level) {
 
-        if (activeSubmission != null)
-            throw new ValidationException("Unable to run a two-pass submission and xforms:message within a same action sequence.", activeSubmission.getLocationData());
+        if (activeSubmissionFirstPass != null)
+            throw new ValidationException("Unable to run a two-pass submission and xforms:message within a same action sequence.", activeSubmissionFirstPass.getLocationData());
 
         if (messagesToRun == null)
             messagesToRun = new ArrayList<Message>();
@@ -582,7 +705,7 @@ public class XFormsContainingDocument extends XBLContainer {
 
     public void addScriptToRun(String scriptId, XFormsEvent event, XFormsEventObserver eventObserver) {
 
-        if (activeSubmission != null && StringUtils.isBlank(activeSubmission.getResolvedXXFormsTarget())) {
+        if (activeSubmissionFirstPass != null && StringUtils.isBlank(activeSubmissionFirstPass.getResolvedXXFormsTarget())) {
             // Scripts occurring after a submission without a target takes place should not run
             // TODO: Should we allow scripts anyway? Don't we allow value changes updates on the client anyway?
             indentedLogger.logWarning("", "xxforms:script will be ignored because two-pass submission started", "script id", scriptId);
@@ -590,7 +713,7 @@ public class XFormsContainingDocument extends XBLContainer {
         }
 
         // Warn that scripts won't run in noscript mode (duh)
-        if (XFormsProperties.isNoscript(this))
+        if (xformsStaticState.isNoscript())
             indentedLogger.logWarning("noscript", "script won't run in noscript mode", "script id", scriptId);
 
         if (scriptsToRun == null)
@@ -631,8 +754,8 @@ public class XFormsContainingDocument extends XBLContainer {
      */
     public void addLoadToRun(String resource, String target, String urlType, boolean isReplace, boolean isPortletLoad, boolean isShowProgress) {
 
-        if (activeSubmission != null)
-            throw new ValidationException("Unable to run a two-pass submission and xforms:load within a same action sequence.", activeSubmission.getLocationData());
+        if (activeSubmissionFirstPass != null)
+            throw new ValidationException("Unable to run a two-pass submission and xforms:load within a same action sequence.", activeSubmissionFirstPass.getLocationData());
 
         if (loadsToRun == null)
             loadsToRun = new ArrayList<Load>();
@@ -697,8 +820,8 @@ public class XFormsContainingDocument extends XBLContainer {
      */
     public void setClientFocusEffectiveControlId(String effectiveControlId) {
 
-        if (activeSubmission != null)
-            throw new ValidationException("Unable to run a two-pass submission and xforms:setfocus within a same action sequence.", activeSubmission.getLocationData());
+        if (activeSubmissionFirstPass != null)
+            throw new ValidationException("Unable to run a two-pass submission and xforms:setfocus within a same action sequence.", activeSubmissionFirstPass.getLocationData());
 
         this.focusEffectiveControlId = effectiveControlId;
     }
@@ -733,8 +856,8 @@ public class XFormsContainingDocument extends XBLContainer {
      */
     public void setClientHelpEffectiveControlId(String effectiveControlId) {
 
-        if (activeSubmission != null)
-            throw new ValidationException("Unable to run a two-pass submission and xforms-help within a same action sequence.", activeSubmission.getLocationData());
+        if (activeSubmissionFirstPass != null)
+            throw new ValidationException("Unable to run a two-pass submission and xforms-help within a same action sequence.", activeSubmissionFirstPass.getLocationData());
 
         this.helpEffectiveControlId = effectiveControlId;
     }
@@ -785,10 +908,12 @@ public class XFormsContainingDocument extends XBLContainer {
                 // When going online, ensure rebuild/revalidate before each event
                 rebuildRecalculateIfNeeded(pipelineContext);
 
+                getControls().cloneInitialStateIfNeeded(pipelineContext);
+                
                 // Mark the control as dirty, because we may have done a rebuild/recalculate earlier, and this means
                 // the MIPs need to be re-evaluated before being checked below
-                getControls().cloneInitialStateIfNeeded(pipelineContext);
-                xformsControl.markDirty();
+                // NOTE: This is almost certainly wrong now (2010-04-08)
+                xformsControl.markDirty(xpathDependencies);
             }
 
             if (!handleGoingOnline) {
@@ -861,7 +986,7 @@ public class XFormsContainingDocument extends XBLContainer {
                         // Store value into instance data through the control
                         final XFormsValueControl valueXFormsControl = (XFormsValueControl) eventTarget;
                         // NOTE: filesElement is only used by the upload control at the moment
-                        valueXFormsControl.storeExternalValue(pipelineContext, valueChangeWithFocusChangeEvent.getNewValue(), null, valueChangeWithFocusChangeEvent.getFilesElement());
+                        valueXFormsControl.storeExternalValue(pipelineContext, valueChangeWithFocusChangeEvent.getNewValue(), null);
                     }
 
                     {
@@ -873,7 +998,7 @@ public class XFormsContainingDocument extends XBLContainer {
                             // We have a focus change (otherwise, the focus is assumed to remain the same)
 
                             // Dispatch DOMFocusOut
-                            // NOTE: setExternalValue() above may cause e.g. xforms-select / xforms-deselect events to be
+                            // NOTE: storeExternalValue() above may cause e.g. xforms-select / xforms-deselect events to be
                             // dispatched, so we get the control again to have a fresh reference
                             dispatchEventCheckTarget(pipelineContext, new DOMFocusOutEvent(this, eventTarget));
 
@@ -976,6 +1101,17 @@ public class XFormsContainingDocument extends XBLContainer {
     }
 
     @Override
+    public Object resolveObjectById(String sourceEffectiveId, String targetStaticId, Item contextItem) {
+        if (targetStaticId.equals(CONTAINING_DOCUMENT_PSEUDO_ID)) {
+            // Special case of containing document
+            return this;
+        } else {
+            // All other cases
+            return super.resolveObjectById(sourceEffectiveId, targetStaticId, contextItem);
+        }
+    }
+
+    @Override
     public void dispatchEvent(PropertyContext propertyContext, XFormsEvent event) {
         // Ensure that the event uses the proper container to dispatch the event
         final XBLContainer targetContainer = event.getTargetObject().getXBLContainer(this);
@@ -1005,13 +1141,32 @@ public class XFormsContainingDocument extends XBLContainer {
     }
 
     /**
-     * Prepare the ContainingDocument for a sequence of external events.
+     * Check if there is a pending two-pass submission and run it if needed.
      *
-     * @param pipelineContext   current PipelineContext
+     * This must NOT synchronize on this document and must NOT modify the document, because further Ajax request might
+     * run concurrently on this document.
+     *
+     * @param callable          callable to run or null
+     * @param response          response to write to if needed
+     * @return                  true if calling the callable was successful
+     */
+    public static boolean checkAndRunDeferredSubmission(Callable<SubmissionResult> callable, ExternalContext.Response response) {
+        if (callable != null) {
+            XFormsModelSubmission.runDeferredSubmission(callable, response);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Prepare the document for a sequence of external events.
+     *
+     * @param pipelineContext   current context
      * @param response          ExternalContext.Response for xforms:submission[@replace = 'all'], or null
      * @param handleGoingOnline whether we are going online and therefore using optimized event handling
      */
-    public void startExternalEventsSequence(PipelineContext pipelineContext, ExternalContext.Response response, boolean handleGoingOnline) {
+    public void beforeExternalEvents(PipelineContext pipelineContext, ExternalContext.Response response, boolean handleGoingOnline) {
         // Clear containing document state
         clearClientState();
 
@@ -1024,15 +1179,21 @@ public class XFormsContainingDocument extends XBLContainer {
         // Start outermost action handler here if going online
         if (handleGoingOnline)
             startOutermostActionHandler();
+
+        // Process completed asynchronous submissions if any
+        processCompletedAsynchronousSubmissions(pipelineContext, handleGoingOnline, false);
     }
 
     /**
      * End a sequence of external events.
      *
-     * @param pipelineContext   current PipelineContext
+     * @param pipelineContext   current context
      * @param handleGoingOnline whether we are going online and therefore using optimized event handling
      */
-    public void endExternalEventsSequence(PipelineContext pipelineContext, boolean handleGoingOnline) {
+    public void afterExternalEvents(PipelineContext pipelineContext, boolean handleGoingOnline) {
+
+        // Process completed asynchronous submissions if any
+        processCompletedAsynchronousSubmissions(pipelineContext, handleGoingOnline, true);
 
         // End outermost action handler here if going online
         if (handleGoingOnline)
@@ -1095,7 +1256,7 @@ public class XFormsContainingDocument extends XBLContainer {
             // TODO: Dispatch to children containers?
             dispatchEvent(propertyContext, new XXFormsOnlineEvent(this, currentModel));
         }
-        this.goingOffline = false;
+//        this.goingOffline = false;
     }
 
     public void goOffline(PropertyContext propertyContext) {
@@ -1128,12 +1289,12 @@ public class XFormsContainingDocument extends XBLContainer {
             // TODO: Dispatch to children containers
             dispatchEvent(propertyContext, new XXFormsOfflineEvent(this, currentModel));
         }
-        this.goingOffline = true;
+//        this.goingOffline = true;
     }
 
-    public boolean goingOffline() {
-        return goingOffline;
-    }
+//    public boolean goingOffline() {
+//        return goingOffline;
+//    }
 
     /**
      * Create an encoded dynamic state that represents the dynamic state of this XFormsContainingDocument.
@@ -1154,8 +1315,24 @@ public class XFormsContainingDocument extends XBLContainer {
         {
             dynamicStateDocument = Dom4jUtils.createDocument();
             final Element dynamicStateElement = dynamicStateDocument.addElement("dynamic-state");
-            // Add UUID
+            // Add UUIDs
             dynamicStateElement.addAttribute("uuid", uuid);
+            dynamicStateElement.addAttribute("sequence", Integer.toString(changeSequence));
+
+            // Add request information
+            dynamicStateElement.addAttribute("deployment-type", deploymentType.name());
+            dynamicStateElement.addAttribute("request-context-path", requestContextPath);
+            dynamicStateElement.addAttribute("request-path", requestPath);
+            dynamicStateElement.addAttribute("container-type", containerType);
+            dynamicStateElement.addAttribute("container-namespace", containerNamespace);
+
+            // Remember versioned paths
+            if (versionedPathMatchers != null && versionedPathMatchers.size() > 0) {
+                final Element matchersElement = dynamicStateElement.addElement("matchers");
+                for (final URLRewriterUtils.PathMatcher pathMatcher: versionedPathMatchers) {
+                    matchersElement.add(pathMatcher.serialize());
+                }
+            }
 
             // Serialize instances
             {
@@ -1165,8 +1342,18 @@ public class XFormsContainingDocument extends XBLContainer {
 
             // Serialize controls
             xformsControls.serializeControls(dynamicStateElement);
+
+            // Serialize annotated page template if present
+            if (annotatedTemplate != null) {
+                final Element templateElement = dynamicStateElement.addElement("template");
+                final Document document = TransformerUtils.saxStoreToDom4jDocument(annotatedTemplate);
+                templateElement.add(document.getRootElement().detach());
+            }
         }
         indentedLogger.endHandleOperation();
+
+        // DEBUG
+//        System.out.println("XXX SERIALIZE: " + Dom4jUtils.domToPrettyString(dynamicStateDocument));
 
         return dynamicStateDocument;
     }
@@ -1181,20 +1368,63 @@ public class XFormsContainingDocument extends XBLContainer {
     private void restoreDynamicState(PipelineContext pipelineContext, String encodedDynamicState) {
 
         // Get dynamic state document
-        final Document dynamicStateDocument = XFormsUtils.decodeXML(pipelineContext, encodedDynamicState);
+        final Element dynamicStateElement = XFormsUtils.decodeXML(pipelineContext, encodedDynamicState).getRootElement();
 
-        // Restore UUID
-        this.uuid = dynamicStateDocument.getRootElement().attributeValue("uuid");
-        indentedLogger.logDebug("initialization", "restoring UUID", "uuid", this.uuid);
+        // DEBUG
+//        System.out.println("XXX RESTORE: " + Dom4jUtils.domToPrettyString(dynamicStateElement.getDocument()));
+
+        // Restore UUIDs
+
+        this.uuid = dynamicStateElement.attributeValue("uuid");
+        this.changeSequence = Integer.parseInt(dynamicStateElement.attributeValue("sequence"));
+
+        indentedLogger.logDebug("initialization", "restoring UUID", "UUID", this.uuid,
+                "change sequence", Integer.toString(this.changeSequence));
+
+        // Restore request information
+        if (dynamicStateElement.attribute("deployment-type") != null) {
+            // Normal case where information below was previously serialized
+            this.deploymentType = XFormsConstants.DeploymentType.valueOf(dynamicStateElement.attributeValue("deployment-type"));
+            this.requestContextPath = dynamicStateElement.attributeValue("request-context-path");
+            this.requestPath = dynamicStateElement.attributeValue("request-path");
+            this.containerType = dynamicStateElement.attributeValue("container-type");
+            this.containerNamespace = dynamicStateElement.attributeValue("container-namespace");
+        } else {
+            // Use information from the request
+            // This is relied upon by oxf:xforms-submission and unit tests and shouldn't be relied on in other cases
+            initializeRequestInformation(pipelineContext);
+        }
+
+        // Restore versioned paths matchers if present
+        {
+            final Element matchersElement = dynamicStateElement.element("matchers");
+            if (matchersElement != null) {
+                final List<Element> matchersElements = Dom4jUtils.elements(matchersElement, "matcher");
+                this.versionedPathMatchers = new ArrayList<URLRewriterUtils.PathMatcher>(matchersElements.size());
+                for (final Element currentMatcherElement: matchersElements) {
+                    this.versionedPathMatchers.add(new URLRewriterUtils.PathMatcher(currentMatcherElement));
+                }
+            }
+        }
+
+        // Restore annotated page template if present
+        {
+            final Element templateElement = dynamicStateElement.element("template");
+            if (templateElement != null) {
+                final Document templateDocument = Dom4jUtils.createDocument();
+                templateDocument.setRootElement((Element) ((Element) templateElement.elements().get(0)).detach());
+                this.annotatedTemplate = TransformerUtils.dom4jToSAXStore(templateDocument);
+            }
+        }
 
         // Restore models state
         {
             // Store instances state in PipelineContext for use down the line
-            final Element instancesElement = dynamicStateDocument.getRootElement().element("instances");
+            final Element instancesElement = dynamicStateElement.element("instances");
             pipelineContext.setAttribute(XFORMS_DYNAMIC_STATE_RESTORE_INSTANCES, instancesElement);
 
             // Create XForms controls and models
-            createControlsAndModels(pipelineContext);
+            createControlsAndModels();
 
             // Restore top-level models state, including instances
             restoreModelsState(pipelineContext);
@@ -1203,7 +1433,7 @@ public class XFormsContainingDocument extends XBLContainer {
         // Restore controls state
         {
             // Store serialized control state for retrieval later
-            final Map serializedControlStateMap = xformsControls.getSerializedControlStateMap(dynamicStateDocument.getRootElement());
+            final Map serializedControlStateMap = xformsControls.getSerializedControlStateMap(dynamicStateElement);
             pipelineContext.setAttribute(XFORMS_DYNAMIC_STATE_RESTORE_CONTROLS, serializedControlStateMap);
 
             xformsControls.initializeState(pipelineContext);
@@ -1233,7 +1463,7 @@ public class XFormsContainingDocument extends XBLContainer {
         // This is called upon the first creation of the XForms engine or for testing only
 
         // Create XForms controls and models
-        createControlsAndModels(pipelineContext);
+        createControlsAndModels();
 
         // Group all xforms-model-construct-done and xforms-ready events within a single outermost action handler in
         // order to optimize events
@@ -1250,32 +1480,28 @@ public class XFormsContainingDocument extends XBLContainer {
         endOutermostActionHandler(pipelineContext);
     }
 
-    private AsynchronousSubmissionManager asynchronousSubmissionManager;
-
     public AsynchronousSubmissionManager getAsynchronousSubmissionManager(boolean create) {
         if (asynchronousSubmissionManager == null && create)
             asynchronousSubmissionManager = new AsynchronousSubmissionManager(this);
         return asynchronousSubmissionManager;
     }
 
-    public void processCompletedAsynchronousSubmissions(PropertyContext propertyContext, boolean skipDeferredEventHandling, boolean addPollEvent) {
-        if (asynchronousSubmissionManager != null && asynchronousSubmissionManager.hasPendingAsynchronousSubmissions(propertyContext)) {
+    private void processCompletedAsynchronousSubmissions(PropertyContext propertyContext, boolean skipDeferredEventHandling, boolean addPollEvent) {
+        final AsynchronousSubmissionManager manager = getAsynchronousSubmissionManager(false);
+        if (manager != null && manager.hasPendingAsynchronousSubmissions(propertyContext)) {
             if (!skipDeferredEventHandling)
                 startOutermostActionHandler();
-            asynchronousSubmissionManager.processCompletedAsynchronousSubmissions(propertyContext);
+            manager.processCompletedAsynchronousSubmissions(propertyContext);
             if (!skipDeferredEventHandling)
                 endOutermostActionHandler(propertyContext);
 
             // Remember to send a poll event if needed
             if (addPollEvent)
-                asynchronousSubmissionManager.addClientDelayEventIfNeeded(propertyContext);
+                manager.addClientDelayEventIfNeeded(propertyContext);
         }
     }
 
-    private void createControlsAndModels(PipelineContext pipelineContext) {
-
-        // Gather static analysis information
-        xformsStaticState.analyzeIfNecessary(pipelineContext);
+    private void createControlsAndModels() {
 
         // Create XForms controls
         xformsControls = new XFormsControls(this);
@@ -1389,5 +1615,26 @@ public class XFormsContainingDocument extends XBLContainer {
 
     public boolean allowExternalEvent(IndentedLogger indentedLogger, String logType, String eventName) {
         return ALLOWED_EXTERNAL_EVENTS.contains(eventName);
+    }
+
+    /**
+     * Called when this document is added to the document cache.
+     */
+    public void added(PropertyContext propertyContext) {
+        XFormsStateManager.instance().onAdd(propertyContext, this);
+    }
+
+    /**
+     * Called when somebody explicitly removes this document from the document cache.
+     */
+    public void removed(PropertyContext propertyContext) {
+        XFormsStateManager.instance().onRemove(propertyContext, this);
+    }
+
+    /**
+     * Called when cache expires this document from the document cache.
+     */
+    public void evicted(PropertyContext propertyContext) {
+        XFormsStateManager.instance().onEvict(propertyContext, this);
     }
 }

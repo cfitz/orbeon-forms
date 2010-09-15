@@ -1,26 +1,27 @@
 /**
- *  Copyright (C) 2005 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify it under the terms of the
- *  GNU Lesser General Public License as published by the Free Software Foundation; either version
- *  2.1 of the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU Lesser General Public License as published by the Free Software Foundation; either version
+ * 2.1 of the License, or (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *  See the GNU Lesser General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Lesser General Public License for more details.
  *
- *  The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+ * The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
  */
 package org.orbeon.oxf.processor.converter;
 
 import org.dom4j.Element;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
 import org.orbeon.oxf.processor.*;
-import org.orbeon.oxf.xml.ForwardingContentHandler;
+import org.orbeon.oxf.processor.impl.CacheableTransformerOutputImpl;
+import org.orbeon.oxf.xml.ForwardingXMLReceiver;
 import org.orbeon.oxf.xml.NamespaceSupport3;
 import org.orbeon.saxon.om.FastStringBuffer;
 import org.xml.sax.Attributes;
-import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
 /**
@@ -41,9 +42,10 @@ public class QNameConverter extends ProcessorImpl {
         addOutputInfo(new ProcessorInputOutputInfo(OUTPUT_DATA));
     }
 
+    @Override
     public ProcessorOutput createOutput(String name) {
-        ProcessorOutput output = new ProcessorImpl.CacheableTransformerOutputImpl(getClass(), name) {
-            public void readImpl(PipelineContext context, ContentHandler contentHandler) {
+        final ProcessorOutput output = new CacheableTransformerOutputImpl(QNameConverter.this, name) {
+            public void readImpl(PipelineContext context, XMLReceiver xmlReceiver) {
 
                 // Read config input
                 final Config config = (Config) readCacheInputAsObject(context, getInputByName(INPUT_CONFIG), new CacheableInputReader() {
@@ -71,10 +73,11 @@ public class QNameConverter extends ProcessorImpl {
                 });
 
                 // Do the conversion
-                readInputAsSAX(context, INPUT_DATA, new ForwardingContentHandler(contentHandler) {
+                readInputAsSAX(context, INPUT_DATA, new ForwardingXMLReceiver(xmlReceiver) {
 
                     private NamespaceSupport3 namespaceSupport = new NamespaceSupport3();
 
+                    @Override
                     public void startElement(String uri, String localname, String qName, Attributes attributes) throws SAXException {
                         namespaceSupport.startElement();
                         if (config.matchURI == null || config.matchURI.equals(uri)) {
@@ -113,6 +116,7 @@ public class QNameConverter extends ProcessorImpl {
                         }
                     }
 
+                    @Override
                     public void endElement(String uri, String localname, String qName) throws SAXException {
                         if (config.matchURI == null || config.matchURI.equals(uri)) {
                             int colonIndex = qName.indexOf(':');
@@ -151,11 +155,13 @@ public class QNameConverter extends ProcessorImpl {
                         namespaceSupport.endElement();
                     }
 
+                    @Override
                     public void startPrefixMapping(String prefix, String uri) throws SAXException {
                         namespaceSupport.startPrefixMapping(prefix, uri);
                         super.startPrefixMapping(prefix, uri);
                     }
 
+                    @Override
                     public void endPrefixMapping(String prefix) throws SAXException {
                         super.endPrefixMapping(prefix);
                     }

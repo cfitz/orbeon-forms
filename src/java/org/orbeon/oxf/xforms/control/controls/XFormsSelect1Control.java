@@ -20,15 +20,13 @@ import org.orbeon.oxf.common.ValidationException;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
 import org.orbeon.oxf.util.PropertyContext;
 import org.orbeon.oxf.xforms.*;
-import org.orbeon.oxf.xforms.control.XFormsControl;
-import org.orbeon.oxf.xforms.control.XFormsSingleNodeControl;
-import org.orbeon.oxf.xforms.control.XFormsValueControl;
+import org.orbeon.oxf.xforms.analysis.XPathDependencies;
+import org.orbeon.oxf.xforms.analysis.controls.Select1Analysis;
+import org.orbeon.oxf.xforms.control.*;
 import org.orbeon.oxf.xforms.event.XFormsEvent;
 import org.orbeon.oxf.xforms.event.events.XFormsDeselectEvent;
 import org.orbeon.oxf.xforms.event.events.XFormsSelectEvent;
-import org.orbeon.oxf.xforms.itemset.Item;
-import org.orbeon.oxf.xforms.itemset.Itemset;
-import org.orbeon.oxf.xforms.itemset.XFormsItemUtils;
+import org.orbeon.oxf.xforms.itemset.*;
 import org.orbeon.oxf.xforms.xbl.XBLContainer;
 import org.orbeon.oxf.xml.ContentHandlerHelper;
 import org.orbeon.oxf.xml.dom4j.Dom4jUtils;
@@ -70,9 +68,8 @@ public class XFormsSelect1Control extends XFormsValueControl {
     }
 
     @Override
-    public void setBindingContext(PropertyContext propertyContext, XFormsContextStack.BindingContext bindingContext, boolean isCreate) {
-        super.setBindingContext(propertyContext, bindingContext, isCreate);
-
+    protected void onCreate(PropertyContext propertyContext) {
+        super.onCreate(propertyContext);
         // Evaluate itemsets only if restoring dynamic state
         // NOTE: This doesn't sound like it is the right place to do this, does it?
         if (containingDocument.isRestoringDynamicState(propertyContext))
@@ -101,8 +98,8 @@ public class XFormsSelect1Control extends XFormsValueControl {
     }
 
     @Override
-    public void markDirty() {
-        super.markDirty();
+    protected void markDirtyImpl(XPathDependencies xpathDependencies) {
+        super.markDirtyImpl(xpathDependencies);
         // Force recalculation of items here
         itemset = null;
     }
@@ -187,8 +184,8 @@ public class XFormsSelect1Control extends XFormsValueControl {
      * @return                      true iif control has a static set of items
      */
     public static boolean isStaticItemset(XFormsContainingDocument containingDocument, String prefixedId) {
-        final XFormsStaticState.ItemsInfo itemsInfo = containingDocument.getStaticState().getItemsInfo(prefixedId);
-        return itemsInfo != null && !itemsInfo.hasNonStaticItem();
+        final Select1Analysis analysis = containingDocument.getStaticState().getSelect1Analysis(prefixedId);
+        return analysis != null && !analysis.hasNonStaticItem;
     }
 
     /**
@@ -199,17 +196,8 @@ public class XFormsSelect1Control extends XFormsValueControl {
      * @return                      true iif control is a multiple-selection control
      */
     public static boolean isMultiple(XFormsContainingDocument containingDocument, String prefixedId) {
-        final XFormsStaticState.ItemsInfo itemsInfo = containingDocument.getStaticState().getItemsInfo(prefixedId);
-        return itemsInfo != null && itemsInfo.isMultiple();
-    }
-
-    /**
-     * Whether this control has a static set of items.
-     *
-     * @return                      true iif control has a static set of items
-     */
-    public boolean isStaticItemset() {
-        return isStaticItemset(containingDocument, getPrefixedId());
+        final Select1Analysis analysis = containingDocument.getStaticState().getSelect1Analysis(prefixedId);
+        return analysis != null && analysis.isMultiple;
     }
 
     public boolean isOpenSelection() {
@@ -254,7 +242,7 @@ public class XFormsSelect1Control extends XFormsValueControl {
     }
 
     @Override
-    public void storeExternalValue(PropertyContext propertyContext, String value, String type, Element filesElement) {
+    public void storeExternalValue(PropertyContext propertyContext, String value, String type) {
 
         if (!(this instanceof XFormsSelectControl)) {// kind of a HACK due to the way our class hierarchy is setup
             // Handle xforms:select1-specific logic
@@ -310,11 +298,11 @@ public class XFormsSelect1Control extends XFormsValueControl {
             if (hasSelectedItem || isOpenSelection()) {
                 // Only then do we store the external value. This ensures that if the value is NOT in the itemset AND
                 // we are a closed selection then we do NOT store the value in instance.
-                super.storeExternalValue(propertyContext, value, type, filesElement);
+                super.storeExternalValue(propertyContext, value, type);
             }
         } else {
             // Forward to superclass
-            super.storeExternalValue(propertyContext, value, type, filesElement);
+            super.storeExternalValue(propertyContext, value, type);
         }
     }
 
@@ -337,8 +325,8 @@ public class XFormsSelect1Control extends XFormsValueControl {
     }
 
     private boolean mustSendItemsetUpdate(PropertyContext propertyContext, XFormsSelect1Control otherSelect1Control) {
-        final XFormsStaticState.ItemsInfo itemsInfo = containingDocument.getStaticState().getItemsInfo(getPrefixedId());
-        if (itemsInfo != null && !itemsInfo.hasNonStaticItem()) {
+        final Select1Analysis analysis = containingDocument.getStaticState().getSelect1Analysis(getPrefixedId());
+        if (analysis != null && !analysis.hasNonStaticItem) {
             // There is no need to send an update:
             //
             // 1. Items are static...
@@ -373,7 +361,7 @@ public class XFormsSelect1Control extends XFormsValueControl {
 
         // Output itemset diff
         if (mustSendItemsetUpdate(pipelineContext, (XFormsSelect1Control) other)) {
-            ch.startElement("xxf", XFormsConstants.XXFORMS_NAMESPACE_URI, "itemset", new String[]{"id", getEffectiveId()});
+            ch.startElement("xxf", XFormsConstants.XXFORMS_NAMESPACE_URI, "itemset", new String[]{"id", XFormsUtils.namespaceId(containingDocument, getEffectiveId())});
             {
                 final Itemset itemset = getItemset(pipelineContext, true);
                 if (itemset != null) {

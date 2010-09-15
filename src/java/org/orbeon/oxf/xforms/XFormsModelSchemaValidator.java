@@ -15,58 +15,37 @@ package org.orbeon.oxf.xforms;
 
 import com.sun.msv.datatype.xsd.DatatypeFactory;
 import com.sun.msv.datatype.xsd.XSDatatype;
-import com.sun.msv.grammar.Expression;
-import com.sun.msv.grammar.Grammar;
-import com.sun.msv.grammar.IDContextProvider2;
+import com.sun.msv.grammar.*;
 import com.sun.msv.grammar.xmlschema.*;
 import com.sun.msv.reader.GrammarReaderController;
 import com.sun.msv.reader.util.GrammarLoader;
 import com.sun.msv.reader.xmlschema.XMLSchemaReader;
-import com.sun.msv.util.DatatypeRef;
-import com.sun.msv.util.StartTagInfo;
-import com.sun.msv.util.StringRef;
+import com.sun.msv.util.*;
 import com.sun.msv.verifier.Acceptor;
-import com.sun.msv.verifier.regexp.ExpressionAcceptor;
-import com.sun.msv.verifier.regexp.REDocumentDeclaration;
-import com.sun.msv.verifier.regexp.SimpleAcceptor;
-import com.sun.msv.verifier.regexp.StringToken;
+import com.sun.msv.verifier.regexp.*;
 import com.sun.msv.verifier.regexp.xmlschema.XSAcceptor;
 import com.sun.msv.verifier.regexp.xmlschema.XSREDocDecl;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
-import org.dom4j.Attribute;
-import org.dom4j.Element;
-import org.dom4j.QName;
-import org.orbeon.oxf.cache.Cache;
-import org.orbeon.oxf.cache.CacheKey;
-import org.orbeon.oxf.cache.ObjectCache;
-import org.orbeon.oxf.common.OXFException;
+import org.dom4j.*;
+import org.orbeon.oxf.cache.*;
 import org.orbeon.oxf.common.ValidationException;
 import org.orbeon.oxf.pipeline.api.ExternalContext;
 import org.orbeon.oxf.resources.URLFactory;
-import org.orbeon.oxf.util.IndentedLogger;
-import org.orbeon.oxf.util.LoggerFactory;
-import org.orbeon.oxf.util.NetUtils;
-import org.orbeon.oxf.util.PropertyContext;
+import org.orbeon.oxf.util.*;
 import org.orbeon.oxf.xforms.msv.IDConstraintChecker;
-import org.orbeon.oxf.xml.TransformerUtils;
-import org.orbeon.oxf.xml.XMLConstants;
+import org.orbeon.oxf.xml.*;
 import org.orbeon.oxf.xml.XMLUtils;
-import org.orbeon.oxf.xml.dom4j.Dom4jUtils;
-import org.orbeon.oxf.xml.dom4j.LocationData;
+import org.orbeon.oxf.xml.dom4j.*;
 import org.relaxng.datatype.Datatype;
 import org.relaxng.datatype.DatatypeException;
-import org.xml.sax.InputSource;
-import org.xml.sax.Locator;
-import org.xml.sax.SAXException;
+import org.xml.sax.*;
 import org.xml.sax.helpers.AttributesImpl;
 
 import javax.xml.parsers.SAXParserFactory;
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Provides XML Schema validation services for the XForms model.
@@ -97,17 +76,16 @@ public class XFormsModelSchemaValidator {
         // Check for external schemas
         final String schemaAttribute = modelElement.attributeValue("schema");
         if (schemaAttribute != null)
-            this.schemaURIs = StringUtils.split(XFormsUtils.encodeHRRI(schemaAttribute, false));
+            this.schemaURIs = StringUtils.split(NetUtils.encodeHRRI(schemaAttribute, false));
 
         // Check for inline schemas
         // "3.3.1 The model Element [...] xs:schema elements located inside the current model need not be listed."
-        for (Object o: modelElement.elements(XMLConstants.XML_SCHEMA_QNAME)) {
-            final Element currentSchemaElement = (Element) o;
+        for (final Element schemaElement: Dom4jUtils.elements( modelElement, XMLConstants.XML_SCHEMA_QNAME)) {
 
             if (schemaElements == null)
                 schemaElements = new ArrayList<Element>();
 
-            schemaElements.add(currentSchemaElement);
+            schemaElements.add(schemaElement);
         }
     }
 
@@ -165,6 +143,7 @@ public class XFormsModelSchemaValidator {
 
     private static class SchemaKey extends CacheKey {
         final int hash;
+
         final URL url;
 
         SchemaKey(final URL u) {
@@ -173,19 +152,26 @@ public class XFormsModelSchemaValidator {
             hash = url.hashCode();
         }
 
+        @Override
         public int hashCode() {
             return hash;
         }
 
-        public boolean equals(final Object rhsObj) {
+        @Override
+        public boolean equals(final Object other) {
             final boolean ret;
-            if (rhsObj instanceof SchemaKey) {
-                final SchemaKey rhs = (SchemaKey) rhsObj;
+            if (other instanceof SchemaKey) {
+                final SchemaKey rhs = (SchemaKey) other;
                 ret = url.equals(rhs.url);
             } else {
                 ret = false;
             }
             return ret;
+        }
+
+        @Override
+        public void toXML(ContentHandlerHelper helper, Object validities) {
+            helper.element("url", new String[] { "class", getClazz().getName(), "validity", (validities != null) ? validities.toString() : null, "url", url.toExternalForm() });
         }
     }
 
@@ -364,11 +350,11 @@ public class XFormsModelSchemaValidator {
             final Datatype datatype = datatypeRef.types[0];
             if (datatype instanceof XSDatatype) {
                 final XSDatatype xsDatatype = (XSDatatype) datatype;
-                final String datatTypeURI = xsDatatype.getNamespaceUri();
-                final String datatTypeName = xsDatatype.getName();
+                final String dataTypeURI = xsDatatype.getNamespaceUri();
+                final String dataTypeName = xsDatatype.getName();
 
-                if (datatTypeName != null && !datatTypeName.equals(""))
-                    InstanceData.setType(element, XMLUtils.buildExplodedQName(datatTypeURI, datatTypeName));
+                if (dataTypeName != null && !dataTypeName.equals(""))
+                    InstanceData.setType(element, XMLUtils.buildExplodedQName(dataTypeURI, dataTypeName));
             }
         }
 
@@ -643,15 +629,16 @@ public class XFormsModelSchemaValidator {
     /**
      * Load XForms model schemas.
      *
-     * @param propertyContext   current context
+     * @param propertyContext       current context
+     * @param containingDocument    current document
      */
-    public void loadSchemas(final PropertyContext propertyContext) {
+    public void loadSchemas(final PropertyContext propertyContext, XFormsContainingDocument containingDocument) {
 
         // Check for external schema
         if (schemaURIs != null && schemaURIs.length > 0) {
             // Resolve URL
             // NOTE: We do not support "optimized" access here, we always use an URL, because loadGrammar() wants a URL
-            final String resolvedURLString = XFormsUtils.resolveServiceURL(propertyContext, modelElement, schemaURIs[0],
+            final String resolvedURLString = XFormsUtils.resolveServiceURL(propertyContext, containingDocument, modelElement, schemaURIs[0],
                     ExternalContext.Response.REWRITE_MODE_ABSOLUTE);
 
             // Load associated grammar
@@ -699,7 +686,7 @@ public class XFormsModelSchemaValidator {
             }
             return grammar;
         } catch (Exception e) {
-            throw new OXFException(e);
+            throw ValidationException.wrapException(e, new ExtendedLocationData(schemaURI, -1, -1, "loading schema from URI"));
         }
     }
 
@@ -740,13 +727,12 @@ public class XFormsModelSchemaValidator {
             }
 
             // Get validation mode ("lax" is the default)
-            final String validation = (instance.getValidation() == null) ? "lax" : instance.getValidation();
             boolean isValid = true;
-            if ("lax".equals(validation)) {
+            if (instance.isLaxValidation()) {
                 // Lax validation
                 final Element instanceRootElement = instance.getDocument().getRootElement();
                 isValid &= validateElementLax(instanceRootElement);
-            } else if ("strict".equals(instance.getValidation())) {
+            } else if (instance.isStrictValidation()) {
                 // Strict validation
                 final Acceptor acceptor = documentDeclaration.createAcceptor();
                 final Element instanceRootElement = instance.getDocument().getRootElement();

@@ -13,6 +13,7 @@
  */
 package org.orbeon.oxf.xforms.processor.handlers;
 
+import org.orbeon.oxf.xforms.XFormsUtils;
 import org.orbeon.oxf.xforms.control.XFormsControl;
 import org.orbeon.oxf.xml.*;
 import org.xml.sax.Attributes;
@@ -20,7 +21,7 @@ import org.xml.sax.SAXException;
 
 public class XFormsGroupSeparatorHandler extends XFormsGroupHandler {
 
-    private DeferredContentHandler currentSavedOutput;
+    private DeferredXMLReceiver currentSavedOutput;
     private OutputInterceptor outputInterceptor;
 
     @Override
@@ -70,18 +71,19 @@ public class XFormsGroupSeparatorHandler extends XFormsGroupHandler {
                     // Delimiter: begin group
                     if (isMustGenerateBeginEndDelimiters) {
                         outputInterceptor.outputDelimiter(currentSavedOutput, outputInterceptor.getDelimiterNamespaceURI(),
-                                outputInterceptor.getDelimiterPrefix(), outputInterceptor.getDelimiterLocalName(), firstDelimiterClasses, "group-begin-" + effectiveId);
+                                outputInterceptor.getDelimiterPrefix(), outputInterceptor.getDelimiterLocalName(), firstDelimiterClasses,
+                                "group-begin-" + XFormsUtils.namespaceId(containingDocument, effectiveId));
                     }
                 }
             });
             // TODO: is the use of XFormsElementFilterContentHandler necessary now?
-            controller.setOutput(new DeferredContentHandlerImpl(new XFormsElementFilterContentHandler(outputInterceptor)));
+            controller.setOutput(new DeferredXMLReceiverImpl(new XFormsElementFilterXMLReceiver(outputInterceptor)));
 
             // Set control classes
             outputInterceptor.setAddedClasses(elementClasses);
         } else if (isDisabled(control)) {
             // In noscript, if the group not visible, set output to a black hole
-            handlerContext.getController().setOutput(new DeferredContentHandlerAdapter());
+            handlerContext.getController().setOutput(new DeferredXMLReceiverAdapter());
         }
 
         // Don't support label, help, alert, or hint and other appearances, only the content!
@@ -101,7 +103,8 @@ public class XFormsGroupSeparatorHandler extends XFormsGroupHandler {
             final boolean isMustGenerateBeginEndDelimiters = !handlerContext.isFullUpdateTopLevelControl(effectiveId);
             if (isMustGenerateBeginEndDelimiters) {
                 outputInterceptor.outputDelimiter(currentSavedOutput, outputInterceptor.getDelimiterNamespaceURI(),
-                        outputInterceptor.getDelimiterPrefix(), outputInterceptor.getDelimiterLocalName(), "xforms-group-begin-end", "group-end-" + effectiveId);
+                        outputInterceptor.getDelimiterPrefix(), outputInterceptor.getDelimiterLocalName(), "xforms-group-begin-end",
+                        "group-end-" + XFormsUtils.namespaceId(containingDocument, effectiveId));
             }
         } else if (isDisabled(control)) {
             // In noscript, group was not visible, restore output

@@ -1,44 +1,33 @@
 /**
- *  Copyright (C) 2004 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify it under the terms of the
- *  GNU Lesser General Public License as published by the Free Software Foundation; either version
- *  2.1 of the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU Lesser General Public License as published by the Free Software Foundation; either version
+ * 2.1 of the License, or (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *  See the GNU Lesser General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Lesser General Public License for more details.
  *
- *  The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+ * The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
  */
 package org.orbeon.oxf.processor.serializer.legacy;
 
-import org.dom4j.Document;
-import org.dom4j.Element;
-import org.dom4j.Node;
+import org.dom4j.*;
 import org.jfree.chart.*;
 import org.jfree.chart.axis.*;
-import org.jfree.chart.labels.StandardCategoryItemLabelGenerator;
-import org.jfree.chart.labels.StandardPieSectionLabelGenerator;
-import org.jfree.chart.labels.StandardXYItemLabelGenerator;
+import org.jfree.chart.labels.*;
 import org.jfree.chart.plot.*;
 import org.jfree.chart.renderer.AbstractRenderer;
 import org.jfree.chart.renderer.category.*;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.title.LegendTitle;
 import org.jfree.chart.title.TextTitle;
-import org.jfree.data.Range;
 import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
-import org.jfree.data.general.AbstractDataset;
-import org.jfree.data.general.Dataset;
-import org.jfree.data.general.PieDataset;
-import org.jfree.data.time.FixedMillisecond;
-import org.jfree.data.time.TimeSeries;
-import org.jfree.data.time.TimeSeriesCollection;
-import org.jfree.data.xy.XYDataset;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.data.general.*;
+import org.jfree.data.time.*;
+import org.jfree.data.xy.*;
 import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.RectangleInsets;
 import org.orbeon.oxf.common.OXFException;
@@ -53,8 +42,7 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.*;
 import java.util.List;
 
 public class JFreeChartSerializer extends HttpBinarySerializer {
@@ -260,6 +248,7 @@ public class JFreeChartSerializer extends HttpBinarySerializer {
             chart.setCategoryMargin(Double.parseDouble(catMargin));
 
         chart.setSerieTitle(XPathUtils.selectStringValueNormalize(doc, "/chart/serie-title"));
+        chart.setSerieAutoRangeIncludeZero(XPathUtils.selectBooleanValue(doc, "not(/chart/serie-auto-range-include-zero = 'false')").booleanValue());
         chart.setxSize(XPathUtils.selectIntegerValue(doc, "/chart/x-size").intValue());
         chart.setySize(XPathUtils.selectIntegerValue(doc, "/chart/y-size").intValue());
 
@@ -354,7 +343,8 @@ public class JFreeChartSerializer extends HttpBinarySerializer {
             categoryAxis = new CategoryAxis(chartConfig.getCategoryTitle());
             ((CategoryAxis)categoryAxis).setCategoryLabelPositions(chartConfig.getCategoryLabelPosition());
         }
-        Axis valueAxis = new RestrictedNumberAxis(chartConfig.getSerieTitle());
+        NumberAxis valueAxis = new RestrictedNumberAxis(chartConfig.getSerieTitle());
+        valueAxis.setAutoRangeIncludesZero(chartConfig.getSerieAutoRangeIncludeZero());
         AbstractRenderer renderer = null;
         Plot plot = null;
 
@@ -507,7 +497,6 @@ public class JFreeChartSerializer extends HttpBinarySerializer {
             categoryAxis.setTickMarkPaint(chartConfig.getTitleColor());
             if(categoryAxis instanceof RestrictedNumberAxis) {
                 ((RestrictedNumberAxis)categoryAxis).setMaxTicks(chartConfig.getMaxNumOfLabels());
-                ((RestrictedNumberAxis)categoryAxis).adjustTickUnits();
             }
             if (categoryAxis instanceof CategoryAxis && chartConfig.getCategoryMargin() != 0)
                 ((CategoryAxis)categoryAxis).setCategoryMargin(chartConfig.getCategoryMargin());
@@ -518,7 +507,6 @@ public class JFreeChartSerializer extends HttpBinarySerializer {
             valueAxis.setTickLabelPaint(chartConfig.getTitleColor());
             valueAxis.setTickMarkPaint(chartConfig.getTitleColor());
             ((RestrictedNumberAxis)valueAxis).setMaxTicks(chartConfig.getMaxNumOfLabels());
-            ((RestrictedNumberAxis)valueAxis).adjustTickUnits();
         }
 
         if (renderer != null) {
@@ -582,6 +570,7 @@ public class JFreeChartSerializer extends HttpBinarySerializer {
         private String map;
         private String categoryTitle;
         private String serieTitle;
+        private boolean serieAutoRangeIncludeZero;
         private double categoryMargin;
         private Color titleColor;
         private Color backgroundColor;
@@ -628,6 +617,14 @@ public class JFreeChartSerializer extends HttpBinarySerializer {
 
         public void setSerieTitle(String serieTitle) {
             this.serieTitle = serieTitle;
+        }
+
+        public boolean getSerieAutoRangeIncludeZero() {
+            return serieAutoRangeIncludeZero;
+        }
+
+        public void setSerieAutoRangeIncludeZero(boolean serieAutoRangeIncludeZero) {
+            this.serieAutoRangeIncludeZero = serieAutoRangeIncludeZero;
         }
 
         public int getxSize() {
@@ -1194,8 +1191,8 @@ public class JFreeChartSerializer extends HttpBinarySerializer {
         }
     }
 
-    protected static class RestrictedNumberAxis extends NumberAxis{
-        private int maxTicks = NumberAxis.MAXIMUM_TICK_COUNT;
+    protected static class RestrictedNumberAxis extends NumberAxis {
+
         /**
          * Creates a Number axis with the specified label.
          *
@@ -1205,26 +1202,8 @@ public class JFreeChartSerializer extends HttpBinarySerializer {
             super(label);
         }
 
-        public int getMaxTicks() {
-            return maxTicks;
-        }
-
         public void setMaxTicks(int maxTicks) {
-            this.maxTicks = maxTicks;
-        }
-
-        protected int getVisibleTickCount() {
-            double unit = getTickUnit().getSize();
-            Range range = getRange();
-            return (int)(Math.floor(range.getUpperBound() / unit)
-                    - Math.ceil(range.getLowerBound() / unit) + 1);
-
-        }
-        protected void adjustTickUnits() {
-            int tickUnit = getVisibleTickCount()/maxTicks;
-            if(tickUnit != 0) {
-                super.setTickUnit(new NumberTickUnit(tickUnit));
-            }
+            super.setTickUnit(new NumberTickUnit(getRange().getLength() / maxTicks));
         }
     }
 }

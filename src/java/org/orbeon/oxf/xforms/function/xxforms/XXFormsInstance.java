@@ -13,18 +13,11 @@
  */
 package org.orbeon.oxf.xforms.function.xxforms;
 
-import org.orbeon.oxf.xforms.XFormsContainingDocument;
-import org.orbeon.oxf.xforms.XFormsInstance;
-import org.orbeon.oxf.xforms.XFormsModel;
-import org.orbeon.oxf.xforms.XFormsUtils;
+import org.orbeon.oxf.xforms.*;
 import org.orbeon.oxf.xforms.function.XFormsFunction;
 import org.orbeon.oxf.xforms.xbl.XBLContainer;
-import org.orbeon.saxon.expr.Expression;
-import org.orbeon.saxon.expr.PathMap;
-import org.orbeon.saxon.expr.XPathContext;
-import org.orbeon.saxon.om.EmptyIterator;
-import org.orbeon.saxon.om.SequenceIterator;
-import org.orbeon.saxon.om.SingletonIterator;
+import org.orbeon.saxon.expr.*;
+import org.orbeon.saxon.om.*;
 import org.orbeon.saxon.trans.XPathException;
 
 /**
@@ -33,23 +26,30 @@ import org.orbeon.saxon.trans.XPathException;
  */
 public class XXFormsInstance extends XFormsFunction {
 
+    @Override
     public SequenceIterator iterate(XPathContext xpathContext) throws XPathException {
 
         final XFormsContainingDocument containingDocument = getContainingDocument(xpathContext);
 
         // Get instance id
         final Expression instanceIdExpression = argument[0];
-        final String instanceId = XFormsUtils.namespaceId(containingDocument, instanceIdExpression.evaluateAsString(xpathContext));
+        final String instanceId = instanceIdExpression.evaluateAsString(xpathContext).toString();
 
-        // Search ancestor-or-self containers as suggested here: http://wiki.orbeon.com/forms/projects/xforms-model-scoping-rules
         XFormsInstance instance = null;
-        {
-            XBLContainer currentContainer = getXBLContainer(xpathContext);
-            while (currentContainer != null) {
-                instance = currentContainer.findInstance(instanceId);
-                if (instance != null)
-                    break;
-                currentContainer = currentContainer.getParentXBLContainer();
+        if (argument.length > 1 && argument[1].effectiveBooleanValue(xpathContext)) {
+            // Argument is effective id
+            final Object o = containingDocument.getObjectByEffectiveId(instanceId);
+            instance = (o instanceof XFormsInstance) ? ((XFormsInstance) o) : null;
+        } else {
+            // Search ancestor-or-self containers as suggested here: http://wiki.orbeon.com/forms/projects/xforms-model-scoping-rules
+            {
+                XBLContainer currentContainer = getXBLContainer(xpathContext);
+                while (currentContainer != null) {
+                    instance = currentContainer.findInstance(instanceId);
+                    if (instance != null)
+                        break;
+                    currentContainer = currentContainer.getParentXBLContainer();
+                }
             }
         }
 
@@ -64,7 +64,10 @@ public class XXFormsInstance extends XFormsFunction {
         }
     }
 
-    public PathMap.PathMapNode addToPathMap(PathMap pathMap, PathMap.PathMapNode pathMapNode) {
-        return addDocToPathMap(pathMap, pathMapNode);
+    @Override
+    public PathMap.PathMapNodeSet addToPathMap(PathMap pathMap, PathMap.PathMapNodeSet pathMapNodeSet) {
+        // TODO: if argument[1] is true, must search globally
+        argument[0].addToPathMap(pathMap, pathMapNodeSet);
+        return new PathMap.PathMapNodeSet(pathMap.makeNewRoot(this));
     }
 }

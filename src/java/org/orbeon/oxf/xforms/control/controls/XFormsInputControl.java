@@ -24,18 +24,12 @@ import org.orbeon.oxf.xforms.XFormsProperties;
 import org.orbeon.oxf.xforms.control.XFormsControl;
 import org.orbeon.oxf.xforms.control.XFormsValueControl;
 import org.orbeon.oxf.xforms.xbl.XBLContainer;
-import org.orbeon.oxf.xml.XMLConstants;
 import org.orbeon.saxon.om.Item;
 import org.orbeon.saxon.om.ValueRepresentation;
-import org.orbeon.saxon.value.CalendarValue;
-import org.orbeon.saxon.value.DateValue;
+import org.orbeon.saxon.value.*;
 import org.orbeon.saxon.value.StringValue;
-import org.orbeon.saxon.value.TimeValue;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Represents an xforms:input control.
@@ -71,11 +65,6 @@ public class XFormsInputControl extends XFormsValueControl {
     }
 
     @Override
-    protected void evaluate(PropertyContext propertyContext, boolean isRefresh) {
-        super.evaluate(propertyContext, isRefresh);
-    }
-
-    @Override
     protected void evaluateExternalValue(PropertyContext propertyContext) {
 
         final String internalValue = getValue(propertyContext);
@@ -104,9 +93,9 @@ public class XFormsInputControl extends XFormsValueControl {
     }
 
     @Override
-    public void storeExternalValue(PropertyContext propertyContext, String value, String type, Element filesElement) {
+    public void storeExternalValue(PropertyContext propertyContext, String value, String type) {
         // Store after converting
-        super.storeExternalValue(propertyContext, convertFromExternalValue(value), type, filesElement);
+        super.storeExternalValue(propertyContext, convertFromExternalValue(value), type);
     }
 
     private String convertFromExternalValue(String externalValue) {
@@ -122,18 +111,20 @@ public class XFormsInputControl extends XFormsValueControl {
                 // Anything but "true" is "false"
                 if (!externalValue.equals("true"))
                     externalValue = "false";
-            } else if (XFormsProperties.isNoscript(containingDocument)) {
+            } else if (containingDocument.getStaticState().isNoscript()) {
                 // Noscript mode: value must be pre-processed on the server (in Ajax mode, ISO value is sent to server if possible)
 
                 if ( "date".equals(typeName)) {
                     // Date input
                     externalValue = externalValue.trim();
                     final Perl5MatchProcessor matcher = new Perl5MatchProcessor();
+                    // TODO: like on client, must handle oxf.xforms.format.input.date
                     externalValue = parse(matcher, DATE_PARSE_PATTERNS, externalValue);
                 } else if ("time".equals(typeName)) {
                     // Time input
                     externalValue = externalValue.trim();
                     final Perl5MatchProcessor matcher = new Perl5MatchProcessor();
+                    // TODO: like on client, must handle oxf.xforms.format.input.time
                     externalValue = parse(matcher, TIME_PARSE_PATTERNS, externalValue);
                 } else if ("dateTime".equals(typeName)) {
                     // Date + time input
@@ -216,9 +207,9 @@ public class XFormsInputControl extends XFormsValueControl {
                 }
                 public String handle(MatchProcessor.Result result) {
 
-                    final String year = (String) result.groups.get(2);
-                    final String month = (String) result.groups.get(0);
-                    final String day = (String) result.groups.get(1);
+                    final String year = result.groups.get(2);
+                    final String month = result.groups.get(0);
+                    final String day = result.groups.get(1);
                     // TODO: year on 2 or 3 digits
                     final DateValue value = new DateValue(Integer.parseInt(year), Byte.parseByte(month), Byte.parseByte(day));
                     return value.getStringValue();
@@ -232,8 +223,8 @@ public class XFormsInputControl extends XFormsValueControl {
                 public String handle(MatchProcessor.Result result) {
 
                     final String year = Integer.toString(new GregorianCalendar().get(Calendar.YEAR));// current year
-                    final String month = (String) result.groups.get(0);
-                    final String day = (String) result.groups.get(1);
+                    final String month = result.groups.get(0);
+                    final String day = result.groups.get(1);
                     final DateValue value = new DateValue(Integer.parseInt(year), Byte.parseByte(month), Byte.parseByte(day));
                     return value.getStringValue();
                 }
@@ -245,9 +236,9 @@ public class XFormsInputControl extends XFormsValueControl {
                 }
                 public String handle(MatchProcessor.Result result) {
 
-                    final String year = (String) result.groups.get(2);
-                    final String month = (String) result.groups.get(1);
-                    final String day = (String) result.groups.get(0);
+                    final String year = result.groups.get(2);
+                    final String month = result.groups.get(1);
+                    final String day = result.groups.get(0);
                     // TODO: year on 2 or 3 digits
                     final DateValue value = new DateValue(Integer.parseInt(year), Byte.parseByte(month), Byte.parseByte(day));
                     return value.getStringValue();
@@ -260,9 +251,9 @@ public class XFormsInputControl extends XFormsValueControl {
                 }
                 public String handle(MatchProcessor.Result result) {
 
-                    final String year = (String) result.groups.get(0);
-                    final String month = (String) result.groups.get(1);
-                    final String day = (String) result.groups.get(2);
+                    final String year = result.groups.get(0);
+                    final String month = result.groups.get(1);
+                    final String day = result.groups.get(2);
                     // TODO: year on 2 or 3 digits
                     final DateValue value = new DateValue(Integer.parseInt(year), Byte.parseByte(month), Byte.parseByte(day));
                     return value.getStringValue();
@@ -282,11 +273,11 @@ public class XFormsInputControl extends XFormsValueControl {
                     return "^(\\d{1,2}):(\\d{1,2}):(\\d{1,2}) ?(p|pm|p\\.\\m\\.)$";
                 }
                 public String handle(MatchProcessor.Result result) {
-                    byte hoursByte = Byte.parseByte((String) result.groups.get(0));
+                    byte hoursByte = Byte.parseByte(result.groups.get(0));
                     if (hoursByte < 12) hoursByte += 12;
 
-                    final String minutes = (String) result.groups.get(1);
-                    final String seconds = (String) result.groups.get(2);
+                    final String minutes = result.groups.get(1);
+                    final String seconds = result.groups.get(2);
                     final TimeValue value = new TimeValue(hoursByte, Byte.parseByte(minutes), Byte.parseByte(seconds), 0, CalendarValue.NO_TIMEZONE);
                     return value.getStringValue();
                 }
@@ -297,10 +288,10 @@ public class XFormsInputControl extends XFormsValueControl {
                     return "^(\\d{1,2}):(\\d{1,2}) ?(p|pm|p\\.\\m\\.)$";
                 }
                 public String handle(MatchProcessor.Result result) {
-                    byte hoursByte = Byte.parseByte((String) result.groups.get(0));
+                    byte hoursByte = Byte.parseByte(result.groups.get(0));
                     if (hoursByte < 12) hoursByte += 12;
 
-                    final String minutes = (String) result.groups.get(1);
+                    final String minutes = result.groups.get(1);
                     final TimeValue value = new TimeValue(hoursByte, Byte.parseByte(minutes), (byte) 0, 0, CalendarValue.NO_TIMEZONE);
                     return value.getStringValue();
                 }
@@ -311,7 +302,7 @@ public class XFormsInputControl extends XFormsValueControl {
                     return "^(\\d{1,2}) ?(p|pm|p\\.\\m\\.)$";
                 }
                 public String handle(MatchProcessor.Result result) {
-                    byte hoursByte = Byte.parseByte((String) result.groups.get(0));
+                    byte hoursByte = Byte.parseByte(result.groups.get(0));
                     if (hoursByte < 12) hoursByte += 12;
 
                     final TimeValue value = new TimeValue(hoursByte, (byte) 0, (byte) 0, 0, CalendarValue.NO_TIMEZONE);
@@ -324,9 +315,9 @@ public class XFormsInputControl extends XFormsValueControl {
                     return "^(\\d{1,2}):(\\d{1,2}):(\\d{1,2}) ?(a|am|a\\.\\m\\.)?$";
                 }
                 public String handle(MatchProcessor.Result result) {
-                    final String hours = (String) result.groups.get(0);
-                    final String minutes = (String) result.groups.get(1);
-                    final String seconds = (String) result.groups.get(2);
+                    final String hours = result.groups.get(0);
+                    final String minutes = result.groups.get(1);
+                    final String seconds = result.groups.get(2);
                     final TimeValue value = new TimeValue(Byte.parseByte(hours), Byte.parseByte(minutes), Byte.parseByte(seconds), 0, CalendarValue.NO_TIMEZONE);
                     return value.getStringValue();
                 }
@@ -338,8 +329,8 @@ public class XFormsInputControl extends XFormsValueControl {
                 }
                 public String handle(MatchProcessor.Result result) {
 
-                    final String hours = (String) result.groups.get(0);
-                    final String minutes = (String) result.groups.get(1);
+                    final String hours = result.groups.get(0);
+                    final String minutes = result.groups.get(1);
                     final TimeValue value = new TimeValue(Byte.parseByte(hours), Byte.parseByte(minutes), (byte) 0, 0, CalendarValue.NO_TIMEZONE);
                     return value.getStringValue();
                 }
@@ -351,7 +342,7 @@ public class XFormsInputControl extends XFormsValueControl {
                 }
                 public String handle(MatchProcessor.Result result) {
 
-                    final String hours = (String) result.groups.get(0);
+                    final String hours = result.groups.get(0);
                     final TimeValue value = new TimeValue(Byte.parseByte(hours), (byte) 0, (byte) 0, 0, CalendarValue.NO_TIMEZONE);
                     return value.getStringValue();
                 }
@@ -364,7 +355,7 @@ public class XFormsInputControl extends XFormsValueControl {
                 }
                 public String handle(MatchProcessor.Result result) {
 
-                    final String all = (String) result.groups.get(0);
+                    final String all = result.groups.get(0);
 
 //                    var d = new Date();
 //                    var h = bits[1].substring(0,2);
@@ -377,7 +368,7 @@ public class XFormsInputControl extends XFormsValueControl {
 //                    d.setSeconds(parseInt(s, 10));
 
 
-                    final String minutes = (String) result.groups.get(1);
+                    final String minutes = result.groups.get(1);
                     final TimeValue value = new TimeValue(Byte.parseByte(hours), Byte.parseByte(minutes), (byte) 0, 0, CalendarValue.NO_TIMEZONE);
                     return value.getStringValue();
                 }
@@ -453,9 +444,6 @@ public class XFormsInputControl extends XFormsValueControl {
     }
 
     private String formatSubValue(PipelineContext pipelineContext, String valueType, String value) {
-        // Assume xs: prefix for default formats
-        final Map<String, String> prefixToURIMap = new HashMap<String, String>();
-        prefixToURIMap.put(XMLConstants.XSD_PREFIX, XMLConstants.XSD_URI);
 
         final Map<String, ValueRepresentation> variables = new HashMap<String, ValueRepresentation>();
         variables.put("v", new StringValue(value));
@@ -471,7 +459,7 @@ public class XFormsInputControl extends XFormsValueControl {
                             + XFormsProperties.getTypeInputFormat(containingDocument, valueType)
                             + "', 'en', (), ()) else $v";
 
-            return evaluateAsString(pipelineContext, boundItem, xpathExpression, prefixToURIMap, variables);
+            return evaluateAsString(pipelineContext, boundItem, xpathExpression, FORMAT_NAMESPACE_MAPPING, variables);
         }
     }
 

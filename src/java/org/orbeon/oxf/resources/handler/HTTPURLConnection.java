@@ -20,7 +20,7 @@ import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.properties.Properties;
 import org.orbeon.oxf.util.Connection;
-import org.orbeon.oxf.util.StringUtils;
+import org.orbeon.oxf.util.StringConversions;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -65,6 +65,7 @@ public class HTTPURLConnection extends URLConnection {
 
     private String username;
     private String password;
+    private String domain;
 
     public HTTPURLConnection(URL url) {
         super(url);
@@ -154,10 +155,18 @@ public class HTTPURLConnection extends URLConnection {
                 );
             } else if (isAuthenticationRequestedWithUsername) {
                 // Set username and password specified externally
-                httpClient.getState().setCredentials(
-                    new AuthScope(url.getHost(), url.getPort()),
-                    new UsernamePasswordCredentials(username, password == null ? "" : password)
-                );
+            	if (domain == null) {
+                    httpClient.getState().setCredentials(
+                        new AuthScope(url.getHost(), url.getPort()),
+                        new UsernamePasswordCredentials(username, password == null ? "" : password)
+                    );
+            	} else {
+            		// domain is not null use NTCredential
+            		httpClient.getState().setCredentials(
+            				new AuthScope(url.getHost(), url.getPort()),
+            				new NTCredentials(username, password, url.getHost(), domain)
+            		);
+                }
             }
 
             // If method has not been set, use GET
@@ -264,7 +273,7 @@ public class HTTPURLConnection extends URLConnection {
     @Override
     public void addRequestProperty(String key, String value) {
         super.addRequestProperty(key, value);
-        StringUtils.addValueToStringArrayMap(requestProperties, key, value);
+        StringConversions.addValueToStringArrayMap(requestProperties, key, value);
     }
 
     @Override
@@ -294,6 +303,10 @@ public class HTTPURLConnection extends URLConnection {
     public void setPassword(String password) {
         this.password = password.trim();
     }
+
+    public void setDomain(String domain) {
+		this.domain = domain.trim();
+	}
 
     @Override
     public long getLastModified() {

@@ -194,7 +194,7 @@
 
                                                 <xforms:group id="component-inner-group" appearance="xxforms:internal" xxbl:scope="inner">
 
-                                                    <xxforms:variable name="result" as="node()?">
+                                                    <xxforms:variable id="result-variable" name="result" as="node()?">
                                                         <xxforms:sequence select="." xxbl:scope="outer"/>
                                                     </xxforms:variable>
 
@@ -309,6 +309,7 @@
                                 <events>
                                     <event type="xforms-enabled" target="xf-25" indexes="2"/>
                                     <event type="xforms-enabled" target="component-inner-group" indexes="2"/>
+                                    <event type="xforms-enabled" target="result-variable" indexes="2"/>
                                     <event type="xforms-enabled" target="component-result-group" indexes="2"/>
                                     <event type="xforms-enabled" target="component-controls-group" indexes="2"/>
                                     <event type="xforms-enabled" target="year-select" indexes="2"/>
@@ -785,7 +786,7 @@
                                     <xbl:binding id="fr-super-control-binding" element="fr|super-control">
                                         <xbl:template>
                                             <xforms:group xbl:attr="ref" xxbl:scope="outer">
-                                                <xhtml:div id="my-div" style="{.}">
+                                                <xhtml:div style="{.}">
                                                     Div 3
                                                 </xhtml:div>
                                                 <xhtml:input id="my-html-input" name="my-html-input"/>
@@ -814,32 +815,31 @@
             </p:config>
         </input>
         <output name="response">
-            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
-                <xxf:dynamic-state>
-                    <dynamic-state>
-                        <instances>
-                            <instance id="instance" model-id="model">
-                                <values>
-                                    <value1>color: red</value1>
-                                    <value2>font-weight: bold</value2>
-                                </values>
-                            </instance>
-                        </instances>
-                        <controls>
-                            <control effective-id="repeat" index="1"/>
-                        </controls>
-                    </dynamic-state>
-                </xxf:dynamic-state>
-                <xxf:action>
-                    <xxf:control-values>
-                        <xxf:attribute id="fr-super-control-1$xf-5" for="fr-super-control-1$my-div" name="style">color: red</xxf:attribute>
-                        <xxf:attribute id="fr-super-control-2$xf-8" for="fr-super-control-2$my-div" name="style">font-weight: bold</xxf:attribute>
-
-                        <xxf:attribute id="fr-super-control-3$xf-11·1" for="fr-super-control-3$my-div·1" name="style">color: red</xxf:attribute>
-                        <xxf:attribute id="fr-super-control-3$xf-11·2" for="fr-super-control-3$my-div·2" name="style">font-weight: bold</xxf:attribute>
-                    </xxf:control-values>
-                </xxf:action>
-            </xxf:event-response>
+<xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+    <xxf:dynamic-state>
+        <dynamic-state>
+            <instances>
+                <instance id="instance" model-id="model">
+                    <values>
+                        <value1>color: red</value1>
+                        <value2>font-weight: bold</value2>
+                    </values>
+                </instance>
+            </instances>
+            <controls>
+                <control effective-id="repeat" index="1"/>
+            </controls>
+        </dynamic-state>
+    </xxf:dynamic-state>
+    <xxf:action>
+        <xxf:control-values>
+            <xxf:attribute id="fr-super-control-1$xf-6" for="fr-super-control-1$xf-5" name="style">color: red</xxf:attribute>
+            <xxf:attribute id="fr-super-control-2$xf-10" for="fr-super-control-2$xf-9" name="style">font-weight: bold</xxf:attribute>
+            <xxf:attribute id="fr-super-control-3$xf-14·1" for="fr-super-control-3$xf-13·1" name="style">color: red</xxf:attribute>
+            <xxf:attribute id="fr-super-control-3$xf-14·2" for="fr-super-control-3$xf-13·2" name="style">font-weight: bold</xxf:attribute>
+        </xxf:control-values>
+    </xxf:action>
+</xxf:event-response>
         </output>
     </test>
 
@@ -3391,6 +3391,270 @@
                 <xxf:action>
                     <xxf:control-values>
                         <xxf:control id="my-foo$gaga" label="My label">42</xxf:control>
+                    </xxf:control-values>
+                </xxf:action>
+            </xxf:event-response>
+        </output>
+    </test>
+
+    <test description="xforms:output within xforms:message in XBL doesn't throw an exception" name="oxf:pipeline">
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl"/>
+        <input name="document">
+            <xhtml:html xmlns:xxforms="http://orbeon.org/oxf/xml/xforms" xmlns:fr="http://orbeon.org/oxf/xml/form-runner">
+                <xhtml:head>
+                    <xforms:model id="model"/>
+                    <xbl:xbl>
+                        <xbl:binding id="fr-foo" element="fr|foo">
+                            <xbl:template>
+                                <xforms:group id="my-group">
+                                    <xforms:message ev:event="xforms-enabled" id="my-message"
+                                                    level="xxforms:log-debug">Message: <xforms:output id="my-output" value="xxforms:event('xxforms:type')"/>.</xforms:message>
+                                </xforms:group>
+                            </xbl:template>
+                        </xbl:binding>
+                    </xbl:xbl>
+                </xhtml:head>
+                <xhtml:body>
+                    <fr:foo/>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances/>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values/>
+                </xxf:action>
+            </xxf:event-response>
+        </output>
+    </test>
+
+    <test description="XBL components within non-relevant control doesn't through an exception" name="oxf:pipeline">
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl"/>
+        <input name="document">
+            <xhtml:html xmlns:xxforms="http://orbeon.org/oxf/xml/xforms" xmlns:fr="http://orbeon.org/oxf/xml/form-runner">
+                <xhtml:head>
+                    <xforms:model id="model"/>
+                </xhtml:head>
+                <xhtml:body>
+                    <xforms:group ref="()" id="my-group">
+                        <fr:button id="my-button"/>
+                    </xforms:group>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances/>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values>
+                        <xxf:control id="my-group" relevant="false"/>
+                    </xxf:control-values>
+                </xxf:action>
+            </xxf:event-response>
+        </output>
+    </test>
+
+    <test description="Handling of namespaces with xbl:attr" name="oxf:pipeline">
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl"/>
+        <input name="document">
+            <xhtml:html xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+                        xmlns:fr="http://orbeon.org/oxf/xml/form-runner"
+                        xmlns:xxbl="http://orbeon.org/oxf/xml/xbl">
+                <xhtml:head>
+                    <xforms:model id="model">
+                        <xforms:instance id="instance">
+                            <my:value xmlns:my="http://orbeon.org/oxf/xml/my">42</my:value>
+                        </xforms:instance>
+                    </xforms:model>
+                    <xbl:xbl>
+                        <xbl:binding id="fr-foo" element="fr|foo">
+                            <xbl:template>
+                                <xforms:output id="my-output" xbl:attr="value" xxbl:scope="outer"/>
+                            </xbl:template>
+                        </xbl:binding>
+                    </xbl:xbl>
+                </xhtml:head>
+                <xhtml:body xmlns:my="http://orbeon.org/oxf/xml/my">
+                    <fr:foo id="my-foo" value="/my:value"/>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances>
+                            <instance id="instance" model-id="model">
+                                <my:value xmlns:my="http://orbeon.org/oxf/xml/my">42</my:value>
+                            </instance>
+                        </instances>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values>
+                        <xxf:control id="my-foo$my-output">42</xxf:control>
+                    </xxf:control-values>
+                </xxf:action>
+            </xxf:event-response>
+        </output>
+    </test>
+
+    <test description="Non-relevant XBL control containing models and instances" name="oxf:pipeline">
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl"/>
+        <input name="document">
+            <xhtml:html xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+                        xmlns:fr="http://orbeon.org/oxf/xml/form-runner"
+                        xmlns:xxbl="http://orbeon.org/oxf/xml/xbl">
+                <xhtml:head>
+                    <xforms:model id="model">
+                        <xforms:instance id="instance">
+                            <instance>42</instance>
+                        </xforms:instance>
+                        <xforms:action ev:event="xforms-ready">
+                            <xforms:message value="string-join(for $m in xxforms:list-models() return xxforms:list-instances($m), ', ')"/>
+                            <xforms:setvalue ref=".">43</xforms:setvalue>
+                            <xforms:refresh/>
+                            <xforms:message value="string-join(for $m in xxforms:list-models() return xxforms:list-instances($m), ', ')"/>
+                        </xforms:action>
+                    </xforms:model>
+                    <xbl:xbl>
+                        <xbl:binding id="fr-foo" element="fr|foo">
+                            <xbl:implementation>
+                                <xforms:model id="my-xbl-model">
+                                    <xforms:instance id="my-xbl-instance">
+                                        <instance/>
+                                    </xforms:instance>
+                                </xforms:model>
+                            </xbl:implementation>
+                            <xbl:template>
+                                <xforms:output id="my-output"/>
+                            </xbl:template>
+                        </xbl:binding>
+                    </xbl:xbl>
+                </xhtml:head>
+                <xhtml:body>
+                    <fr:foo id="my-foo1"/>
+                    <xforms:group ref="()" id="my-group1">
+                        <fr:foo id="my-foo2"/>
+                    </xforms:group>
+                    <xforms:group ref=".[. = '43']" id="my-group2">
+                        <fr:foo id="my-foo3"/>
+                    </xforms:group>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances>
+                            <instance id="instance" model-id="model">
+                                <instance>43</instance>
+                            </instance>
+                            <instance id="my-xbl-instance" model-id="my-foo1$my-xbl-model">
+                                <instance/>
+                            </instance>
+                            <instance id="my-xbl-instance" model-id="my-foo3$my-xbl-model">
+                                <instance/>
+                            </instance>
+                        </instances>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values>
+                        <xxf:control id="my-group1" relevant="false"/>
+                        <xxf:control id="my-foo2$my-output" relevant="false"/>
+                    </xxf:control-values>
+                    <xxf:message level="modal">instance, my-foo1$my-xbl-instance</xxf:message>
+                    <xxf:message level="modal">instance, my-foo1$my-xbl-instance, my-foo3$my-xbl-instance</xxf:message>
+                </xxf:action>
+            </xxf:event-response>            
+        </output>
+    </test>
+
+    <test description="xforms:label/xforms:output within XBL" name="oxf:pipeline">
+        <!-- See: http://forge.ow2.org/tracker/index.php?func=detail&aid=315244&group_id=168&atid=350207 -->
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl"/>
+        <input name="document">
+            <xhtml:html xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+                        xmlns:fr="http://orbeon.org/oxf/xml/form-runner"
+                        xmlns:xxbl="http://orbeon.org/oxf/xml/xbl">
+                <xhtml:head>
+                    <xforms:model id="model"/>
+                    <xbl:xbl>
+                        <xbl:binding id="fr-foo" element="fr|foo">
+                            <xbl:template>
+                                <xforms:trigger id="xbl-trigger">
+                                    <xforms:label id="xbl-label"><xforms:output id="xbl-output" value="'Press Me!'"/></xforms:label>
+                                </xforms:trigger>
+                            </xbl:template>
+                        </xbl:binding>
+                    </xbl:xbl>
+                </xhtml:head>
+                <xhtml:body>
+                    <fr:foo id="my-foo1"/>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances/>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values>
+                        <xxf:control id="my-foo1$xbl-trigger" label="Press Me!"/>
+                    </xxf:control-values>
+                </xxf:action>
+            </xxf:event-response>
+        </output>
+    </test>
+
+    <test description="xforms:label/AVT within XBL" name="oxf:pipeline">
+        <!-- See: http://forge.ow2.org/tracker/index.php?func=detail&aid=315244&group_id=168&atid=350207 -->
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl"/>
+        <input name="document">
+            <xhtml:html xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+                        xmlns:fr="http://orbeon.org/oxf/xml/form-runner"
+                        xmlns:xxbl="http://orbeon.org/oxf/xml/xbl">
+                <xhtml:head>
+                    <xforms:model id="model"/>
+                    <xbl:xbl>
+                        <xbl:binding id="fr-foo" element="fr|foo">
+                            <xbl:template>
+                                <xforms:trigger id="xbl-trigger">
+                                    <xforms:label id="xbl-label"><xhtml:div id="xbl-avt" style="{'background-color: red'}"/></xforms:label>
+                                </xforms:trigger>
+                            </xbl:template>
+                        </xbl:binding>
+                    </xbl:xbl>
+                </xhtml:head>
+                <xhtml:body>
+                    <fr:foo id="my-foo1"/>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances/>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values>
+                        <xxf:control id="my-foo1$xbl-trigger" label="&lt;div id=&quot;xbl-avt&quot; style=&quot;background-color: red&quot;&gt;&lt;/div&gt;"/>
                     </xxf:control-values>
                 </xxf:action>
             </xxf:event-response>

@@ -13,13 +13,13 @@
  */
 package org.orbeon.oxf.xforms.itemset;
 
+import org.apache.commons.lang.StringUtils;
 import org.dom4j.Element;
 import org.dom4j.Text;
 import org.orbeon.oxf.common.ValidationException;
-import org.orbeon.oxf.util.PropertyContext;
-import org.orbeon.oxf.util.SecureUtils;
-import org.orbeon.oxf.util.XPathCache;
+import org.orbeon.oxf.util.*;
 import org.orbeon.oxf.xforms.*;
+import org.orbeon.oxf.xforms.analysis.controls.Select1Analysis;
 import org.orbeon.oxf.xforms.control.controls.XFormsSelect1Control;
 import org.orbeon.oxf.xforms.control.controls.XFormsSelectControl;
 import org.orbeon.oxf.xforms.xbl.XBLBindings;
@@ -95,8 +95,8 @@ public class XFormsItemUtils {
         // Optimize static itemsets
         {
             final boolean isStaticItemset; {
-            final XFormsStaticState.ItemsInfo itemsInfo = container.getContainingDocument().getStaticState().getItemsInfo(select1Control.getPrefixedId());
-                isStaticItemset = itemsInfo != null && !itemsInfo.hasNonStaticItem();
+            final Select1Analysis analysis = container.getContainingDocument().getStaticState().getSelect1Analysis(select1Control.getPrefixedId());
+                isStaticItemset = analysis != null && !analysis.hasNonStaticItem;
             }
 
             if (isStaticItemset)
@@ -125,17 +125,17 @@ public class XFormsItemUtils {
 
             public void startElement(Element element) {
                 final String localname = element.getName();
-                if (XFormsConstants.XFORMS_ITEM_QNAME.getName().equals(localname)) {
+                if (XFormsConstants.ITEM_QNAME.getName().equals(localname)) {
                     // xforms:item
 
 //                    mayReuse[0] = false;
-                    final String label = getLabelValue(element.element(XFormsConstants.XFORMS_LABEL_QNAME));
-                    final String value = getValueValue(element.element(XFormsConstants.XFORMS_VALUE_QNAME));
+                    final String label = getLabelValue(element.element(XFormsConstants.LABEL_QNAME));
+                    final String value = getValueValue(element.element(XFormsConstants.VALUE_QNAME));
 
                     final Map<String, String> attributes = getAttributes(element);
-                    currentContainer.addChildItem(new Item(isMultiple, isEncryptItemValues, attributes, label != null ? label : "", value != null ? value : ""));
+                    currentContainer.addChildItem(new Item(isMultiple, isEncryptItemValues, attributes, StringUtils.defaultString(label), StringUtils.defaultString(value)));
 
-                } else if (XFormsConstants.XFORMS_ITEMSET_QNAME.getName().equals(localname)) {
+                } else if (XFormsConstants.ITEMSET_QNAME.getName().equals(localname)) {
                     // xforms:itemset
                     contextStack.pushBinding(propertyContext, element, getElementEffectiveId(element), select1Control.getChildElementScope(element));
                     {
@@ -146,7 +146,7 @@ public class XFormsItemUtils {
                         if (currentNodeSet != null) {
 
                             // Node stack tracks the relative position of the current node wrt ancestor nodes
-                            final Stack<NodeInfo> nodeStack = new Stack<NodeInfo>();
+                            final Stack<org.orbeon.saxon.om.Item> nodeStack = new Stack<org.orbeon.saxon.om.Item>();
                             int currentLevel = 0;
 
                             final int iterationCount = currentNodeSet.size();
@@ -155,7 +155,7 @@ public class XFormsItemUtils {
                                 // Push iteration
                                 contextStack.pushIteration(currentPosition);
                                 {
-                                    final NodeInfo currentNodeInfo = (NodeInfo) currentNodeSet.get(currentPosition - 1);
+                                    final org.orbeon.saxon.om.Item currentNodeInfo = currentNodeSet.get(currentPosition - 1);
 
                                     // Handle children of xforms:itemset
 
@@ -164,23 +164,23 @@ public class XFormsItemUtils {
                                     // NOTE: If a node is non-relevant, all its descendants will be non-relevant as
                                     // well. If a node is non-relevant, it should be as if it had not even been part of
                                     // the nodeset.
-                                    final boolean isRelevant = InstanceData.getInheritedRelevant(currentNodeInfo);
+                                    final boolean isRelevant = (currentNodeInfo instanceof NodeInfo) ? InstanceData.getInheritedRelevant((NodeInfo) currentNodeInfo) : true;
                                     if (isRelevant) {
-                                        final String label = getLabelValue(element.element(XFormsConstants.XFORMS_LABEL_QNAME));
+                                        final String label = getLabelValue(element.element(XFormsConstants.LABEL_QNAME));
                                         final Element valueCopyElement;
                                         {
-                                            final Element valueElement = element.element(XFormsConstants.XFORMS_VALUE_QNAME);
+                                            final Element valueElement = element.element(XFormsConstants.VALUE_QNAME);
                                             valueCopyElement = (valueElement != null)
-                                                    ? valueElement : element.element(XFormsConstants.XFORMS_COPY_QNAME);
+                                                    ? valueElement : element.element(XFormsConstants.COPY_QNAME);
                                         }
                                         if (valueCopyElement == null)
                                             throw new ValidationException("xforms:itemset element must contain one xforms:value or one xforms:copy element.", select1Control.getLocationData());
 
                                         // Update stack and containers
                                         if (nodeStack.size() != 0) {
-                                            final int newLevel = getNodeLevel(currentNodeInfo, nodeStack);
+                                            final int newLevel = getItemLevel(currentNodeInfo, nodeStack);
                                             if (newLevel == currentLevel) {
-                                                //  We are staying at the same level, pop old node
+                                                //  We are staying at the same level, pop old item
                                                 nodeStack.pop();
                                             } else if (newLevel < currentLevel) {
                                                 //  We are going down one or more levels
@@ -194,13 +194,11 @@ public class XFormsItemUtils {
                                                 final List<Item> children = currentContainer.getChildren();
                                                 currentContainer = children.get(children.size() - 1);
                                             }
-                                            if (currentContainer == null)
-                                                System.out.println();
                                             currentLevel = newLevel;
                                         }
 
                                         // Handle new item
-                                        if (valueCopyElement.getName().equals(XFormsConstants.XFORMS_VALUE_QNAME.getName())) {
+                                        if (valueCopyElement.getName().equals(XFormsConstants.VALUE_QNAME.getName())) {
                                             // Handle xforms:value
                                             // TODO: This could be optimized for xforms:value/@ref|@value as we could get the expression from the cache only once
                                             final String value = getValueValue(valueCopyElement);
@@ -210,13 +208,13 @@ public class XFormsItemUtils {
                                             // a leaf item, so we prune such non-relevant items later.
 
                                             final Map<String, String> attributes = getAttributes(element);
-                                            currentContainer.addChildItem(new Item(isMultiple, isEncryptItemValues, attributes, label != null ? label : "", value));
+                                            currentContainer.addChildItem(new Item(isMultiple, isEncryptItemValues, attributes, StringUtils.defaultString(label), value));
                                         } else {
                                             // TODO: handle xforms:copy
                                             throw new ValidationException("xforms:copy is not yet supported.", select1Control.getLocationData());
                                         }
 
-                                        // Always push the last node to the stack
+                                        // Always push the last item to the stack
                                         nodeStack.push(currentNodeInfo);
 
                                     }
@@ -227,12 +225,14 @@ public class XFormsItemUtils {
                     }
                     contextStack.popBinding();
 
-                } else if (XFormsConstants.XFORMS_CHOICES_QNAME.getName().equals(localname)) {
+                } else if (XFormsConstants.CHOICES_QNAME.getName().equals(localname)) {
                     // xforms:choices
 
-                    final Element labelElement = element.element(XFormsConstants.XFORMS_LABEL_QNAME);
+                    final Element labelElement = element.element(XFormsConstants.LABEL_QNAME);
                     if (labelElement != null) {
-                        final String label = getLabelValue(element.element(XFormsConstants.XFORMS_LABEL_QNAME));
+                        final String label = getLabelValue(labelElement);
+
+                        // NOTE: returned label can be null in some cases
 
                         final Map<String, String> attributes = getAttributes(element);
                         final Item newContainer = new Item(isMultiple, isEncryptItemValues, attributes, label, null);
@@ -271,7 +271,7 @@ public class XFormsItemUtils {
             }
 
             private void addAttributeAVTValue(Element itemChoiceItemsetElement, String attributeName, String attributeValue, String elementEffectiveId, Map<String, String> result) {
-                if (attributeValue.indexOf('{') == -1) {
+                if (!XFormsUtils.maybeAVT(attributeValue)) {
                     // Definitely not an AVT
                     result.put(attributeName, attributeValue);
                 } else {
@@ -295,10 +295,10 @@ public class XFormsItemUtils {
 
             public void endElement(Element element) {
                 final String localname = element.getName();
-                if (XFormsConstants.XFORMS_CHOICES_QNAME.getName().equals(localname)) {
+                if (XFormsConstants.CHOICES_QNAME.getName().equals(localname)) {
                     // xforms:choices
 
-                    final Element labelElement = element.element(XFormsConstants.XFORMS_LABEL_QNAME);
+                    final Element labelElement = element.element(XFormsConstants.LABEL_QNAME);
                     if (labelElement != null) {
                         currentContainer = currentContainer.getParent();
                     }
@@ -309,27 +309,39 @@ public class XFormsItemUtils {
             }
 
             /**
-             * Return the node level for the given node. If the stack is emty, the level is 0.
+             * Return the item level for the given item. If the stack is empty, the level is 0.
              *
-             * @param nodeInfo  node to check
+             * @param item      item to check
              * @param stack     stack of potential ancestors
              * @return          node level
              */
-            private int getNodeLevel(NodeInfo nodeInfo, Stack<NodeInfo> stack) {
+            private int getItemLevel(org.orbeon.saxon.om.Item item, Stack<org.orbeon.saxon.om.Item> stack) {
                 // Iterate stack from top to bottom
-                Collections.reverse(stack);
-                int level = stack.size();
-                for (Iterator<NodeInfo> i = stack.iterator(); i.hasNext(); level--) {
-                    final NodeInfo currentNode = i.next();
-                    if (isAncestorNode(nodeInfo, currentNode)) {
-                        // Restore order
-                        Collections.reverse(stack);
-                        return level;
+                if (item instanceof NodeInfo) {
+                    int level = stack.size();
+                    // Only nodes can have ancestor relationship
+                    final NodeInfo nodeInfo = (NodeInfo) item;
+                    // Reverse order
+                    Collections.reverse(stack);
+                    for (Iterator<org.orbeon.saxon.om.Item> i = stack.iterator(); i.hasNext(); level--) {
+                        final org.orbeon.saxon.om.Item currentItem = i.next();
+                        if (currentItem instanceof NodeInfo) {
+                            // Only nodes can have ancestor relationship
+                            final NodeInfo currentNode = (NodeInfo) currentItem;
+                            if (isAncestorNode(nodeInfo, currentNode)) {
+                                // Restore order
+                                Collections.reverse(stack);
+                                return level;
+                            }
+                        }
                     }
+                    // Restore order
+                    Collections.reverse(stack);
+                    return level;
+                } else {
+                    // If it's not a node, stay at current level
+                    return stack.size() - 1;
                 }
-                // Restore order
-                Collections.reverse(stack);
-                return level;
             }
 
             /**
@@ -372,33 +384,35 @@ public class XFormsItemUtils {
 
             public void startElement(Element element) {
                 final String localname = element.getName();
-                if (XFormsConstants.XFORMS_ITEM_QNAME.getName().equals(localname)) {
+                if (XFormsConstants.ITEM_QNAME.getName().equals(localname)) {
                     // xforms:item
 
-                    final Element labelElement = element.element(XFormsConstants.XFORMS_LABEL_QNAME);
+                    final Element labelElement = element.element(XFormsConstants.LABEL_QNAME);
                     if (labelElement == null)
                         throw new ValidationException("xforms:item must contain an xforms:label element.", (LocationData) controlElement.getData());
                     final String label = XFormsUtils.getStaticChildElementValue(labelElement, false, null);
 
-                    final Element valueElement = element.element(XFormsConstants.XFORMS_VALUE_QNAME);
+                    final Element valueElement = element.element(XFormsConstants.VALUE_QNAME);
                     if (valueElement == null)
                         throw new ValidationException("xforms:item must contain an xforms:value element.", (LocationData) controlElement.getData());
                     final String value = XFormsUtils.getStaticChildElementValue(valueElement, false, null);
 
                     final Map<String, String> attributes = getAttributes(element);
-                    currentContainer.addChildItem(new Item(isMultiple, isEncryptItemValues, attributes, label != null ? label : "", value != null ? value : ""));
+                    currentContainer.addChildItem(new Item(isMultiple, isEncryptItemValues, attributes, StringUtils.defaultString(label), StringUtils.defaultString(value)));
 
-                } else if (XFormsConstants.XFORMS_ITEMSET_QNAME.getName().equals(localname)) {
+                } else if (XFormsConstants.ITEMSET_QNAME.getName().equals(localname)) {
                     // xforms:itemset
 
                     throw new ValidationException("xforms:itemset must not appear in static itemset.", (LocationData) controlElement.getData());
 
-                } else if (XFormsConstants.XFORMS_CHOICES_QNAME.getName().equals(localname)) {
+                } else if (XFormsConstants.CHOICES_QNAME.getName().equals(localname)) {
                     // xforms:choices
 
-                    final Element labelElement = element.element(XFormsConstants.XFORMS_LABEL_QNAME);
+                    final Element labelElement = element.element(XFormsConstants.LABEL_QNAME);
                     if (labelElement != null) {
-                        final String label = XFormsUtils.getStaticChildElementValue(element.element(XFormsConstants.XFORMS_LABEL_QNAME), false, null);
+                        final String label = XFormsUtils.getStaticChildElementValue(labelElement, false, null);
+
+                        assert label != null;
 
                         final Map<String, String> attributes = getAttributes(element);
                         final Item newContainer = new Item(isMultiple, isEncryptItemValues, attributes, label, null);
@@ -410,10 +424,10 @@ public class XFormsItemUtils {
 
             public void endElement(Element element) {
                 final String localname = element.getName();
-                 if (XFormsConstants.XFORMS_CHOICES_QNAME.getName().equals(localname)) {
+                 if (XFormsConstants.CHOICES_QNAME.getName().equals(localname)) {
                     // xforms:choices
 
-                    final Element labelElement = element.element(XFormsConstants.XFORMS_LABEL_QNAME);
+                    final Element labelElement = element.element(XFormsConstants.LABEL_QNAME);
                     if (labelElement != null) {
                         currentContainer = currentContainer.getParent();
                     }

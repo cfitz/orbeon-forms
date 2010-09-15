@@ -27,15 +27,13 @@ import org.orbeon.oxf.transformer.xupdate.XUpdateConstants;
 import org.orbeon.oxf.util.LoggerFactory;
 import org.orbeon.oxf.util.URLRewriterUtils;
 import org.orbeon.oxf.xforms.XFormsConstants;
+import org.orbeon.oxf.xml.NamespaceMapping;
 import org.orbeon.oxf.xml.XMLConstants;
 import org.orbeon.oxf.xml.dom4j.*;
 import org.xml.sax.SAXException;
 
 import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class PageFlowControllerProcessor extends ProcessorImpl {
 
@@ -45,7 +43,7 @@ public class PageFlowControllerProcessor extends ProcessorImpl {
     public final static String CONTROLLER_NAMESPACE_URI = "http://www.orbeon.com/oxf/controller";
     private final static Document TRUE_DOCUMENT = new NonLazyUserDataDocument();
     private final static Document FALSE_DOCUMENT = new NonLazyUserDataDocument();
-    private final static Map<String, String> NAMESPACES_WITH_XSI_AND_XSLT = new HashMap<String, String>();
+    private final static NamespaceMapping NAMESPACES_WITH_XSI_AND_XSLT;
     public final static String EXTRACT_INSTANCE_XPATH
             = "/*/*[local-name() = 'instance' and namespace-uri() = '" + XFormsConstants.XFORMS_NAMESPACE_URI + "']/*[1]";
 
@@ -71,6 +69,7 @@ public class PageFlowControllerProcessor extends ProcessorImpl {
 
     public static final String XFORMS_SUBMISSION_PATH_PROPERTY_NAME = "xforms-submission-path";
     public static final String XFORMS_SUBMISSION_PATH_DEFAULT_VALUE = "/xforms-server-submit";
+    public static final String PATH_MATCHERS = "path-matchers"; // used by PageFlowController
 
     static {
         Element trueConfigElement = new NonLazyUserDataElement( "config");
@@ -81,8 +80,11 @@ public class PageFlowControllerProcessor extends ProcessorImpl {
         falseConfigElement.setText("false");
         FALSE_DOCUMENT.setRootElement(falseConfigElement);
 
-        NAMESPACES_WITH_XSI_AND_XSLT.put(XMLConstants.XSI_PREFIX, XMLConstants.XSI_URI);
-        NAMESPACES_WITH_XSI_AND_XSLT.put(XMLConstants.XSLT_PREFIX, XMLConstants.XSLT_NAMESPACE);
+        final Map<String, String> mapping = new HashMap<String, String>();
+        mapping.put(XMLConstants.XSI_PREFIX, XMLConstants.XSI_URI);
+        mapping.put(XMLConstants.XSLT_PREFIX, XMLConstants.XSLT_NAMESPACE);
+
+        NAMESPACES_WITH_XSI_AND_XSLT = new NamespaceMapping(mapping);
     }
 
     public PageFlowControllerProcessor() {
@@ -446,7 +448,7 @@ public class PageFlowControllerProcessor extends ProcessorImpl {
                             + Dom4jUtils.domToString(astDocumentHandler.getDocument()));
                 }
 
-                return new PageFlow(new PipelineProcessor(astPipeline), pathMatchers);
+                return new PageFlow(new PipelineProcessor(astPipeline), Collections.unmodifiableList(pathMatchers));
             }
         });
 
@@ -455,13 +457,17 @@ public class PageFlowControllerProcessor extends ProcessorImpl {
         // actually know what a "resource" is.
         final List<URLRewriterUtils.PathMatcher> pathMatchers = pageFlow.getPathMatchers();
         if (pathMatchers != null && pathMatchers.size() > 0) {
-            final List<URLRewriterUtils.PathMatcher> existingFileInfos = (List<URLRewriterUtils.PathMatcher>) pipelineContext.getAttribute(PipelineContext.PATH_MATCHERS);
-            if (existingFileInfos == null) {
+            final List<URLRewriterUtils.PathMatcher> existingPathMatchers = (List<URLRewriterUtils.PathMatcher>) pipelineContext.getAttribute(PATH_MATCHERS);
+            if (existingPathMatchers == null) {
                 // Set if we are the first
-                pipelineContext.setAttribute(PipelineContext.PATH_MATCHERS, pathMatchers);
+                pipelineContext.setAttribute(PATH_MATCHERS, pathMatchers);
             } else {
                 // Add if we come after others (in case of nested page flows)
-                existingFileInfos.addAll(pathMatchers);
+                final List<URLRewriterUtils.PathMatcher> allMatchers = new ArrayList<URLRewriterUtils.PathMatcher>() {{
+                    addAll(existingPathMatchers);
+                    addAll(pathMatchers);
+                }};
+                pipelineContext.setAttribute(PATH_MATCHERS, Collections.unmodifiableList(allMatchers));
             }
         }
 
@@ -493,7 +499,7 @@ public class PageFlowControllerProcessor extends ProcessorImpl {
                             rootElement.addElement("version").addText(HTMLSerializer.DEFAULT_VERSION);
                         addInput(new ASTInput("config", config));
                         addInput(new ASTInput("data", new ASTHrefId(epilogueData)));
-                        //setLocationData(xxx);
+                        //setLocationData(TODO);
                     }});
                 }});
                 addWhen(new ASTWhen());
@@ -664,7 +670,7 @@ public class PageFlowControllerProcessor extends ProcessorImpl {
                         if (foundActionWithoutWhen[0])
                             throw new ValidationException("Unreachable <action>", (LocationData) actionElement.getData());
                         setTest(whenAttribute);
-                        setNamespaces(Dom4jUtils.getNamespaceContextNoDefault(actionElement));
+                        setNamespaces(new NamespaceMapping(Dom4jUtils.getNamespaceContextNoDefault(actionElement)));
                         setLocationData((LocationData) actionElement.getData());
                     } else {
                         foundActionWithoutWhen[0] = true;
@@ -732,7 +738,7 @@ public class PageFlowControllerProcessor extends ProcessorImpl {
                                 addWhen(new ASTWhen() {{
                                     if (resultWhenAttribute != null) {
                                         setTest(resultWhenAttribute);
-                                        setNamespaces(Dom4jUtils.getNamespaceContextNoDefault(resultElement));
+                                        setNamespaces(new NamespaceMapping(Dom4jUtils.getNamespaceContextNoDefault(resultElement)));
                                         final String[] locationParams =
                                                 new String[]{"page id", pageElement.attributeValue("id"), "when", resultWhenAttribute};
                                         setLocationData(new ExtendedLocationData((LocationData) resultElement.getData(), "executing result", resultElement, locationParams, true));
@@ -985,7 +991,7 @@ public class PageFlowControllerProcessor extends ProcessorImpl {
                 addInput(new ASTInput("config", transformConfig));// transform
                 addInput(new ASTInput("instance", new ASTHrefId(paramedInstance)));// source-instance
                 addInput(new ASTInput("data", new ASTHrefId(instanceToUpdate)));// destination-instance
-                //addInput(new ASTInput("request-instance", new ASTHrefId(requestInstance)));// params-instance xxx
+                //addInput(new ASTInput("request-instance", new ASTHrefId(requestInstance)));// params-instance TODO
                 if (actionData != null)
                     addInput(new ASTInput("action", new ASTHrefId(actionData)));// action
                 else
@@ -1124,28 +1130,18 @@ public class PageFlowControllerProcessor extends ProcessorImpl {
                             final ASTOutput epilogueData, final ASTOutput epilogueModelData,
                             final ASTOutput epilogueInstance, final boolean isVersioned) {
         when.addStatement(new ASTProcessorCall(XMLConstants.RESOURCE_SERVER_PROCESSOR_QNAME) {{
-            if (isVersioned && URLRewriterUtils.getApplicationResourceVersion() != null) {
-                // Path is versioned, i.e. of the form /3.6.0.200801092029/... (Orbeon resource) or /1.1/... (app resource), so remove the version prefix
+            if (isVersioned) {
+                // Path is versioned, i.e. of the form /3.6.0.200801092029/... (Orbeon resource) or /1.1/... (app resource)
+                // Use XPath function to decode the resource URI before passing it to the resource server
                 addInput(new ASTInput("config",
                             new ASTHrefAggregate("path", new ASTHrefXPointer(new ASTHrefId(request),
-                                    "for $path in string(/request/request-path) return concat('/', substring-after(substring($path, 2), '/'))"))
-                ));
-            } else if (isVersioned) {
-                // Path is versioned for Orbeon resources, but not for app resources
-                // TODO: add test for /xbl/orbeon and /forms/orbeon
-                // TODO: don't hardcode these paths, see URLRewriterUtils
-                addInput(new ASTInput("config",
-                            new ASTHrefAggregate("path", new ASTHrefXPointer(new ASTHrefId(request),
-                                    "for $path in string(/request/request-path) return" +
-                                            " if (tokenize($path, '/')[3] = ('ops', 'config'))" + // Orbeon path
-                                            "    then concat('/', substring-after(substring($path, 2), '/'))" +
-                                            "    else $path"))
+                                    "p:decode-resource-uri(/request/request-path, true())"))
                 ));
             } else {
-                // Pass the path as is
+                // Path is not versioned
                 addInput(new ASTInput("config",
                             new ASTHrefAggregate("path", new ASTHrefXPointer(new ASTHrefId(request),
-                                    "string(/request/request-path)"))
+                                    "p:decode-resource-uri(/request/request-path, false())"))
                 ));
             }
 

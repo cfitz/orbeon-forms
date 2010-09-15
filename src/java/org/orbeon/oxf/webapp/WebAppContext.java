@@ -20,7 +20,6 @@ import org.orbeon.oxf.pipeline.InitUtils;
 import org.orbeon.oxf.resources.ResourceManagerWrapper;
 import org.orbeon.oxf.resources.WebAppResourceManagerImpl;
 import org.orbeon.oxf.util.LoggerFactory;
-import org.orbeon.oxf.xml.TomcatClasspathFix;
 
 import javax.servlet.ServletContext;
 import java.util.Collections;
@@ -40,14 +39,6 @@ import java.util.Map;
  * 4. Initialize the processor registry
  */
 public class WebAppContext {
-    
-    static {
-        try {
-            TomcatClasspathFix.applyIfNeedBe();
-        } catch (Throwable t) {
-            // ignore
-        }
-    }
 
     public static final String PROPERTIES_PROPERTY = "oxf.properties";
     public static final String LOGGING_PROPERTY = "oxf.initialize-logging";
@@ -78,14 +69,16 @@ public class WebAppContext {
         try {
             // Remember Servlet context
             this.servletContext = servletContext;
-            
+
             // Check whether logging initialization is disabled
             final boolean initializeLogging = !"false".equals(getServletInitParametersMap().get(LOGGING_PROPERTY));
 
             if (initializeLogging) {
                 LoggerFactory.initBasicLogger();
             }
-            logger.info("Starting Orbeon Forms Release " + Version.getVersion());
+
+            // 0. Say hello
+            logger.info("Starting " + Version.getVersionString());
 
             // 1. Initialize the Resource Manager
             final Map<String, Object> properties = new LinkedHashMap<String, Object>();
@@ -103,12 +96,16 @@ public class WebAppContext {
             if (propertiesFile != null)
                 org.orbeon.oxf.properties.Properties.init(propertiesFile);
 
-            // 3. Initialize log4j with a DOMConfiguration
+            // 3. Initialize Version object (depends on resource manager)
+            // Better to do it here so that log messages will go to the same place as the above logs
+            Version.instance();
+
+            // 4. Initialize log4j with a DOMConfiguration
             if (initializeLogging) {
                 LoggerFactory.initLogger();
             }
 
-            // 4. Register processor definitions with the default XML Processor Registry
+            // 5. Register processor definitions with the default XML Processor Registry
             InitUtils.initializeProcessorDefinitions();
 
         } catch (Exception e) {

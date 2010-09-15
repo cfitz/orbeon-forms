@@ -19,25 +19,19 @@ import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.common.ValidationException;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
 import org.orbeon.oxf.processor.converter.XHTMLRewrite;
-import org.orbeon.oxf.util.IndentedLogger;
-import org.orbeon.oxf.util.PropertyContext;
-import org.orbeon.oxf.util.XPathCache;
+import org.orbeon.oxf.util.*;
 import org.orbeon.oxf.xforms.*;
+import org.orbeon.oxf.xforms.analysis.XPathDependencies;
+import org.orbeon.oxf.xforms.analysis.controls.ControlAnalysis;
 import org.orbeon.oxf.xforms.control.controls.XFormsRepeatControl;
 import org.orbeon.oxf.xforms.control.controls.XFormsRepeatIterationControl;
-import org.orbeon.oxf.xforms.event.XFormsEvent;
-import org.orbeon.oxf.xforms.event.XFormsEventObserver;
-import org.orbeon.oxf.xforms.event.XFormsEventTarget;
-import org.orbeon.oxf.xforms.event.XFormsEvents;
+import org.orbeon.oxf.xforms.event.*;
 import org.orbeon.oxf.xforms.function.XFormsFunction;
 import org.orbeon.oxf.xforms.xbl.XBLBindings;
 import org.orbeon.oxf.xforms.xbl.XBLContainer;
-import org.orbeon.oxf.xml.ContentHandlerHelper;
-import org.orbeon.oxf.xml.ForwardingContentHandler;
+import org.orbeon.oxf.xml.*;
 import org.orbeon.oxf.xml.XMLUtils;
-import org.orbeon.oxf.xml.dom4j.Dom4jUtils;
-import org.orbeon.oxf.xml.dom4j.ExtendedLocationData;
-import org.orbeon.oxf.xml.dom4j.LocationData;
+import org.orbeon.oxf.xml.dom4j.*;
 import org.orbeon.saxon.om.Item;
 import org.orbeon.saxon.om.ValueRepresentation;
 import org.xml.sax.Attributes;
@@ -74,22 +68,20 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
 
     // Dynamic information (changes depending on the content of XForms instances)
     private String previousEffectiveId;
-    private String tempEffectiveId;
     private String effectiveId;
 
     protected XFormsContextStack.BindingContext bindingContext;
 
-    private boolean isEvaluated;
-
     // Relevance
-    private boolean relevant;
+    private boolean relevant = false;
     private boolean wasRelevant;
 
     // Optional extension attributes supported by the control
+    // TODO: must be evaluated lazily
     private Map<QName, String> extensionAttributesValues;
 
     // Label, help, hint and alert (evaluated lazily)
-    private LHHA label, help, hint, alert;
+    private Map<XFormsConstants.LHHA, LHHA> lhha = new HashMap<XFormsConstants.LHHA, LHHA>(XFormsConstants.LHHA.values().length);
 
     final boolean[] tempContainsHTML = new boolean[1];// temporary holder
 
@@ -118,15 +110,15 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
         this.effectiveId = effectiveId;
     }
 
-    public String getId() {
+    public final String getId() {
         return id;
     }
 
-    public XBLContainer getXBLContainer() {
+    public final XBLContainer getXBLContainer() {
         return container;
     }
 
-    public XBLContainer getXBLContainer(XFormsContainingDocument containingDocument) {
+    public final XBLContainer getXBLContainer(XFormsContainingDocument containingDocument) {
         return getXBLContainer();
     }
 
@@ -142,7 +134,7 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
         // NOP, can be overridden
     }
 
-    public XBLBindings.Scope getResolutionScope() {
+    public final XBLBindings.Scope getResolutionScope() {
         return containingDocument.getStaticState().getXBLBindings().getResolutionScopeByPrefixedId(getPrefixedId());
     }
 
@@ -158,9 +150,6 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
         final String parentSuffix = XFormsUtils.getEffectiveIdSuffix(parentEffectiveId);
 
         if (!parentSuffix.equals("")) {
-            // Keep initial effective id for the next refresh
-            if (tempEffectiveId == null)
-                tempEffectiveId = effectiveId;
             // Update effective id
             effectiveId = XFormsUtils.getPrefixedId(effectiveId) + XFormsConstants.REPEAT_HIERARCHY_SEPARATOR_1 + parentSuffix;
         } else {
@@ -172,7 +161,7 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
         return effectiveId;
     }
 
-    public String getPrefixedId() {
+    public final String getPrefixedId() {
         return prefixedId;
     }
 
@@ -184,12 +173,42 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
         return (controlElement != null) ? (LocationData) controlElement.getData() : null;
     }
 
-    public boolean isRelevant() {
+    /**
+     * Set this control's binding context.
+     */
+    public void setBindingContext(PropertyContext propertyContext, XFormsContextStack.BindingContext bindingContext) {
+        final XFormsContextStack.BindingContext oldBinding = this.bindingContext;
+        this.bindingContext = bindingContext;
+
+        // Relevance is a property of all controls
+        final boolean oldRelevant = this.relevant;
+        final boolean newRelevant = computeRelevant();
+
+        if (!oldRelevant && newRelevant) {
+            // Control is created
+            this.relevant = newRelevant;
+            onCreate(propertyContext);
+        } else if (oldRelevant && !newRelevant) {
+            // Control is destroyed
+            onDestroy(propertyContext);
+            this.relevant = newRelevant;
+        } else if (newRelevant) {
+            onBindingUpdate(propertyContext, oldBinding, bindingContext);
+        }
+    }
+
+    public final boolean isRelevant() {
         return relevant;
     }
 
-    protected final void setRelevant(boolean relevant) {
-        this.relevant = relevant;
+    protected void onCreate(PropertyContext propertyContext) {
+        wasRelevant = false;
+    }
+
+    protected void onDestroy(PropertyContext propertyContext) {
+    }
+
+    protected void onBindingUpdate(PropertyContext propertyContext, XFormsContextStack.BindingContext oldBinding, XFormsContextStack.BindingContext newBinding) {
     }
 
     protected boolean computeRelevant() {
@@ -200,11 +219,20 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
     }
 
     public String getPreviousEffectiveId() {
-        return previousEffectiveId;
+        final String result = previousEffectiveId;
+        previousEffectiveId = effectiveId;
+        return result;
     }
 
     public boolean wasRelevant() {
-        return wasRelevant;
+        final boolean result = wasRelevant;
+        wasRelevant = relevant;
+        return result;
+    }
+
+    public void commitCurrentUIState() {
+        wasRelevant();
+        getPreviousEffectiveId();
     }
 
     public boolean supportsRefreshEvents() {
@@ -216,84 +244,92 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
         return control != null && control.supportsRefreshEvents();
     }
 
-    public String getLabel(PropertyContext propertyContext) {
-        if (label == null) {
-            final Element lhhaElement = containingDocument.getStaticState().getLabelElement(getPrefixedId());
-            label = (lhhaElement == null) ? NULL_LHHA : new ConcreteLHHA(this, lhhaElement, isSupportHTMLLabels());
+    private LHHA getLabelLHHA() {
+        LHHA result = lhha.get(XFormsConstants.LHHA.LABEL);
+        if (result == null) {
+            final ControlAnalysis.LHHAAnalysis lhhaElement = containingDocument.getStaticState().getLabel(getPrefixedId());
+            result = (lhhaElement == null) ? NULL_LHHA : new ConcreteLHHA(this, lhhaElement, isSupportHTMLLabels());
+            lhha.put(XFormsConstants.LHHA.LABEL, result);
         }
+        return result;
+    }
 
-        return label.getValue(propertyContext);
+    private LHHA getHelpLHHA() {
+        LHHA result = lhha.get(XFormsConstants.LHHA.HELP);
+        if (result == null) {
+            final ControlAnalysis.LHHAAnalysis lhhaElement = containingDocument.getStaticState().getHelp(getPrefixedId());
+            result = (lhhaElement == null) ? NULL_LHHA : new ConcreteLHHA(this, lhhaElement, true);
+            lhha.put(XFormsConstants.LHHA.HELP, result);
+        }
+        return result;
+    }
+
+    private LHHA getHintLHHA() {
+        LHHA result = lhha.get(XFormsConstants.LHHA.HINT);
+        if (result == null) {
+            final ControlAnalysis.LHHAAnalysis lhhaElement = containingDocument.getStaticState().getHint(getPrefixedId());
+            result = (lhhaElement == null) ? NULL_LHHA : new ConcreteLHHA(this, lhhaElement, isSupportHTMLHints());
+            lhha.put(XFormsConstants.LHHA.HINT, result);
+        }
+        return result;
+    }
+
+    private LHHA getAlertLHHA() {
+        LHHA result = lhha.get(XFormsConstants.LHHA.ALERT);
+        if (result == null) {
+            final ControlAnalysis.LHHAAnalysis lhhaElement = containingDocument.getStaticState().getAlert(getPrefixedId());
+            result = (lhhaElement == null) ? NULL_LHHA : new ConcreteLHHA(this, lhhaElement, true);
+            lhha.put(XFormsConstants.LHHA.ALERT, result);
+        }
+        return result;
+    }
+
+    public String getLabel(PropertyContext propertyContext) {
+        return getLabelLHHA().getValue(propertyContext);
     }
 
     public String getEscapedLabel(PipelineContext pipelineContext) {
-        getLabel(pipelineContext);
-        return label.getEscapedValue(pipelineContext);
+        return getLabelLHHA().getEscapedValue(pipelineContext);
     }
 
     public boolean isHTMLLabel(PropertyContext propertyContext) {
-        getLabel(propertyContext);
-        return label.isHTML(propertyContext);
+        return getLabelLHHA().isHTML(propertyContext);
     }
 
     public String getHelp(PropertyContext propertyContext) {
-        if (help == null) {
-            final Element lhhaElement = containingDocument.getStaticState().getHelpElement(getPrefixedId());
-            help = (lhhaElement == null) ? NULL_LHHA : new ConcreteLHHA(this, lhhaElement, true);
-        }
-
-        return help.getValue(propertyContext);
+        return getHelpLHHA().getValue(propertyContext);
     }
 
     public String getEscapedHelp(PipelineContext pipelineContext) {
-        getHelp(pipelineContext);
-        return help.getEscapedValue(pipelineContext);
+        return getHelpLHHA().getEscapedValue(pipelineContext);
     }
 
     public boolean isHTMLHelp(PropertyContext propertyContext) {
-        getHelp(propertyContext);
-        return help.isHTML(propertyContext);
+        return getHelpLHHA().isHTML(propertyContext);
     }
 
     public String getHint(PropertyContext propertyContext) {
-        if (hint == null) {
-            final Element lhhaElement = containingDocument.getStaticState().getHintElement(getPrefixedId());
-            hint = (lhhaElement == null) ? NULL_LHHA : new ConcreteLHHA(this, lhhaElement, isSupportHTMLHints());
-        }
-
-        return hint.getValue(propertyContext);
+        return getHintLHHA().getValue(propertyContext);
     }
 
     public String getEscapedHint(PipelineContext pipelineContext) {
-        getHint(pipelineContext);
-        return hint.getEscapedValue(pipelineContext);
+        return getHintLHHA().getEscapedValue(pipelineContext);
     }
 
     public boolean isHTMLHint(PropertyContext propertyContext) {
-        getHint(propertyContext);
-        return hint.isHTML(propertyContext);
+        return getHintLHHA().isHTML(propertyContext);
     }
 
     public String getAlert(PropertyContext propertyContext) {
-        if (alert == null) {
-            final Element lhhaElement = containingDocument.getStaticState().getAlertElement(getPrefixedId());
-            alert = (lhhaElement == null) ? NULL_LHHA : new ConcreteLHHA(this, lhhaElement, true);
-        }
-        return alert.getValue(propertyContext);
+        return getAlertLHHA().getValue(propertyContext);
     }
 
     public boolean isHTMLAlert(PropertyContext propertyContext) {
-        getAlert(propertyContext);
-        return alert.isHTML(propertyContext);
+        return getAlertLHHA().isHTML(propertyContext);
     }
 
     public String getEscapedAlert(PipelineContext pipelineContext) {
-        getAlert(pipelineContext);
-        return alert.getEscapedValue(pipelineContext);
-    }
-
-    public boolean isHTMLAlert(PipelineContext pipelineContext) {
-        getAlert(pipelineContext);
-        return alert.isHTML(pipelineContext);
+        return getAlertLHHA().getEscapedValue(pipelineContext);
     }
 
     /**
@@ -314,11 +350,11 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
         return true;
     }
 
-    public String getName() {
+    public final String getName() {
         return name;
     }
 
-    public XFormsControl getParent() {
+    public final XFormsControl getParent() {
         return parent;
     }
 
@@ -330,65 +366,64 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
         this.parent = null;
     }
 
-    public Element getControlElement() {
+    public final Element getControlElement() {
         return controlElement;
     }
 
     /**
-     * Whether a given control has an xforms:label element.
+     * Whether a given control has an associated xforms:label element.
      *
      * @param containingDocument    containing document
      * @param prefixedId              static control id
      * @return                      true iif there is an xforms:label element
      */
     public static boolean hasLabel(XFormsContainingDocument containingDocument, String prefixedId) {
-        return containingDocument.getStaticState().getLabelElement(prefixedId) != null;
+        return containingDocument.getStaticState().getLabel(prefixedId) != null;
     }
 
     /**
-     * Whether a given control has an xforms:hint element.
+     * Whether a given control has an associated xforms:hint element.
      *
      * @param containingDocument    containing document
      * @param prefixedId              static control id
      * @return                      true iif there is an xforms:hint element
      */
     public static boolean hasHint(XFormsContainingDocument containingDocument, String prefixedId) {
-        return containingDocument.getStaticState().getHintElement(prefixedId) != null;
+        return containingDocument.getStaticState().getHint(prefixedId) != null;
     }
 
     /**
-     * Whether a given control has an xforms:help element.
+     * Whether a given control has an associated xforms:help element.
      *
      * @param containingDocument    containing document
      * @param prefixedId              static control id
      * @return                      true iif there is an xforms:help element
      */
     public static boolean hasHelp(XFormsContainingDocument containingDocument, String prefixedId) {
-        return containingDocument.getStaticState().getHelpElement(prefixedId) != null;
+        return containingDocument.getStaticState().getHelp(prefixedId) != null;
     }
 
     /**
-     * Whether a given control has an xforms:alert element.
+     * Whether a given control has an associated xforms:alert element.
      *
      * @param containingDocument    containing document
      * @param prefixedId              static control id
      * @return                      true iif there is an xforms:alert element
      */
     public static boolean hasAlert(XFormsContainingDocument containingDocument, String prefixedId) {
-        return containingDocument.getStaticState().getAlertElement(prefixedId) != null;
+        return containingDocument.getStaticState().getAlert(prefixedId) != null;
     }
 
     /**
      * Return the control's appearance as an exploded QName.
      */
     public String getAppearance() {
-        if (appearance == null)
-            appearance = Dom4jUtils.qNameToExplodedQName(Dom4jUtils.extractAttributeValueQName(controlElement, XFormsConstants.APPEARANCE_QNAME.getName()));
+        if (appearance == null) {
+            final QName qName = Dom4jUtils.extractTextValueQName(container.getNamespaceMappings(controlElement).mapping,
+                    controlElement.attributeValue(XFormsConstants.APPEARANCE_QNAME.getName()), true);
+            appearance = Dom4jUtils.qNameToExplodedQName(qName);
+        }
         return appearance;
-    }
-
-    public String getAppearancePlain() {
-        return controlElement.attributeValue(XFormsConstants.APPEARANCE_QNAME);
     }
 
     /**
@@ -451,13 +486,6 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
     }
 
     /**
-     * Set this control's binding context.
-     */
-    public void setBindingContext(PropertyContext propertyContext, XFormsContextStack.BindingContext bindingContext, boolean isCreate) {
-        this.bindingContext = bindingContext;
-    }
-
-    /**
      * Return the binding context for this control.
      */
     public XFormsContextStack.BindingContext getBindingContext() {
@@ -468,23 +496,12 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
         return getBindingContext();
     }
 
-    public final void evaluateIfNeeded(PropertyContext propertyContext, boolean isRefresh) {
-        if (!isEvaluated) {
-            isEvaluated = true;// be careful with this flag, you can get into a recursion if you don't set it before calling evaluate()
-            try {
-                evaluate(propertyContext, isRefresh);
-
-                // Evaluate standard extension attributes
-                evaluateExtensionAttributes(propertyContext, STANDARD_EXTENSION_ATTRIBUTES);
-                // Evaluate custom extension attributes
-                final QName[] extensionAttributes = getExtensionAttributes();
-                if (extensionAttributes != null) {
-                    evaluateExtensionAttributes(propertyContext, extensionAttributes);
-                }
-            } catch (ValidationException e) {
-                    throw ValidationException.wrapException(e, new ExtendedLocationData(getLocationData(), "evaluating control",
-                        getControlElement(), "element", Dom4jUtils.elementToDebugString(getControlElement())));
-            }
+    public final void evaluate(PropertyContext propertyContext) {
+        try {
+            evaluateImpl(propertyContext);
+        } catch (ValidationException e) {
+                throw ValidationException.wrapException(e, new ExtendedLocationData(getLocationData(), "evaluating control",
+                    getControlElement(), "element", Dom4jUtils.elementToDebugString(getControlElement())));
         }
     }
 
@@ -506,34 +523,26 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
     }
 
     /**
-     * Mark a control as "dirty" to mean that the control:
-     *
-     * o needs to be re-evaluated
-     * o must save its current state for purposes of refresh events dispatch
-     *
-     * As of 2010-02 this is called:
-     *
-     * o by UpdateBindingsListener during a refresh, just before evaluation
-     * o when going online, before handling each external event
+     * Notify the control that some of its aspects (value, label, etc.) might have changed and require re-evaluation. It
+     * is left to the control to figure out if this can be optimized.
      */
-    public void markDirty() {
+    public final void markDirty(XPathDependencies xpathDependencies) {
+        markDirtyImpl(xpathDependencies);
+    }
 
-        // Keep previous values for refresh updates
-        // NOTE: effectiveId might have changed already upon updateEffectiveId(); in which case, use tempEffectiveId
-        previousEffectiveId = (tempEffectiveId != null) ? tempEffectiveId : effectiveId;
-        tempEffectiveId = null;
-        wasRelevant = relevant;
+    protected void markDirtyImpl(XPathDependencies xpathDependencies) {
 
-        // Clear everything
-        isEvaluated = false;
-        if (label != null)
-            label.markDirty();
-        if (hint != null)
-            hint.markDirty();
-        if (help != null)
-            help.markDirty();
-        if (alert != null)
-            alert.markDirty();
+        // Check LHHA
+        for (final Map.Entry<XFormsConstants.LHHA, LHHA> entry: lhha.entrySet()) {
+            final XFormsConstants.LHHA key = entry.getKey();
+            final LHHA value = entry.getValue();
+
+            if (value != null && !value.isDirty() && xpathDependencies.requireLHHAUpdate(key, getPrefixedId()))
+                value.markDirty();
+        }
+
+        // For now clear this all the time
+        // TODO: dependencies
         if (extensionAttributesValues != null)
             extensionAttributesValues.clear();
     }
@@ -542,20 +551,17 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
      * Evaluate this control.
      *
      * @param propertyContext   current context
-     * @param isRefresh         true if part of the refresh process, false if initialization and new repeat iteration creation
      */
-    protected void evaluate(PropertyContext propertyContext, boolean isRefresh) {
+    // TODO: move this method to XFormsValueControl and XFormsValueContainerControl
+    protected void evaluateImpl(PropertyContext propertyContext) {
 
-        // Relevance is a property of all controls
-        setRelevant(computeRelevant());
-
-        // NOTE: We no longer evaluate LHHA here, instead we do lazy evaluation. This is good in particular when there
-        // are multiple refreshes during an Ajax request, and LHHA values are only needed in the end.
-
-        if (!isRefresh) {
-            // Sync values
-            previousEffectiveId = effectiveId;
-            wasRelevant = relevant;
+        // TODO: these should be evaluated lazily
+        // Evaluate standard extension attributes
+        evaluateExtensionAttributes(propertyContext, STANDARD_EXTENSION_ATTRIBUTES);
+        // Evaluate custom extension attributes
+        final QName[] extensionAttributes = getExtensionAttributes();
+        if (extensionAttributes != null) {
+            evaluateExtensionAttributes(propertyContext, extensionAttributes);
         }
     }
 
@@ -661,7 +667,7 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
             // Rewrite URLs
             final StringBuilder sb = new StringBuilder(rawValue.length() * 2);// just an approx of the size it may take
             // NOTE: we do our own serialization here, but it's really simple (no namespaces) and probably reasonably efficient
-            XFormsUtils.streamHTMLFragment(new XHTMLRewrite().getRewriteContentHandler(propertyContext, new ForwardingContentHandler() {
+            XFormsUtils.streamHTMLFragment(new XHTMLRewrite().getRewriteXMLReceiver(propertyContext, new ForwardingXMLReceiver() {
 
                 private boolean isStartElement;
 
@@ -708,94 +714,6 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
     }
 
     /**
-     * Add attributes differences for custom attributes.
-     *
-     * @param pipelineContext       current pipeline context
-     * @param originalControl       original control, possibly null
-     * @param attributesImpl        attributes to add to
-     * @param isNewRepeatIteration  whether the current controls is within a new repeat iteration
-     * @return                      true if any attribute was added, false otherwise
-     */
-    public boolean addCustomAttributesDiffs(PipelineContext pipelineContext, XFormsSingleNodeControl originalControl,
-                                            AttributesImpl attributesImpl, boolean isNewRepeatIteration) {
-
-        final QName[] extensionAttributes = getExtensionAttributes();
-        // By default, diff only attributes in the xxforms:* namespace
-        return extensionAttributes != null && addAttributesDiffs(originalControl, attributesImpl, isNewRepeatIteration, extensionAttributes, XFormsConstants.XXFORMS_NAMESPACE_URI);
-    }
-
-    private boolean addAttributesDiffs(XFormsControl control1, AttributesImpl attributesImpl, boolean isNewRepeatIteration, QName[] attributeQNames, String namespaceURI) {
-
-        final XFormsControl control2 = this;
-
-        boolean added = false;
-
-        for (final QName avtAttributeQName: attributeQNames) {
-            // Skip if namespace URI is excluded
-            if (namespaceURI != null && !namespaceURI.equals(avtAttributeQName.getNamespaceURI()))
-                continue;
-
-            final String value1 = (control1 == null) ? null : control1.getExtensionAttributeValue(avtAttributeQName);
-            final String value2 = control2.getExtensionAttributeValue(avtAttributeQName);
-
-            if (!XFormsUtils.compareStrings(value1, value2)) {
-                final String attributeValue = value2 != null ? value2 : "";
-                // NOTE: For now we use the local name; may want to use a full name?
-                added |= addAttributeIfNeeded(attributesImpl, avtAttributeQName.getName(), attributeValue, isNewRepeatIteration, attributeValue.equals(""));
-            }
-        }
-
-        return added;
-    }
-
-    public void addStandardAttributesDiffs(XFormsSingleNodeControl originalControl, ContentHandlerHelper ch, boolean isNewRepeatIteration) {
-        final QName[] extensionAttributes = STANDARD_EXTENSION_ATTRIBUTES;
-        if (extensionAttributes != null) {
-            final XFormsControl control2 = this;
-
-            for (final QName avtAttributeQName: extensionAttributes) {
-
-                // Skip @class because this is handled separately
-                if (avtAttributeQName.equals(XFormsConstants.CLASS_QNAME))
-                    continue;
-
-                final String value1 = (originalControl == null) ? null : originalControl.getExtensionAttributeValue(avtAttributeQName);
-                final String value2 = control2.getExtensionAttributeValue(avtAttributeQName);
-
-                if (!XFormsUtils.compareStrings(value1, value2)) {
-                    final String attributeValue = value2 != null ? value2 : "";
-
-                    final AttributesImpl attributesImpl = new AttributesImpl();
-                    // Control id
-                    attributesImpl.addAttribute("", "id", "id", ContentHandlerHelper.CDATA, control2.getEffectiveId());
-
-                    // The client does not store an HTML representation of the xxforms:attribute control, so we
-                    // have to output these attributes.
-
-                    // HTML element id
-                    addAttributeIfNeeded(attributesImpl, "for", control2.getEffectiveId(), isNewRepeatIteration, false);
-
-                    // Attribute name
-                    addAttributeIfNeeded(attributesImpl, "name", avtAttributeQName.getName(), isNewRepeatIteration, false);
-
-                    ch.startElement("xxf", XFormsConstants.XXFORMS_NAMESPACE_URI, "attribute", attributesImpl);
-                    ch.text(attributeValue);
-                    ch.endElement();
-                }
-            }
-        }
-    }
-
-    protected static boolean addAttributeIfNeeded(AttributesImpl attributesImpl, String name, String value, boolean isNewRepeatIteration, boolean isDefaultValue) {
-        if (isNewRepeatIteration && isDefaultValue) {
-            return false;
-        } else {
-            attributesImpl.addAttribute("", name, name, ContentHandlerHelper.CDATA, value);
-            return true;
-        }
-    }
-
-    /**
      * Evaluate an attribute of the control as an AVT.
      *
      * @param propertyContext   current context
@@ -804,7 +722,7 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
      */
     protected String evaluateAvt(PropertyContext propertyContext, String attributeValue) {
 
-        if (attributeValue.indexOf('{') == -1) {
+        if (!XFormsUtils.maybeAVT(attributeValue)) {
             // Definitely not an AVT
 
             return attributeValue;
@@ -831,8 +749,7 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
                     // Don't consider this as fatal
                     // TODO: must dispatch xforms-compute-error? Check if safe to do so.
                     final IndentedLogger indentedLogger = containingDocument.getControls().getIndentedLogger();
-                    if (indentedLogger.isInfoEnabled())
-                        indentedLogger.logInfo("", "exception while evaluating XPath expression", e);
+                    indentedLogger.logWarning("", "exception while evaluating XPath expression", e);
 
                     return null;
                 } finally {
@@ -872,8 +789,7 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
                 // Don't consider this as fatal
                 // TODO: must dispatch xforms-compute-error? Check if safe to do so.
                 final IndentedLogger indentedLogger = containingDocument.getControls().getIndentedLogger();
-                if (indentedLogger.isInfoEnabled())
-                    indentedLogger.logInfo("", "exception while evaluating XPath expression", e);
+                indentedLogger.logWarning("", "exception while evaluating XPath expression", e);
 
                 return null;
             } finally {
@@ -889,12 +805,12 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
      * @param propertyContext       current context
      * @param contextItem           context item
      * @param xpathString           XPath expression
-     * @param prefixToURIMap        namespace mappings to use
+     * @param namespaceMapping      namespace mappings to use
      * @param variableToValueMap    variables to use
      * @return                      value, or null if cannot be computed
      */
     protected String evaluateAsString(PropertyContext propertyContext, Item contextItem, String xpathString,
-                                      Map<String, String> prefixToURIMap, Map<String, ValueRepresentation> variableToValueMap) {
+                                      NamespaceMapping namespaceMapping, Map<String, ValueRepresentation> variableToValueMap) {
 
         if (contextItem == null) {
             // TODO: in the future we should be able to try evaluating anyway
@@ -908,15 +824,14 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
             // Evaluate
             try {
                 return XPathCache.evaluateAsString(propertyContext, contextItem,
-                                xpathString, prefixToURIMap, variableToValueMap,
+                                xpathString, namespaceMapping, variableToValueMap,
                                 XFormsContainingDocument.getFunctionLibrary(),
                                 getFunctionContext(), null, getLocationData());
             } catch (Exception e) {
                 // Don't consider this as fatal
                 // TODO: must dispatch xforms-compute-error? Check if safe to do so.
                 final IndentedLogger indentedLogger = containingDocument.getControls().getIndentedLogger();
-                if (indentedLogger.isInfoEnabled())
-                    indentedLogger.logInfo("", "exception while evaluating XPath expression", e);
+                indentedLogger.logWarning("", "exception while evaluating XPath expression", e);
 
                 return null;
             } finally {
@@ -942,9 +857,9 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
     /**
      * Return the namespace mappings for this control.
      *
-     * @return              Map<String prefix, String uri>
+     * @return              mapping
      */
-    public Map<String, String> getNamespaceMappings() {
+    public NamespaceMapping getNamespaceMappings() {
         return container.getNamespaceMappings(controlElement);
     }
 
@@ -1009,12 +924,6 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
      */
     public Object getBackCopy(PropertyContext propertyContext) {
         
-        // Evaluate lazy values
-        getLabel(propertyContext);
-        getHelp(propertyContext);
-        getHint(propertyContext);
-        getAlert(propertyContext);
-        
         // NOTE: this.parent is handled by subclasses
         final XFormsControl cloned;
         try {
@@ -1024,17 +933,22 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
         }
 
         // Clone LHHA if not null and not constant
-        if (label != null && label != NULL_LHHA) {
-            cloned.label = (LHHA) label.clone();
-        }
-        if (help != null && help != NULL_LHHA) {
-            cloned.help = (LHHA) help.clone();
-        }
-        if (hint != null && hint != NULL_LHHA) {
-            cloned.hint = (LHHA) hint.clone();
-        }
-        if (alert != null && alert != NULL_LHHA) {
-            cloned.alert = (LHHA) alert.clone();
+        cloned.lhha = new HashMap<XFormsConstants.LHHA, LHHA>(XFormsConstants.LHHA.values().length);
+        for (final Map.Entry<XFormsConstants.LHHA, LHHA> entry: lhha.entrySet()) {
+            final XFormsConstants.LHHA key = entry.getKey();
+            final LHHA value = entry.getValue();
+
+            // Evaluate lazy value before copying
+            value.getValue(propertyContext);
+
+            // Clone
+            final LHHA clonedLHHA;
+            if (value != null && value != NULL_LHHA)
+                clonedLHHA = value.clone();
+            else
+                clonedLHHA = value;
+
+            cloned.lhha.put(key, clonedLHHA);
         }
 
         if (this.currentLocal != null) {
@@ -1107,7 +1021,7 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
         final Iterator<Item> j = nodeset2.iterator();
         for (Item currentItem1: nodeset1) {
             final Item currentItem2 = j.next();
-            if (!currentItem1.equals(currentItem2)) {// equals() is the same as isSameNodeInfo() for NodeInfo, and compares the values for values
+            if (!XFormsUtils.compareItems(currentItem1, currentItem2)) {
                 // Found a difference
                 return false;
             }
@@ -1171,11 +1085,12 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
         }
 
         public void markDirty() {}
+        public boolean isDirty() { return false; }
 
         @Override
-        public Object clone() {
+        public LHHA clone() {
             try {
-                return super.clone();
+                return (LHHA) super.clone();
             } catch (CloneNotSupportedException e) {
                 throw new OXFException(e);
             }
@@ -1186,6 +1101,7 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
     private static class ConcreteLHHA extends LHHA {
 
         private final XFormsControl control;
+        private final ControlAnalysis.LHHAAnalysis lhhaAnalysis;
         private final Element lhhaElement;
         private final boolean supportsHTML;
 
@@ -1193,23 +1109,21 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
         private boolean isEvaluated;
         private boolean isHTML;
 
-        public ConcreteLHHA(XFormsControl control, Element lhhaElement, boolean supportsHTML) {
+        public ConcreteLHHA(XFormsControl control, ControlAnalysis.LHHAAnalysis lhhaAnalysis, boolean supportsHTML) {
 
-            assert lhhaElement != null : "LHHA element can't be null";
+            assert lhhaAnalysis != null && lhhaAnalysis.element != null : "LHHA analysis/element can't be null";
 
             this.control = control;
-            this.lhhaElement = lhhaElement;
+            this.lhhaAnalysis = lhhaAnalysis;
+            this.lhhaElement = lhhaAnalysis.element;
             this.supportsHTML = supportsHTML;
         }
 
         @Override
         public String getValue(PropertyContext propertyContext) {
-
-            assert control.isEvaluated : "control must be evaluated before LHHA value is evaluated";
-
             if (!isEvaluated) {
                 if (control.isRelevant()) {
-                    value = getLabelHelpHintAlertValue(propertyContext);
+                    value = evaluateValue(propertyContext);
                     isHTML = value != null && control.tempContainsHTML[0];
                 } else {
                     // NOTE: if the control is not relevant, nobody should ask about this in the first place
@@ -1240,17 +1154,22 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
             isHTML = false;
         }
 
+        @Override
+        public boolean isDirty() {
+            return !isEvaluated;
+        }
+
         /**
-         * Get the value of a LHHA related to this control.
+         * Evaluate the value of a LHHA related to this control.
          *
          * @param propertyContext       current context
          * @return                      string containing the result of the evaluation, null if evaluation failed
          */
-        private String getLabelHelpHintAlertValue(PropertyContext propertyContext) {
+        private String evaluateValue(PropertyContext propertyContext) {
 
             final XFormsContextStack contextStack = control.getContextStack();
             final String value;
-            if (lhhaElement.getParent() == control.getControlElement()) {
+            if (lhhaAnalysis.isLocal) {
                 // LHHA is direct child of control, evaluate within context
                 contextStack.setBinding(control);
                 contextStack.pushBinding(propertyContext, lhhaElement, control.effectiveId, control.getChildElementScope(lhhaElement));
@@ -1339,5 +1258,237 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
     public void outputAjaxDiff(PipelineContext pipelineContext, ContentHandlerHelper ch, XFormsControl other,
                                AttributesImpl attributesImpl, boolean isNewlyVisibleSubtree) {
         // NOP
+    }
+
+    protected boolean addAjaxAttributes(PipelineContext pipelineContext, AttributesImpl attributesImpl, boolean isNewlyVisibleSubtree, XFormsControl other) {
+
+        boolean added = false;
+
+        // Control id
+        attributesImpl.addAttribute("", "id", "id", ContentHandlerHelper.CDATA, XFormsUtils.namespaceId(containingDocument, getEffectiveId()));
+
+        // Class attribute
+        added |= addAjaxClass(attributesImpl, isNewlyVisibleSubtree, other, this);
+
+        // Label, help, hint, alert, etc.
+        added |= addAjaxLHHA(pipelineContext, attributesImpl, isNewlyVisibleSubtree, other, this);
+
+        // Output control-specific attributes
+        added |= addAjaxCustomAttributes(pipelineContext, attributesImpl, isNewlyVisibleSubtree, other);
+
+        return added;
+    }
+
+    // public for unit tests
+    public static boolean addAjaxClass(AttributesImpl attributesImpl, boolean newlyVisibleSubtree,
+                                       XFormsControl control1, XFormsControl control2) {
+
+        boolean added = false;
+
+        final String class1 = (control1 == null) ? null : control1.getExtensionAttributeValue(XFormsConstants.CLASS_QNAME);
+        final String class2 = control2.getExtensionAttributeValue(XFormsConstants.CLASS_QNAME);
+
+        if (newlyVisibleSubtree || !XFormsUtils.compareStrings(class1, class2)) {
+            // Custom MIPs changed
+
+            final String attributeValue;
+            if (class1 == null) {
+                attributeValue = class2;
+            } else {
+                final StringBuilder sb = new StringBuilder(100);
+
+                final Set<String> classes1 = tokenize(class1);
+                final Set<String> classes2 = tokenize(class2);
+
+                // Classes to remove
+                for (final String currentClass: classes1) {
+                    if (!classes2.contains(currentClass)) {
+
+                        if (sb.length() > 0)
+                            sb.append(' ');
+
+                        sb.append('-');
+                        sb.append(currentClass);
+                    }
+                }
+
+                // Classes to add
+                for (final String currentClass: classes2) {
+                    if (!classes1.contains(currentClass)) {
+
+                        if (sb.length() > 0)
+                            sb.append(' ');
+
+                        sb.append('+');
+                        sb.append(currentClass);
+                    }
+                }
+
+                attributeValue = sb.toString();
+            }
+            // This attribute is a space-separate list of class names prefixed with either '-' or '+'
+            if (attributeValue != null)
+                added |= addOrAppendToAttributeIfNeeded(attributesImpl, "class", attributeValue, newlyVisibleSubtree, attributeValue.equals(""));
+        }
+        return added;
+    }
+
+    private static Set<String> tokenize(String value) {
+        final Set<String> result;
+        if (value != null) {
+            result = new LinkedHashSet<String>();
+            for (final StringTokenizer st = new StringTokenizer(value); st.hasMoreTokens();) {
+                result.add(st.nextToken());
+            }
+        } else {
+            result = Collections.emptySet();
+        }
+        return result;
+    }
+
+    private boolean addAjaxLHHA(PipelineContext pipelineContext, AttributesImpl attributesImpl, boolean isNewlyVisibleSubtree,
+                                  XFormsControl control1, XFormsControl control2) {
+
+        boolean added = false;
+        {
+            final String labelValue1 = isNewlyVisibleSubtree ? null : control1.getLabel(pipelineContext);
+            final String labelValue2 = control2.getLabel(pipelineContext);
+
+            if (!XFormsUtils.compareStrings(labelValue1, labelValue2)) {
+                final String escapedLabelValue2 = control2.getEscapedLabel(pipelineContext);
+                final String attributeValue = escapedLabelValue2 != null ? escapedLabelValue2 : "";
+                added |= addOrAppendToAttributeIfNeeded(attributesImpl, "label", attributeValue, isNewlyVisibleSubtree, attributeValue.equals(""));
+            }
+        }
+
+        {
+            final String helpValue1 = isNewlyVisibleSubtree ? null : control1.getHelp(pipelineContext);
+            final String helpValue2 = control2.getHelp(pipelineContext);
+
+            if (!XFormsUtils.compareStrings(helpValue1, helpValue2)) {
+                final String escapedHelpValue2 = control2.getEscapedHelp(pipelineContext);
+                final String attributeValue = escapedHelpValue2 != null ? escapedHelpValue2 : "";
+                added |= addOrAppendToAttributeIfNeeded(attributesImpl, "help", attributeValue, isNewlyVisibleSubtree, attributeValue.equals(""));
+            }
+        }
+
+        {
+            final String hintValue1 = isNewlyVisibleSubtree ? null : control1.getHint(pipelineContext);
+            final String hintValue2 = control2.getHint(pipelineContext);
+
+            if (!XFormsUtils.compareStrings(hintValue1, hintValue2)) {
+                final String escapedHintValue2 = control2.getEscapedHint(pipelineContext);
+                final String attributeValue = escapedHintValue2 != null ? escapedHintValue2 : "";
+                added |= addOrAppendToAttributeIfNeeded(attributesImpl, "hint", attributeValue, isNewlyVisibleSubtree, attributeValue.equals(""));
+            }
+        }
+
+        {
+            final String alertValue1 = isNewlyVisibleSubtree ? null : control1.getAlert(pipelineContext);
+            final String alertValue2 = control2.getAlert(pipelineContext);
+
+            if (!XFormsUtils.compareStrings(alertValue1, alertValue2)) {
+                final String escapedAlertValue2 = control2.getEscapedAlert(pipelineContext);
+                final String attributeValue = escapedAlertValue2 != null ? escapedAlertValue2 : "";
+                added |= addOrAppendToAttributeIfNeeded(attributesImpl, "alert", attributeValue, isNewlyVisibleSubtree, attributeValue.equals(""));
+            }
+        }
+        return added;
+    }
+
+    protected static boolean addOrAppendToAttributeIfNeeded(AttributesImpl attributesImpl, String name, String value, boolean isNewRepeatIteration, boolean isDefaultValue) {
+        if (isNewRepeatIteration && isDefaultValue) {
+            return false;
+        } else {
+            XMLUtils.addOrAppendToAttribute(attributesImpl, name, value);
+            return true;
+        }
+    }
+
+    /**
+     * Add attributes differences for custom attributes.
+     *
+     * @param pipelineContext       current context
+     * @param attributesImpl        attributes to add to
+     * @param isNewRepeatIteration  whether the current controls is within a new repeat iteration
+     * @param other                 original control, possibly null
+     * @return                      true if any attribute was added, false otherwise
+     */
+    protected boolean addAjaxCustomAttributes(PipelineContext pipelineContext, AttributesImpl attributesImpl, boolean isNewRepeatIteration, XFormsControl other) {
+
+        final QName[] extensionAttributes = getExtensionAttributes();
+        // By default, diff only attributes in the xxforms:* namespace
+        return extensionAttributes != null && addAttributesDiffs(other, attributesImpl, isNewRepeatIteration, extensionAttributes, XFormsConstants.XXFORMS_NAMESPACE_URI);
+    }
+
+    private boolean addAttributesDiffs(XFormsControl control1, AttributesImpl attributesImpl, boolean isNewRepeatIteration, QName[] attributeQNames, String namespaceURI) {
+
+        final XFormsControl control2 = this;
+
+        boolean added = false;
+
+        for (final QName avtAttributeQName: attributeQNames) {
+            // Skip if namespace URI is excluded
+            if (namespaceURI != null && !namespaceURI.equals(avtAttributeQName.getNamespaceURI()))
+                continue;
+
+            final String value1 = (control1 == null) ? null : control1.getExtensionAttributeValue(avtAttributeQName);
+            final String value2 = control2.getExtensionAttributeValue(avtAttributeQName);
+
+            if (!XFormsUtils.compareStrings(value1, value2)) {
+                final String attributeValue = value2 != null ? value2 : "";
+                // NOTE: For now we use the local name; may want to use a full name?
+                added |= addAttributeIfNeeded(attributesImpl, avtAttributeQName.getName(), attributeValue, isNewRepeatIteration, attributeValue.equals(""));
+            }
+        }
+
+        return added;
+    }
+
+    protected void addAjaxStandardAttributes(XFormsSingleNodeControl originalControl, ContentHandlerHelper ch, boolean isNewRepeatIteration) {
+        final QName[] extensionAttributes = STANDARD_EXTENSION_ATTRIBUTES;
+        if (extensionAttributes != null) {
+            final XFormsControl control2 = this;
+
+            for (final QName avtAttributeQName: extensionAttributes) {
+
+                // Skip @class because this is handled separately
+                if (avtAttributeQName.equals(XFormsConstants.CLASS_QNAME))
+                    continue;
+
+                final String value1 = (originalControl == null) ? null : originalControl.getExtensionAttributeValue(avtAttributeQName);
+                final String value2 = control2.getExtensionAttributeValue(avtAttributeQName);
+
+                if (!XFormsUtils.compareStrings(value1, value2)) {
+                    final String attributeValue = value2 != null ? value2 : "";
+
+                    final AttributesImpl attributesImpl = new AttributesImpl();
+                    // Control id
+                    attributesImpl.addAttribute("", "id", "id", ContentHandlerHelper.CDATA, XFormsUtils.namespaceId(containingDocument, control2.getEffectiveId()));
+
+                    // The client does not store an HTML representation of the xxforms:attribute control, so we
+                    // have to output these attributes.
+
+                    // HTML element id
+                    addAttributeIfNeeded(attributesImpl, "for", control2.getEffectiveId(), isNewRepeatIteration, false);
+
+                    // Attribute name
+                    addAttributeIfNeeded(attributesImpl, "name", avtAttributeQName.getName(), isNewRepeatIteration, false);
+
+                    ch.startElement("xxf", XFormsConstants.XXFORMS_NAMESPACE_URI, "attribute", attributesImpl);
+                    ch.text(attributeValue);
+                    ch.endElement();
+                }
+            }
+        }
+    }
+
+    protected static boolean addAttributeIfNeeded(AttributesImpl attributesImpl, String name, String value, boolean isNewRepeatIteration, boolean isDefaultValue) {
+        if (isNewRepeatIteration && isDefaultValue) {
+            return false;
+        } else {
+            attributesImpl.addAttribute("", name, name, ContentHandlerHelper.CDATA, value);
+            return true;
+        }
     }
 }

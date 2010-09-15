@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the
  * GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -15,12 +15,9 @@ package org.orbeon.oxf.xforms.function.xxforms;
 
 import org.orbeon.oxf.xforms.XFormsContainingDocument;
 import org.orbeon.oxf.xforms.XFormsModel;
-import org.orbeon.oxf.xforms.XFormsUtils;
 import org.orbeon.oxf.xforms.function.XFormsFunction;
 import org.orbeon.saxon.expr.XPathContext;
-import org.orbeon.saxon.om.EmptyIterator;
-import org.orbeon.saxon.om.ListIterator;
-import org.orbeon.saxon.om.SequenceIterator;
+import org.orbeon.saxon.om.*;
 import org.orbeon.saxon.trans.XPathException;
 import org.orbeon.saxon.value.StringValue;
 
@@ -32,16 +29,14 @@ public class XXFormsListModels extends XFormsFunction {
     public SequenceIterator iterate(XPathContext xpathContext) throws XPathException {
 
         final XFormsContainingDocument containingDocument = getContainingDocument(xpathContext);
-        // TODO: Nested containers
-        final List<XFormsModel> models = containingDocument.getModels();
+        // Get all the models including local XML component models
+        final List<XFormsModel> models = containingDocument.getAllModels();
 
         if (models != null && models.size() > 0) {
             final List<StringValue> modelIds = new ArrayList<StringValue>(models.size());
 
-            for (Object model: models) {
-                final XFormsModel currentModel = (XFormsModel) model;
-                // Tricky: we return a de-namespaced id, which seems to be the best thing to do
-                modelIds.add(new StringValue(XFormsUtils.deNamespaceId(containingDocument, currentModel.getEffectiveId())));
+            for (final XFormsModel model: models) {
+                modelIds.add(new StringValue(model.getEffectiveId()));
             }
 
             return new ListIterator(modelIds);

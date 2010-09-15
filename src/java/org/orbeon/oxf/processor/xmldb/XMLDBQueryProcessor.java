@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the
  * GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -14,11 +14,10 @@
 package org.orbeon.oxf.processor.xmldb;
 
 import org.orbeon.oxf.pipeline.api.PipelineContext;
-import org.orbeon.oxf.processor.ProcessorImpl;
-import org.orbeon.oxf.processor.ProcessorInputOutputInfo;
-import org.orbeon.oxf.processor.ProcessorOutput;
-import org.orbeon.oxf.xml.ContentHandlerAdapter;
-import org.xml.sax.ContentHandler;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
+import org.orbeon.oxf.processor.*;
+import org.orbeon.oxf.processor.impl.ProcessorOutputImpl;
+import org.orbeon.oxf.xml.XMLReceiverAdapter;
 
 /**
  * xmldb:query.
@@ -34,10 +33,11 @@ public class XMLDBQueryProcessor extends XMLDBProcessor {
     /**
      * Case where an XML response must be generated.
      */
+    @Override
     public ProcessorOutput createOutput(String name) {
-        ProcessorOutput output = new ProcessorImpl.ProcessorOutputImpl(getClass(), name) {
-            public void readImpl(PipelineContext pipelineContext, ContentHandler contentHandler) {
-                executeOperation(pipelineContext, contentHandler);
+        final ProcessorOutput output = new ProcessorOutputImpl(XMLDBQueryProcessor.this, name) {
+            public void readImpl(PipelineContext pipelineContext, XMLReceiver xmlReceiver) {
+                executeOperation(pipelineContext, xmlReceiver);
             }
         };
         addOutput(name, output);
@@ -49,6 +49,6 @@ public class XMLDBQueryProcessor extends XMLDBProcessor {
      */
     @Override
     public void start(PipelineContext pipelineContext) {
-        executeOperation(pipelineContext, new ContentHandlerAdapter());
+        executeOperation(pipelineContext, new XMLReceiverAdapter());
     }
 }

@@ -1,15 +1,15 @@
 /**
- *  Copyright (C) 2004 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify it under the terms of the
- *  GNU Lesser General Public License as published by the Free Software Foundation; either version
- *  2.1 of the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU Lesser General Public License as published by the Free Software Foundation; either version
+ * 2.1 of the License, or (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *  See the GNU Lesser General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Lesser General Public License for more details.
  *
- *  The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+ * The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
  */
 package org.orbeon.oxf.processor.transformer;
 
@@ -20,28 +20,22 @@ import org.dom4j.tree.DefaultText;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.common.ValidationException;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
 import org.orbeon.oxf.processor.*;
 import org.orbeon.oxf.processor.generator.DOMGenerator;
+import org.orbeon.oxf.processor.impl.CacheableTransformerOutputImpl;
 import org.orbeon.oxf.processor.pipeline.PipelineFunctionLibrary;
 import org.orbeon.oxf.util.PooledXPathExpression;
 import org.orbeon.oxf.util.XPathCache;
-import org.orbeon.oxf.xml.EmbeddedDocumentContentHandler;
-import org.orbeon.oxf.xml.TransformerUtils;
+import org.orbeon.oxf.xml.*;
 import org.orbeon.oxf.xml.XMLUtils;
 import org.orbeon.oxf.xml.dom4j.Dom4jUtils;
 import org.orbeon.oxf.xml.dom4j.LocationData;
-import org.orbeon.saxon.Configuration;
-import org.orbeon.saxon.dom4j.DocumentWrapper;
-import org.orbeon.saxon.om.FastStringBuffer;
-import org.orbeon.saxon.om.NodeInfo;
+import org.orbeon.saxon.om.*;
 import org.orbeon.saxon.trans.XPathException;
-import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class XPathProcessor extends ProcessorImpl {
 
@@ -53,37 +47,40 @@ public class XPathProcessor extends ProcessorImpl {
         addOutputInfo(new ProcessorInputOutputInfo(OUTPUT_DATA));
     }
 
+    @Override
     public void setLocationData(LocationData locationData) {
         if (locationData != null)
             this.locationData = locationData;
     }
 
+    @Override
     public ProcessorOutput createOutput(String name) {
-        ProcessorOutput output = new ProcessorImpl.CacheableTransformerOutputImpl(getClass(), name) {
-            public void readImpl(PipelineContext context, ContentHandler contentHandler) {
+        final ProcessorOutput output = new CacheableTransformerOutputImpl(XPathProcessor.this, name) {
+            public void readImpl(PipelineContext context, XMLReceiver xmlReceiver) {
 
                Config config = (Config) readCacheInputAsObject(context, getInputByName(INPUT_CONFIG), new CacheableInputReader() {
                     public Object read(PipelineContext context, final ProcessorInput input) {
-                        Document config = readInputAsDOM4J(context, INPUT_CONFIG);
+                        final Document config = readInputAsDOM4J(context, INPUT_CONFIG);
 
                         // Get declared namespaces
-                        Map namespaces = new HashMap();
+                        final Map<String, String> namespaces = new HashMap<String, String>();
                         for (Iterator i = config.getRootElement().selectNodes("/config/namespace").iterator(); i.hasNext();) {
                             Element namespaceElement = (Element) i.next();
                             namespaces.put(namespaceElement.attributeValue("prefix"),
                                     namespaceElement.attributeValue("uri"));
                         }
-                        return  new Config(namespaces, (String) config.selectObject("string(/config/xpath)"));
+                        return new Config(new NamespaceMapping(namespaces), (String) config.selectObject("string(/config/xpath)"));
                     }
                 });
 
-                DocumentWrapper wrapper = new DocumentWrapper(readCacheInputAsDOM4J(context, INPUT_DATA), null, new Configuration());
+                final DocumentInfo documentInfo = readCacheInputAsTinyTree(context, XPathCache.getGlobalConfiguration(), INPUT_DATA);
                 PooledXPathExpression xpath = null;
                 try {
                     final String baseURI = (locationData == null) ? null : locationData.getSystemID();
-                    xpath = XPathCache.getXPathExpression(context, wrapper, config.getExpression(), config.getNamespaces(), null, PipelineFunctionLibrary.instance(), baseURI, locationData);
+                    xpath = XPathCache.getXPathExpression(context, documentInfo.getConfiguration(), documentInfo,
+                            config.getExpression(), config.getNamespaces(), null, PipelineFunctionLibrary.instance(), baseURI, locationData);
                     List results = xpath.evaluate();
-                    contentHandler.startDocument();
+                    xmlReceiver.startDocument();
                     // WARNING: Here we break the rule that processors must output valid XML documents, because
                     // we potentially output several root nodes. This works because the XPathProcessor is always
                     // connected to an aggregator, which adds a new root node.
@@ -103,13 +100,13 @@ public class XPathProcessor extends ProcessorImpl {
                             final DOMGenerator domGenerator = new DOMGenerator
                                     (element, "xpath result doc", DOMGenerator.ZeroValidity, systemId);
                             final ProcessorOutput domOutput = domGenerator.createOutput(OUTPUT_DATA);
-                            domOutput.read(context, new EmbeddedDocumentContentHandler(contentHandler));
+                            domOutput.read(context, new EmbeddedDocumentXMLReceiver(xmlReceiver));
                         } else if (result instanceof NodeInfo) {
                             final NodeInfo nodeInfo = (NodeInfo) result;
-                            TransformerUtils.writeTinyTree(nodeInfo, new EmbeddedDocumentContentHandler(contentHandler));
+                            TransformerUtils.writeTinyTree(nodeInfo, new EmbeddedDocumentXMLReceiver(xmlReceiver));
                         } else if (result instanceof DefaultProcessingInstruction) {
                             DefaultProcessingInstruction processingInstruction = (DefaultProcessingInstruction) result;
-                            contentHandler.processingInstruction(processingInstruction.getTarget(), processingInstruction.getText());
+                            xmlReceiver.processingInstruction(processingInstruction.getTarget(), processingInstruction.getText());
                         } else if (result instanceof DefaultText) {
                             strVal = ((DefaultText) result).getText();
                         } else if (result instanceof String) {
@@ -131,10 +128,10 @@ public class XPathProcessor extends ProcessorImpl {
                         if (strVal != null) {
                             final char[] ch = strVal.toCharArray();
                             final int len = strVal.length();
-                            contentHandler.characters( ch, 0, len );
+                            xmlReceiver.characters( ch, 0, len );
                         }
                     }
-                    contentHandler.endDocument();
+                    xmlReceiver.endDocument();
                 } catch (XPathException xpe) {
                     throw new OXFException(xpe);
                 } catch (SAXException e) {
@@ -150,10 +147,10 @@ public class XPathProcessor extends ProcessorImpl {
     }
 
     protected static class Config {
-        private Map namespaces;
-        private String expression;
+        private final NamespaceMapping namespaces;
+        private final String expression;
 
-        public Config(Map namespaces, String expression) {
+        public Config(NamespaceMapping namespaces, String expression) {
             this.namespaces = namespaces;
             this.expression = expression;
         }
@@ -162,17 +159,8 @@ public class XPathProcessor extends ProcessorImpl {
             return expression;
         }
 
-        public void setExpression(String expression) {
-            this.expression = expression;
-        }
-
-        public Map getNamespaces() {
+        public NamespaceMapping getNamespaces() {
             return namespaces;
         }
-
-        public void setNamespaces(Map namespaces) {
-            this.namespaces = namespaces;
-        }
-
     }
 }

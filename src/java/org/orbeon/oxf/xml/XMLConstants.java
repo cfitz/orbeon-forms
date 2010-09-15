@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the
  * GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -79,6 +79,7 @@ public class XMLConstants {
     public final static QName XINCLUDE_PROCESSOR_QNAME = new QName("xinclude", OXF_PROCESSORS_NAMESPACE);
     public final static QName SAX_DEBUGGER_PROCESSOR_QNAME = new QName("sax-debugger", OXF_PROCESSORS_NAMESPACE);
     public final static QName DEBUG_PROCESSOR_QNAME = new QName("debug", OXF_PROCESSORS_NAMESPACE);
+    public final static QName PERL5_PROCESSOR_QNAME = new QName("perl5-matcher", OXF_PROCESSORS_NAMESPACE);
 
     public final static QName XS_STRING_QNAME = new QName("string", XSD_NAMESPACE);
     public final static QName XS_BOOLEAN_QNAME = new QName("boolean", XSD_NAMESPACE);
@@ -124,6 +125,8 @@ public class XMLConstants {
     public static final String XPATH_FUNCTIONS_NAMESPACE_URI = "http://www.w3.org/2005/xpath-functions";
 
     public static final String NBSP = "\u00a0";
+
+    public static final String SAX_LEXICAL_HANDLER = "http://xml.org/sax/properties/lexical-handler";
 
     private XMLConstants() {
         // Disallow contruction

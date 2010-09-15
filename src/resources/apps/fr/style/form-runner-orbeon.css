@@ -250,7 +250,7 @@ padding: 5px
 #doc-fb .fr-footer { background-image: url(bottom-974.png); _background-image: none }
 
 /* Put margins here as they are not needed */
-#fr-form-group { margin: .5em 1em 1em }
+#fr-form-group { margin: .5em 1em .5em }
 
 .fr-orbeon-version {
     text-align: center;
@@ -321,7 +321,7 @@ padding: 5px
 }
 
 .xforms-label {
-    /* bold seems too much in general*/
+    font-style: italic
 }
 
 .xforms-noscript .xforms-help-panel .xforms-help-group { list-style-type: square }
@@ -334,7 +334,7 @@ padding: 5px
 .fr-goto-content { border: 2px solid #888888; padding: .5em; float: left; margin-left: 1em }
 
 /* Make button appear the same color as a link */
-.xforms-trigger-appearance-xxforms-minimal, .xforms-trigger-appearance-xxforms-minimal button {
+.xforms-trigger-appearance-xxforms-minimal, .xforms-trigger-appearance-xxforms-minimal button, .xforms-trigger-appearance-xxforms-minimal input {
     color: #6E6E6E;
 }
 
@@ -383,6 +383,7 @@ h1 .xforms-trigger-appearance-xxforms-minimal, h2 .xforms-trigger-appearance-xxf
 
 /* Table of contents */
 .fr-toc { color: #004B92; padding: 0 1em 0 1em }
+.fr-toc a { text-decoration: none }
 
 /* Error summary */
 .xbl-fr-error-summary .fr-error-title {
@@ -395,11 +396,21 @@ h1 .xforms-trigger-appearance-xxforms-minimal, h2 .xforms-trigger-appearance-xxf
 .xbl-fr-error-summary .fr-error-label, .xbl-fr-error-summary .fr-error-row { font-weight: bold }
 .xbl-fr-error-summary .fr-error-alert { color: #DF731B }
 
-/* Section title */
+/* Section */
+.fr-section-title { border-bottom: 1px solid #004B92 }
+.fr-section-title a { text-decoration: none }
+.fr-section-title .fr-section-open-close { border-bottom: white }
 .fr-section-title, .fr-section-title .xforms-label { font-weight: normal }
+.fr-section-title .fr-section-arrow { float: left; display: block; height: 1.5em; background-color: white }
+.fr-section-title .xforms-trigger-appearance-xxforms-minimal,
+    .fr-section-title .xforms-trigger-appearance-xxforms-minimal button,
+    .fr-section-title .xforms-trigger-appearance-xxforms-minimal input { text-decoration: none }
 
 /* Add background to static read-only fields and special output fields */
-.xforms-static, .fr-static { background-color: #EEE; min-height: 1em }
+.xforms-static, .fr-static { min-height: 1em }
+.fr-mode-view .fr-grid-content { margin-bottom: 1em; background-color: #E8F2FF }
+.fr-mode-view .fr-repeat .fr-grid-content { background-color: transparent } 
+.fr-mode-view #fr-form-group { margin-top: 1em }
 
 /* Messages area */
 .fr-messages {

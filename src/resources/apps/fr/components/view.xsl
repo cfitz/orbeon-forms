@@ -30,7 +30,7 @@
 
         <xsl:variable name="view" select="."/>
         <xsl:variable name="body" select="($view/fr:body, .)[1]"/>
-        
+
         <xsl:variable name="width" select="$view/@width"/>
         <xsl:if test="$width and not($width = ('750px', '950px', '974px', '1154px', '100%'))">
             <xsl:message terminate="yes">Value of fr:view/@view is not valid</xsl:message>
@@ -40,7 +40,7 @@
 
             <xforms:group id="fr-view">
                 <xhtml:div id="{if ($width = '750px') then 'doc' else if ($width = '950px') then 'doc2' else if ($width = '1154px') then 'doc-fb' else if ($width = '100%') then 'doc3' else 'doc4'}"
-                           class="{if (fr:left) then 'yui-t2 ' else ''}{if ($mode = ('view', 'pdf', 'email')) then ' fr-print-mode' else ''}">
+                           class="{if (fr:left) then 'yui-t2 ' else ''}{concat(' fr-mode-', $mode)}">
                     <!-- Header -->
                     <xhtml:div class="fr-header">
                         <xsl:choose>
@@ -50,22 +50,27 @@
                                     <xsl:apply-templates select="fr:header/node()"/>
                                 </xforms:group>
                             </xsl:when>
-                            <xsl:otherwise>
+                            <xsl:when test="$mode = 'view'">
+                                <!-- View header -->
+                                <xsl:variable name="default-objects" as="element()+">
+                                    <fr:logo/>
+                                </xsl:variable>
+
+                                <xsl:apply-templates select="$default-objects"/>
+                            </xsl:when>
+                            <xsl:when test="not($mode = ('email'))">
                                 <!-- Standard header -->
-                                <xsl:if test="not($mode = ('view', 'email'))">
+                                <xsl:variable name="default-objects" as="element()+">
+                                    <fr:logo/>
+                                    <fr:language-selector/>
+                                    <fr:noscript-selector/>
+                                    <fr:form-builder-doc/>
+                                    <fr:goto-content/>
+                                </xsl:variable>
 
-                                    <xsl:variable name="default-objects" as="element()+">
-                                        <fr:logo/>
-                                        <fr:language-selector/>
-                                        <fr:noscript-selector/>
-                                        <fr:form-builder-doc/>
-                                        <fr:goto-content/>
-                                    </xsl:variable>
-
-                                    <xsl:apply-templates select="$default-objects"/>
-
-                                </xsl:if>
-                            </xsl:otherwise>
+                                <xsl:apply-templates select="$default-objects"/>
+                            </xsl:when>
+                            <xsl:otherwise/>
                         </xsl:choose>
                     </xhtml:div>
                     <xhtml:div id="hd" class="fr-shadow">&#160;</xhtml:div>
@@ -123,11 +128,16 @@
                                     </xforms:group>
 
                                     <!-- Error summary (if at bottom) -->
-                                    <xsl:if test="$error-summary-bottom">
+                                    <!-- If we configuration tells us the bottom error summary should not be shown, still include it but hide it with 'display: none'.
+                                         This is necessary because the persistence model relies on the error summary to know if the data is valid. -->
+                                    <xhtml:div>
+                                        <xsl:if test="not($error-summary-bottom)">
+                                            <xsl:attribute name="style">display: none</xsl:attribute>
+                                        </xsl:if>
                                         <xsl:call-template name="fr-error-summary">
                                             <xsl:with-param name="position" select="'bottom'"/>
                                         </xsl:call-template>
-                                    </xsl:if>
+                                    </xhtml:div>
                                 </xhtml:div>
                                 <!-- Noscript help section (shown only in edit mode) -->
                                 <xsl:if test="$is-noscript and $mode = ('edit', 'new')">
@@ -156,14 +166,10 @@
                                         </xsl:when>
                                         <xsl:otherwise>
                                             <!-- Standard bottom -->
-
-                                            <xsl:variable name="default-objects" as="element()+">
-                                                <fr:messages/>
-                                                <fr:status-icons/>
-                                                <fr:buttons-bar/>
-                                            </xsl:variable>
-
-                                            <xsl:apply-templates select="$default-objects"/>
+                                            <!-- NOTE: Call instead of apply so that current context is kept -->
+                                            <xsl:call-template name="fr:messages"/>
+                                            <xsl:call-template name="fr:status-icons"/>
+                                            <xsl:call-template name="fr:buttons-bar"/>
                                         </xsl:otherwise>
                                     </xsl:choose>
                                 </xhtml:div>
@@ -239,7 +245,7 @@
         </xforms:group>
     </xsl:template>
 
-        <xsl:template match="fr:form-builder-doc">
+    <xsl:template match="fr:form-builder-doc">
         <xsl:if test="$is-form-builder">
             <xhtml:div class="fr-doc-links">
                 <xhtml:a href="http://wiki.orbeon.com/forms/doc/user-guide/form-builder-user-guide" target="_blank">Form Builder User Guide</xhtml:a>
@@ -324,8 +330,8 @@
 
     <xsl:template match="fr:version">
         <xsl:if test="not($has-version = false())">
-            <xsl:variable xmlns:version="java:org.orbeon.oxf.common.Version" name="orbeon-forms-version" select="version:getVersion()" as="xs:string"/>
-            <xhtml:div class="fr-orbeon-version">Orbeon Forms <xsl:value-of select="$orbeon-forms-version"/></xhtml:div>
+            <xsl:variable xmlns:version="java:org.orbeon.oxf.common.Version" name="orbeon-forms-version" select="version:getVersionString()" as="xs:string"/>
+            <xhtml:div class="fr-orbeon-version"><xsl:value-of select="$orbeon-forms-version"/></xhtml:div>
         </xsl:if>
     </xsl:template>
 
@@ -445,7 +451,7 @@
         <xhtml:div class="fr-separator">&#160;</xhtml:div>
     </xsl:template>
 
-    <xsl:template match="fr:status-icons">
+    <xsl:template match="fr:status-icons" name="fr:status-icons">
         <!-- Status icons for detail page -->
         <xsl:if test="$is-detail">
             <xhtml:div class="fr-status-icons">
@@ -463,12 +469,12 @@
                     <!--<xhtml:img width="16" height="16" src="/apps/fr/style/images/silk/exclamation.png" alt="{{$fr-resources/errors/some}}" title="{{$fr-resources/errors/some}}"/>-->
                     <xhtml:img width="16" height="16" src="/apps/fr/style/images/pixelmixer/warning_16.png" alt="{{$message}}" title="{{$message}}"/>
                 </xforms:group>
-                <xforms:group model="fr-error-summary-model" ref=".[valid = 'true']">
+                <xforms:group model="fr-error-summary-model" ref=".[valid = 'true']" class="fr-validity-icon">
                     <!-- Form is valid -->
                     <!--<xhtml:img width="16" height="16" src="/apps/fr/style/images/silk/tick.png" alt="{{$fr-resources/errors/none}}" title="{{$fr-resources/errors/none}}"/>-->
                     <xhtml:img width="16" height="16" src="/apps/fr/style/images/pixelmixer/tick_16.png" alt="{{$fr-resources/errors/none}}" title="{{$fr-resources/errors/none}}"/>
                 </xforms:group>
-                <xforms:group model="fr-persistence-model" ref="instance('fr-persistence-instance')[data-status = 'dirty']">
+                <xforms:group model="fr-persistence-model" ref="instance('fr-persistence-instance')[data-status = 'dirty']" class="fr-data-icon">
                     <!-- Data is dirty -->
                     <xhtml:img width="16" height="16" src="/apps/fr/style/images/silk/disk.png" alt="{{$fr-resources/errors/unsaved}}" title="{{$fr-resources/errors/unsaved}}"/>
                     <!--<xhtml:img width="16" height="16" src="/apps/fr/style/images/pixelmixer/save_16.png" alt="{{$fr-resources/errors/unsaved}}" title="{{$fr-resources/errors/unsaved}}"/>-->
@@ -477,7 +483,7 @@
         </xsl:if>
     </xsl:template>
 
-    <xsl:template match="fr:messages">
+    <xsl:template match="fr:messages" name="fr:messages">
         <!-- Display messages -->
         <xforms:switch class="fr-messages" model="fr-persistence-model" ref=".[instance('fr-persistence-instance')/message != '']">
             <xforms:case id="fr-message-none">
@@ -516,7 +522,7 @@
         </xforms:switch>
     </xsl:template>
 
-    <xsl:template match="fr:buttons-bar">
+    <xsl:template match="fr:buttons-bar" name="fr:buttons-bar">
         <!-- Buttons -->
         <xhtml:div class="fr-buttons">
             <xsl:choose>

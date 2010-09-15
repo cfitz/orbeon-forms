@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the
  * GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -17,19 +17,20 @@ import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItem;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
-import org.orbeon.oxf.processor.ProcessorImpl;
-import org.orbeon.oxf.processor.ProcessorInputOutputInfo;
-import org.orbeon.oxf.processor.ProcessorOutput;
-import org.orbeon.oxf.processor.ProcessorUtils;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
+import org.orbeon.oxf.processor.*;
+import org.orbeon.oxf.processor.impl.ProcessorOutputImpl;
+import org.orbeon.oxf.resources.ResourceManagerWrapper;
+import org.orbeon.oxf.resources.URLFactory;
 import org.orbeon.oxf.util.NetUtils;
-import org.orbeon.oxf.xml.ContentHandlerAdapter;
+import org.orbeon.oxf.xml.XMLReceiverAdapter;
+import org.orbeon.oxf.xml.dom4j.LocationData;
 import org.xml.sax.Attributes;
-import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
 import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -40,10 +41,14 @@ public class ZipProcessor extends ProcessorImpl {
         addOutputInfo(new ProcessorInputOutputInfo(OUTPUT_DATA));
     }
 
+    @Override
     public ProcessorOutput createOutput(String name) {
-        ProcessorOutput output = new ProcessorImpl.ProcessorOutputImpl(getClass(), name) {
+        final ProcessorOutput output = new ProcessorOutputImpl(ZipProcessor.this, name) {
 
-            public void readImpl(PipelineContext context, ContentHandler contentHandler) {
+            String fileName = null;
+            int statusCode = -1;
+
+            public void readImpl(PipelineContext context, XMLReceiver xmlReceiver) {
                 try {
                     // Create temporary zip file
                     final FileItem fileItem = NetUtils.prepareFileItem(context, NetUtils.REQUEST_SCOPE);
@@ -54,31 +59,64 @@ public class ZipProcessor extends ProcessorImpl {
 
                     try {
                         // Read list of files and write to zip output stream as we go
-                        readInputAsSAX(context, INPUT_DATA, new ContentHandlerAdapter() {
+                        readInputAsSAX(context, INPUT_DATA, new XMLReceiverAdapter() {
 
                             String name;
                             StringBuffer uri;
 
                             // Get the file name, store it
+                            @Override
                             public void startElement(String namespaceURI, String localName, String qName, Attributes atts) throws SAXException {
                                 if ("file".equals(localName)) {
                                     name = atts.getValue("name");
                                     uri = new StringBuffer();
+                                } else if ("files".equals(localName)) {
+                                    fileName = atts.getValue("filename");
+                                    String value = atts.getValue("status-code");
+                                    if (value != null ) {
+                                        statusCode = Integer.parseInt(value);
+                                    }
                                 }
                             }
 
                             // Get the URI to the file, store it
+                            @Override
                             public void characters(char ch[], int start, int length) throws SAXException {
                                 if (uri != null)
                                     uri.append(ch, start, length);
                             }
 
                             // Process file
+                            @Override
                             public void endElement(String namespaceURI, String localName, String qName) throws SAXException {
                                 try {
                                     if ("file".equals(localName)) {
                                         zipOutputStream.putNextEntry(new ZipEntry(name));
-                                        InputStream fileInputStream = new FileInputStream(new File(new URI(uri.toString())));
+                                        final LocationData locationData = getLocationData();
+                                        final URL fullURL;
+                                        final String realPath;
+                                        try {
+                                            fullURL = (locationData != null && locationData.getSystemID() != null)
+                                                                            ? URLFactory.createURL(locationData.getSystemID(), uri.toString())
+                                                                            : URLFactory.createURL(uri.toString());
+
+                                            if (fullURL.getProtocol().equals("oxf")) {
+                                                // Get real path to resource path if possible
+                                                realPath = ResourceManagerWrapper.instance().getRealPath(fullURL.getFile());
+                                                if (realPath == null)
+                                                    throw new OXFException("Zip processor is unable to obtain the real path of the file using the oxf: protocol for the base-directory property: " + uri.toString());
+                                            } else if (fullURL.getProtocol().equals("file")) {
+                                                String host = fullURL.getHost();
+                                                realPath = host + (host.length() > 0 ? ":" : "") + fullURL.getFile();
+                                            } else {
+                                                throw new OXFException("Zip processor only supports the file: and oxf: protocols for the base-directory property: " + uri.toString());
+                                            }
+
+                                        } catch (MalformedURLException e) {
+                                            throw new OXFException(e);
+                                        }
+
+                                        InputStream fileInputStream = new FileInputStream(new File(realPath));
                                         try {
                                             NetUtils.copyStream(fileInputStream, zipOutputStream);
                                         } finally {
@@ -86,8 +124,6 @@ public class ZipProcessor extends ProcessorImpl {
                                         }
                                     }
                                 } catch (IOException e) {
-                                    throw new OXFException(e);
-                                } catch (URISyntaxException e) {
                                     throw new OXFException(e);
                                 }
                             }
@@ -99,7 +135,7 @@ public class ZipProcessor extends ProcessorImpl {
                     // Generate an Orbeon binary document with the content of the zip file
                     FileInputStream zipInputStream = new FileInputStream(temporaryZipFile);
                     try {
-                        ProcessorUtils.readBinary(zipInputStream, contentHandler, "multipart/x-gzip", null, -1);
+                        ProcessorUtils.readBinary(zipInputStream, xmlReceiver, "multipart/x-gzip", null, statusCode, fileName);
                     } finally {
                         zipInputStream.close();
                     }

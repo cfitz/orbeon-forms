@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the
  * GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -28,6 +28,8 @@ import org.orbeon.oxf.cache.SoftCacheImpl;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.pipeline.api.ExternalContext;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
+import org.orbeon.oxf.processor.impl.CacheableTransformerOutputImpl;
 import org.orbeon.oxf.resources.URLFactory;
 import org.orbeon.oxf.util.ContentHandlerOutputStream;
 import org.orbeon.oxf.util.LoggerFactory;
@@ -36,7 +38,6 @@ import org.orbeon.oxf.util.NumberUtils;
 import org.orbeon.oxf.xml.XPathUtils;
 import org.orbeon.oxf.xml.dom4j.Dom4jUtils;
 import org.orbeon.oxf.xml.dom4j.NonLazyUserDataDocument;
-import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
 import java.awt.*;
@@ -353,18 +354,19 @@ public class ImageServer extends ProcessorImpl {
      * This processor supports a "data" output. In this mode, it streams the resulting image data to
      * that output.
      */
+    @Override
     public ProcessorOutput createOutput(String name) {
-        ProcessorOutput output = new ProcessorImpl.CacheableTransformerOutputImpl(getClass(), name) {
+        final ProcessorOutput output = new CacheableTransformerOutputImpl(ImageServer.this, name) {
 
-            public void readImpl(final PipelineContext pipelineContext, final ContentHandler contentHandler) {
+            public void readImpl(final PipelineContext pipelineContext, final XMLReceiver xmlReceiver) {
 
-                final ContentHandlerOutputStream contentHandlerOutputStream = new ContentHandlerOutputStream(contentHandler);
+                final ContentHandlerOutputStream contentHandlerOutputStream = new ContentHandlerOutputStream(xmlReceiver);
 
                 // Start processing
                 processImage(pipelineContext, new ImageResponse() {
 
                     public boolean checkIfModifiedSince(long lastModified, boolean allowOverride) {
-                        // Always modifed
+                        // Always modified
                         return true;
                     }
 

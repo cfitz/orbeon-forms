@@ -1,16 +1,16 @@
-/*
-    Copyright (C) 2008 Orbeon, Inc.
-
-    This program is free software; you can redistribute it and/or modify it under the terms of the
-    GNU Lesser General Public License as published by the Free Software Foundation; either version
-    2.1 of the License, or (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-    without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See the GNU Lesser General Public License for more details.
-
-    The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
-*/
+/**
+ * Copyright (C) 2010 Orbeon, Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU Lesser General Public License as published by the Free Software Foundation; either version
+ * 2.1 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Lesser General Public License for more details.
+ *
+ * The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+ */
 
 /* Overwrite definition in form-runner-orbeon.css if any */
 html { overflow: hidden }
@@ -188,6 +188,10 @@ h1.fr-form-title {
 .fb-test-dialog .fb-test-iframe { width: 100%; border: 1px solid #666; }
 .fb-test-dialog .xbl-fr-button { float: right; padding-top: .5em }
 
+/* PE dialog */
+/* NOTE: This should not be needed because alert dialog should not use label for message content */
+.xbl-fr-alert-dialog-message .xforms-label { font-weight: normal }
+
 /* ***** In-Place Editing ******************************************************************************************* */
 
 /* Title and description */
@@ -224,7 +228,7 @@ h1.fr-form-title {
 
 
 /* In-place editing for section titles */
-.fr-section-title .fr-inplace-content .xforms-output { text-decoration: underline; color: #004B92 }
+.fr-section-title .fr-inplace-content .xforms-output { color: #004B92 }
 #fb-details-group .fr-section-title { display: block }
 
 /* Only show buttons when in edit mode or when hovering over the title */
@@ -387,29 +391,6 @@ a.xforms-help-image .fb-control-help { vertical-align: baseline; }
 .fb-grid-4-columns .fb-grid-td { width: 25%; }
 .fb-grid-4-columns .fb-grid-td .fb-grid-content { width: 13.8em; *width: 13.4em }
 
-/* Radio buttons */
-.fb-grid .xforms-select1-appearance-full span input { float: left; }
-.fb-grid .xforms-select1-appearance-full span label { float: left; margin-right: 0 }
-/* Size of text for radio button; needs to be set for every page width / columns number combination */
-#doc .fb-grid-2-columns .xforms-select1-appearance-full span label { width: 24em; }
-
-#doc4 .fb-grid-1-columns .xforms-select1-appearance-full span label { width: 62.3em; *width: 60em }
-#doc4 .fb-grid-2-columns .xforms-select1-appearance-full span label { width: 28.3em; *width: 27em  }
-#doc4 .fb-grid-3-columns .xforms-select1-appearance-full span label { width: 17em; *width: 16em }
-#doc4 .fb-grid-4-columns .xforms-select1-appearance-full span label { width: 11.3em; *width: 10.5em }
-
-/* Checkboxes */
-.fb-grid .xforms-select-appearance-full span input { float: left; }
-.fb-grid .xforms-select-appearance-full span label { float: left; margin-right: 0 }
-
-/* Size of text for checkboxes; needs to be set for every page width / columns number combination */
-#doc .fb-grid-2-columns .xforms-select-appearance-full span label { width: 24em; }
-
-#doc4 .fb-grid-1-columns .xforms-select-appearance-full span label { width: 62.3em; *width: 60em }
-#doc4 .fb-grid-2-columns .xforms-select-appearance-full span label { width: 28.3em; *width: 27em }
-#doc4 .fb-grid-3-columns .xforms-select-appearance-full span label { width: 17em; *width: 16em }
-#doc4 .fb-grid-4-columns .xforms-select-appearance-full span label { width: 11.3em; *width: 10.5em }
-
 .fb-empty-cell { display: none; font-size: 70%; color: gray; width: 100%; font-style: italic; text-align: center; margin-top: 2em  }
 .fb-empty-cell span { display: none }
 .xforms-repeat-selected-item-4 .fb-empty-cell, td:hover .fb-empty-cell { display: block }
@@ -424,6 +405,8 @@ td:hover .fb-click-message { display: block }
 .fb-section-component .fb-grid-td { background-image: none; background-color: #F8F8F8; border: solid 1px #F8F8F8 }
 .xforms-readonly .xforms-input-input { background-image: none; background-color: #CCCCCC }
 .xforms-readonly textarea { background-image: none; background-color: #CCCCCC }
+
+.fr-buttons-placeholder .xforms-output { color: gray }
 
 /* ***** Accordion Menu ********************************************************************************************* */
 
@@ -526,7 +509,7 @@ html.accordion-menu-js dd.a-m-d-anim {
 #fb-layout .yui-layout-unit-bottom .yui-layout-bd { border-top: 2px solid #004B92; background-color: #E8F2FF }
 #top1 { padding: 0.4em .5em 0 .5em }
 
-/* Always show vertial scrollbar so that there is no reflow of the left pannel when it becomes shorter/taller */
+/* Always show vertical scrollbar so that there is no reflow of the left panel when it becomes shorter/taller */
 .yui-layout .yui-layout-unit-left div.yui-layout-bd {
     overflow-y: scroll;
 }

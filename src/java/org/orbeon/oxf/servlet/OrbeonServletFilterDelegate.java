@@ -1,26 +1,25 @@
 /**
- *  Copyright (C) 2004 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify it under the terms of the
- *  GNU Lesser General Public License as published by the Free Software Foundation; either version
- *  2.1 of the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU Lesser General Public License as published by the Free Software Foundation; either version
+ * 2.1 of the License, or (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *  See the GNU Lesser General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Lesser General Public License for more details.
  *
- *  The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+ * The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
  */
 package org.orbeon.oxf.servlet;
 
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.pipeline.InitUtils;
-import org.orbeon.oxf.pipeline.api.ExternalContext;
-import org.orbeon.oxf.pipeline.api.PipelineContext;
-import org.orbeon.oxf.pipeline.api.ProcessorDefinition;
+import org.orbeon.oxf.pipeline.api.*;
+import org.orbeon.oxf.processor.ServletFilterGenerator;
 import org.orbeon.oxf.util.AttributesToMap;
-import org.orbeon.oxf.webapp.WebAppContext;
 import org.orbeon.oxf.webapp.ProcessorService;
+import org.orbeon.oxf.webapp.WebAppContext;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
@@ -88,12 +87,12 @@ public class OrbeonServletFilterDelegate implements Filter {
 
         // Add filter chain to the pipeline context for use by the ServletFilterGenerator
         PipelineContext pipelineContext = new PipelineContext();
-        pipelineContext.setAttribute(org.orbeon.oxf.pipeline.api.PipelineContext.FILTER_CHAIN, chain);
+        pipelineContext.setAttribute(ServletFilterGenerator.FILTER_CHAIN, chain);
 
         // Process the regular pipeline
         try {
             ExternalContext externalContext = new ServletExternalContext(servletContext, pipelineContext, webAppContext.getServletInitParametersMap(), (HttpServletRequest) request, (HttpServletResponse) response);
-            processorService.service(true, externalContext, pipelineContext);
+            processorService.service(externalContext, pipelineContext);
         } catch (Exception e) {
             throw new ServletException(OXFException.getRootThrowable(e));
         }

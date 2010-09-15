@@ -15,8 +15,11 @@ package org.orbeon.oxf.xforms.control;
 
 import org.dom4j.Element;
 import org.orbeon.oxf.util.PropertyContext;
+import org.orbeon.oxf.xforms.XFormsContextStack;
 import org.orbeon.oxf.xforms.XFormsUtils;
 import org.orbeon.oxf.xforms.xbl.XBLContainer;
+import org.orbeon.saxon.om.Item;
+import org.orbeon.saxon.om.NodeInfo;
 
 /**
  * A container control which supports value change events. Currently:
@@ -26,6 +29,7 @@ import org.orbeon.oxf.xforms.xbl.XBLContainer;
  */
 public abstract class XFormsValueContainerControl extends XFormsSingleNodeContainerControl {
 
+    private boolean hasValue;
     private String value;
     private String previousValue;
 
@@ -34,36 +38,46 @@ public abstract class XFormsValueContainerControl extends XFormsSingleNodeContai
     }
 
     @Override
-    protected void evaluate(PropertyContext propertyContext, boolean isRefresh) {
-        super.evaluate(propertyContext, isRefresh);
+    protected void onCreate(PropertyContext propertyContext) {
+        super.onCreate(propertyContext);
+        readBinding();
+    }
 
-        // Evaluate control values
-        if (isRelevant()) {
-            // Control is relevant
-            value = XFormsUtils.getBoundItemValue(getBoundItem());
+    @Override
+    protected void onBindingUpdate(PropertyContext propertyContext, XFormsContextStack.BindingContext oldBinding, XFormsContextStack.BindingContext newBinding) {
+        super.onBindingUpdate(propertyContext, oldBinding, newBinding);
+        readBinding();
+    }
+
+    private void readBinding() {
+        final Item boundItem = getBoundItem();
+        if (boundItem instanceof NodeInfo && !XFormsUtils.hasChildrenElements((NodeInfo) boundItem)) {
+            hasValue = true;
         } else {
-            // Control is not relevant
-            value = null;
-        }
-
-        if (!isRefresh) {
-            // Sync value
-            previousValue = value;
+            hasValue = false;
         }
     }
 
     @Override
-    public void markDirty() {
-        super.markDirty();
+    protected void evaluateImpl(PropertyContext propertyContext) {
+        super.evaluateImpl(propertyContext);
 
-        // Keep previous value
-        previousValue = value;
+        // Evaluate control values
+        if (hasValue && isRelevant()) {
+            // Control has value and is relevant
+            value = XFormsUtils.getBoundItemValue(getBoundItem());
+        } else {
+            // Control doesn't have value or is not relevant
+            value = null;
+        }
     }
 
     @Override
     public boolean isValueChanged() {
         // For special uses, we want to allow the group to detect value changes
-        return !XFormsUtils.compareStrings(previousValue, value);
+        final boolean result = !XFormsUtils.compareStrings(previousValue, value);
+        previousValue = value;
+        return result;
     }
 
     @Override

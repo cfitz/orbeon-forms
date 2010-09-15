@@ -109,7 +109,7 @@ public class FilesystemResourceManagerImpl extends ResourceManagerBase {
      * @return true if write operations are allowed
      */
     public boolean canWrite(String key) {
-        return true;
+        return getFile(key).getParentFile().canWrite();
     }
 
     /**
@@ -124,8 +124,7 @@ public class FilesystemResourceManagerImpl extends ResourceManagerBase {
             if (file.exists() && file.canWrite())
                 file.delete();
             // Create file
-            if (!file.createNewFile())
-                file.createNewFile();
+            file.createNewFile();
 
             if(file.canWrite())
                 return new FileOutputStream(file);
@@ -182,5 +181,11 @@ public class FilesystemResourceManagerImpl extends ResourceManagerBase {
 
     public String getRealPath(String key) {
         return getFile(key).getAbsolutePath();
+        // Need an option for this as some callers call this for non-existing files
+//        final File file = getFile(key);
+//        if (!file.canRead())
+//            throw new ResourceNotFoundException("Cannot read from file " + key);
+//        else
+//            return file.getAbsolutePath();
     }
 }

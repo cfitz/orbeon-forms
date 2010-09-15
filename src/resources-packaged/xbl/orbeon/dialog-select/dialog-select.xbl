@@ -50,30 +50,9 @@
                 </fr:dialog-select>
             </template>
         </metadata>
-        
+
         <xbl:resources>
-            <xbl:style>
-                .xbl-fr-dialog-select ul .xforms-repeat-selected-item-1 { background-color: transparent}
-                .xbl-fr-dialog-select .fr-component-group { display: inline-block; display: -moz-inline-block }
-
-                #doc .fr-grid .xbl-fr-dialog-select .xforms-select-appearance-full span label,
-                        #doc4 .fr-grid .xbl-fr-dialog-select .xforms-select-appearance-full span label {
-                    width: auto;
-                }
-
-                .xbl-fr-dialog-select td { vertical-align: top; padding: .5em }
-
-                .xbl-fr-dialog-select select {
-                    height: 10em;
-                    width: 15em;
-                }
-
-                .xbl-fr-dialog-select table .xbl-fr-button { display: block; margin: .5em }
-                .xbl-fr-dialog-select .xforms-label { display: block; font-weight: bold }
-
-                .xbl-fr-dialog-select .fr-dialog-buttons { text-align: right; padding-right: .5em; padding-top: .5em; padding-bottom: .5em; margin-top: .5em; border-top: 2px solid #DDDDEE; clear: both }
-
-            </xbl:style>
+            <xbl:style src="/xbl/orbeon/dialog-select/dialog-select.css"/>
         </xbl:resources>
 
         <xbl:implementation>
@@ -132,7 +111,9 @@
                         <!-- If a separator is specified, output a string, otherwise output ul/li -->
                         <xxforms:variable name="separator" xbl:attr="xbl:text=separator" as="xs:string">ED9A0AC4-F526-ECCD-869A-D59A3AEDE4A8</xxforms:variable>
                         <xforms:group ref=".[$separator != 'ED9A0AC4-F526-ECCD-869A-D59A3AEDE4A8']">
-                            <xforms:output value="string-join($items[value = $selected]/label, $separator)"/>
+                            <!-- Add tabindex so the element doesn't steal the focus on Firefox when styled with overflow-y: scroll.
+                                 This isn't done by default, but can be done by the application, as is the case in the test-dialog-select.xthml -->
+                            <xforms:output value="string-join($items[value = $selected]/label, $separator)" tabindex="-1"/>
                         </xforms:group>
                         <xforms:group ref=".[$separator = 'ED9A0AC4-F526-ECCD-869A-D59A3AEDE4A8']">
                             <xhtml:ul>
@@ -152,7 +133,7 @@
                             <xxforms:show ev:event="DOMActivate" dialog="dialog"/>
                         </fr:button>
 
-                        <xxforms:dialog id="dialog" close="true" neighbor="select" appearance="full" level="modal">
+                        <xxforms:dialog id="dialog" close="true" appearance="full" level="modal" class="fr-dialog-select-dialog">
                             <xforms:label value="$resources/title"/>
 
                             <xforms:action ev:event="xxforms-dialog-open">
@@ -182,9 +163,9 @@
                                         </xforms:select>
                                     </xhtml:td>
                                     <xhtml:td>
-                                        <fr:button ref="add-trigger">
+                                        <fr:button ref="add-trigger" class="fr-add-button">
                                             <xforms:label>
-                                                <xhtml:img width="16" height="16" src="/apps/fr/style/images/pixelmixer/right_16.png" alt=""/>
+                                                <xforms:output value="$resources/add"/>
                                             </xforms:label>
                                             <xforms:action ev:event="DOMActivate" >
                                                 <xxforms:variable name="selection" select="tokenize(available, '\s+')" as="xs:string*"/>
@@ -197,9 +178,9 @@
                                             </xforms:action>
                                         </fr:button>
 
-                                        <fr:button ref="remove-trigger">
+                                        <fr:button ref="remove-trigger" class="fr-remove-button">
                                             <xforms:label>
-                                                <xhtml:img width="16" height="16" src="/apps/fr/style/images/pixelmixer/left_16.png" alt=""/>
+                                                <xforms:output value="$resources/remove"/>
                                             </xforms:label>
                                             <xforms:action ev:event="DOMActivate" >
                                                 <xxforms:variable name="selection" select="tokenize(selected, '\s+')" as="xs:string*"/>
@@ -226,17 +207,6 @@
                             </xhtml:table>
 
                             <xhtml:div class="fr-dialog-buttons">
-                                <!-- Cancel button -->
-                                <fr:button>
-                                    <xforms:label>
-                                        <xhtml:img width="11" height="16" src="/apps/fr/style/close.gif" alt=""/>
-                                        <xhtml:span><xforms:output value="$resources/cancel"/></xhtml:span>
-                                    </xforms:label>
-                                    <xforms:action ev:event="DOMActivate">
-                                        <!-- Just close -->
-                                        <xxforms:hide dialog="dialog"/>
-                                    </xforms:action>
-                                </fr:button>
                                 <!-- Confirm button -->
                                 <fr:button>
                                     <xforms:label>
@@ -248,6 +218,17 @@
                                         <xforms:setvalue ref="$binding"
                                                          value="for $selected-itemset in instance()/selected-itemset
                                                                 return string-join($items/value/string()[. = tokenize($selected-itemset, '\s+')], ' ')"/>
+                                        <xxforms:hide dialog="dialog"/>
+                                    </xforms:action>
+                                </fr:button>
+                                <!-- Cancel button -->
+                                <fr:button>
+                                    <xforms:label>
+                                        <xhtml:img width="11" height="16" src="/apps/fr/style/close.gif" alt=""/>
+                                        <xhtml:span><xforms:output value="$resources/cancel"/></xhtml:span>
+                                    </xforms:label>
+                                    <xforms:action ev:event="DOMActivate">
+                                        <!-- Just close -->
                                         <xxforms:hide dialog="dialog"/>
                                     </xforms:action>
                                 </fr:button>

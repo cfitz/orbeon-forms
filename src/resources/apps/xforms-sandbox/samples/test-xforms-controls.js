@@ -24,6 +24,9 @@ YAHOO.tool.TestRunner.add(new YAHOO.tool.TestCase({
             ORBEON.util.Test.executeCausingAjaxRequest(this, function() {
                 ORBEON.xforms.Document.setValue("repeat-shown", "true");
             }, function() {
+                var control = YAHOO.util.Dom.get(fullId);
+                var formElement = ORBEON.util.Dom.getElementByTagName(control, ["input", "textarea"]);
+                YAHOO.util.Assert.isFalse(formElement.disabled, "form element must not be disabled after recreation");
                 YAHOO.util.Assert.areEqual("true", ORBEON.xforms.Document.getValue(fullId));
                 YAHOO.util.Assert.areEqual("Label", ORBEON.xforms.Controls.getLabelMessage(YAHOO.util.Dom.get(fullId)));
             });
@@ -41,6 +44,14 @@ YAHOO.tool.TestRunner.add(new YAHOO.tool.TestCase({
 
     name: "Readonly and relevant",
 
+    testDisabledOnLoad: function() {
+        // Checking that a disabled field has the 'disabled' attribute when the page is first loaded, so it can't get
+        // the keyboard focus if the user tabs through it
+        var inputContainer = YAHOO.util.Dom.get("disabled-input" + XFORMS_SEPARATOR_1 + "1");
+        var inputField = ORBEON.util.Dom.getElementByTagName(inputContainer, "input");
+        YAHOO.util.Assert.isTrue(inputField.disabled);
+    },
+
     getFormControls: function() {
         var controlsContainer = YAHOO.util.Dom.get("controls");
         var formTagNames = [ "input", "textarea", "select", "button" ];
@@ -52,8 +63,8 @@ YAHOO.tool.TestRunner.add(new YAHOO.tool.TestCase({
                 var thisTagElement = thisTagElements[thisTagElementIndex];
                 if (YAHOO.util.Dom.getAncestorByClassName(thisTagElement, "xforms-repeat-template") == null)
                     formElements.push(thisTagElement);
-            };
-        };
+            }
+        }
         return formElements;
     },
 
@@ -61,8 +72,10 @@ YAHOO.tool.TestRunner.add(new YAHOO.tool.TestCase({
         var elements = this.getFormControls();
         for (var elementIndex = 0; elementIndex < elements.length; elementIndex++) {
             var element = elements[elementIndex];
-            YAHOO.util.Assert.areEqual(disabled, element.disabled, "element " + element.id + " supposed to have disabled = " + disabled);
-        };
+            if (element.id != "disabled-input$xforms-input-1" + XFORMS_SEPARATOR_1 + "1"
+                    && element.id != "readonly-input$xforms-input-1" + XFORMS_SEPARATOR_1 + "1")
+                YAHOO.util.Assert.areEqual(disabled, element.disabled, "element " + element.id + " supposed to have disabled = " + disabled);
+        }
     },
 
     testReadonly: function() {
@@ -74,6 +87,22 @@ YAHOO.tool.TestRunner.add(new YAHOO.tool.TestCase({
                 ORBEON.xforms.Document.setValue("readonly", "false");
             }, function() {
                 this.checkDisabled(false);
+            });
+        });
+    },
+
+    testReadonlyBecomingRelevant: function() {
+        var inputContainer = YAHOO.util.Dom.get("readonly-input" + XFORMS_SEPARATOR_1 + "1");
+        var inputField = ORBEON.util.Dom.getElementByTagName(inputContainer, "input");
+        ORBEON.util.Test.executeCausingAjaxRequest(this, function() {
+            YAHOO.util.Assert.isTrue(inputField.disabled, "input field initially disabled because bound to a readonly node");
+            ORBEON.xforms.Document.setValue("relevant", "false");
+        }, function() {
+            YAHOO.util.Assert.isTrue(inputField.disabled, "input field still disabled when non-relevant");
+            ORBEON.util.Test.executeCausingAjaxRequest(this, function() {
+                ORBEON.xforms.Document.setValue("relevant", "true");
+            }, function() {
+                YAHOO.util.Assert.isTrue(inputField.disabled, "input field still disabled when becomes relevant because readonly");
             });
         });
     }
@@ -145,7 +174,7 @@ YAHOO.tool.TestRunner.add(new YAHOO.tool.TestCase({
     },
 
     testOutOfRange: function() {
-        function valueOfRadio() { return ORBEON.xforms.Document.getValue("flavor-select1-full" + XFORMS_SEPARATOR_1 + "1") };
+        function valueOfRadio() { return ORBEON.xforms.Document.getValue("flavor-select1-full" + XFORMS_SEPARATOR_1 + "1") }
 
         ORBEON.util.Test.executeCausingAjaxRequest(this, function() {
            YAHOO.util.UserAction.click("set-out-of-range" + XFORMS_SEPARATOR_1 + "1");
@@ -196,11 +225,11 @@ YAHOO.tool.TestRunner.add(new YAHOO.tool.TestCase({
         // Click on text field
         YAHOO.util.UserAction.click(this.dateValueInputId);
         // Check calendar div shown
-        YAHOO.util.Assert.areEqual("block", document.getElementById("orbeon-calendar-div").style.display);
+        YAHOO.util.Assert.areEqual("visible", document.getElementById("orbeon-calendar-div").style.visibility);
         // Click on body
         YAHOO.util.UserAction.click(document.body);
         // Check calendar div is hidden
-        YAHOO.util.Assert.areEqual("none", document.getElementById("orbeon-calendar-div").style.display);
+        YAHOO.util.Assert.areEqual("hidden", document.getElementById("orbeon-calendar-div").style.visibility);
     },
 
     testCantOpenReadonly: function() {
@@ -212,7 +241,7 @@ YAHOO.tool.TestRunner.add(new YAHOO.tool.TestCase({
             // Click on text field
             YAHOO.util.UserAction.click(this.dateValueInputId);
             // Check that the div is still hidden
-            YAHOO.util.Assert.areEqual("none", document.getElementById("orbeon-calendar-div").style.display);
+            YAHOO.util.Assert.areEqual("hidden", document.getElementById("orbeon-calendar-div").style.visibility);
             // Restore read-only = false
             ORBEON.util.Test.executeCausingAjaxRequest(this, function() {
                 ORBEON.xforms.Document.setValue("readonly", "false");
@@ -232,7 +261,7 @@ YAHOO.tool.TestRunner.add(new YAHOO.tool.TestCase({
     testTwoDigitClose: function() { this.checkDateConversion ("02", "2002"); },
     testTwoDigitTwentyFirst: function() { this.checkDateConversion ("40", "2040"); },
     testTwoDigitTwentieth: function() { this.checkDateConversion ("85", "1985"); },
-    
+
     testDateOverflow: function() {
         ORBEON.util.Test.executeCausingAjaxRequest(this, function() {
             // Enter invalid date
@@ -301,8 +330,8 @@ YAHOO.tool.TestRunner.add(new YAHOO.tool.TestCase({
                     monthYear = YAHOO.util.Dom.getElementsByClassName("calnav", null, "orbeon-calendar-div")[0];
                     YAHOO.util.Assert.areEqual("October 2029", monthYear.innerHTML);
                     YAHOO.util.UserAction.click(document.body);
-                }, XFORMS_INTERNAL_SHORT_DELAY_IN_MS);
-            }, XFORMS_INTERNAL_SHORT_DELAY_IN_MS);
+                }, ORBEON.util.Properties.internalShortDelay.get());
+            }, ORBEON.util.Properties.internalShortDelay.get());
         });
 
     }
@@ -357,6 +386,27 @@ YAHOO.tool.TestRunner.add(new YAHOO.tool.TestCase({
                 YAHOO.util.Assert.areNotEqual(-1, a.href.indexOf("/orbeon/xforms-server/dynamic/"));
                 // The text for the link is still the same
                 YAHOO.util.Assert.areEqual("Download file", ORBEON.util.Dom.getStringValue(a));
+            });
+        });
+    }
+}));
+
+YAHOO.tool.TestRunner.add(new YAHOO.tool.TestCase({
+
+    name: "Type change",
+
+    testChangeToDate: function() {
+        var input = YAHOO.util.Dom.get("type-change-input" + XFORMS_SEPARATOR_1 + "1");
+        ORBEON.util.Test.executeCausingAjaxRequest(this, function() {
+            YAHOO.util.UserAction.click("set-type-date" + XFORMS_SEPARATOR_1 + "1");
+        }, function() {
+            var inputInput = ORBEON.util.Dom.getChildElementByClass(input, "xforms-input-input");
+            YAHOO.util.Assert.isTrue(YAHOO.util.Dom.hasClass(inputInput, "xforms-type-date"));
+            ORBEON.util.Test.executeCausingAjaxRequest(this, function() {
+                YAHOO.util.UserAction.click("set-type-float" + XFORMS_SEPARATOR_1 + "1");
+            }, function() {
+                var inputInput = ORBEON.util.Dom.getChildElementByClass(input, "xforms-input-input");
+                YAHOO.util.Assert.isTrue(YAHOO.util.Dom.hasClass(inputInput, "xforms-type-string"));
             });
         });
     }

@@ -15,20 +15,20 @@ package org.orbeon.oxf.processor.pipeline.choose;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.log4j.Logger;
-import org.orbeon.oxf.cache.Cacheable;
 import org.orbeon.oxf.cache.OutputCacheKey;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.common.ValidationException;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
 import org.orbeon.oxf.processor.*;
+import org.orbeon.oxf.processor.impl.ProcessorOutputImpl;
 import org.orbeon.oxf.processor.pipeline.PipelineFunctionLibrary;
-import org.orbeon.oxf.util.LoggerFactory;
-import org.orbeon.oxf.util.PooledXPathExpression;
-import org.orbeon.oxf.util.XPathCache;
+import org.orbeon.oxf.util.*;
+import org.orbeon.oxf.xml.NamespaceMapping;
 import org.orbeon.oxf.xml.dom4j.LocationData;
+import org.orbeon.saxon.Configuration;
 import org.orbeon.saxon.om.DocumentInfo;
 import org.orbeon.saxon.trans.XPathException;
-import org.xml.sax.ContentHandler;
 
 import java.util.*;
 
@@ -39,7 +39,7 @@ public class ConcreteChooseProcessor extends ProcessorImpl {
     // Created when constructed
     private LocationData locationData;
     private List branchConditions;
-    private List branchNamespaces;
+    private List<NamespaceMapping> branchNamespaces;
     private List branchProcessors;
     private Set outputsById;
     private Set outputsByParamRef;
@@ -60,7 +60,7 @@ public class ConcreteChooseProcessor extends ProcessorImpl {
      *                          pipeline outputs
      */
     public ConcreteChooseProcessor(String id, LocationData locationData,
-                                   List branchConditions, List branchNamespaces, List branchProcessors,
+                                   List branchConditions, List<NamespaceMapping> branchNamespaces, List branchProcessors,
                                    Set inputs, Set outputsById, Set outputsByParamRef) {
         setId(id);
         this.locationData = locationData;
@@ -115,41 +115,36 @@ public class ConcreteChooseProcessor extends ProcessorImpl {
         return outputsById;
     }
 
+    @Override
     public ProcessorOutput createOutput(String name) {
         final String _name = name;
-        ProcessorOutput output = new ProcessorImpl.ProcessorOutputImpl(getClass(), name) {
-            public void readImpl(PipelineContext context, ContentHandler contentHandler) {
-                State state = (State) getState(context);
+        final ProcessorOutput output = new ProcessorOutputImpl(ConcreteChooseProcessor.this, name) {
+            public void readImpl(PipelineContext context, XMLReceiver xmlReceiver) {
+                final State state = (State) getState(context);
                 if (!state.started)
                     start(context);
-                ProcessorOutput branchOutput = state.selectedBranchOutputs.get(_name);
-                branchOutput.read(context, contentHandler);
+                final ProcessorOutput branchOutput = state.selectedBranchOutputs.get(_name);
+                branchOutput.read(context, xmlReceiver);
             }
 
-            protected OutputCacheKey getKeyImpl(PipelineContext context) {
-                if (isInputInCache(context, AbstractChooseProcessor.CHOOSE_DATA_INPUT)) {
-                    State state = (State) getState(context);
+            @Override
+            public OutputCacheKey getKeyImpl(PipelineContext pipelineContext) {
+                if (isInputInCache(pipelineContext, AbstractChooseProcessor.CHOOSE_DATA_INPUT)) {
+                    final State state = (State) getState(pipelineContext);
                     if (!state.started)
-                        start(context);
-                    ProcessorOutput branchOutput = state.selectedBranchOutputs.get(_name);
-                    if (branchOutput instanceof Cacheable)
-                        return ((Cacheable) branchOutput).getKey(context);
-                    else
-                        return null;
+                        start(pipelineContext);
+                    return state.selectedBranchOutputs.get(_name).getKey(pipelineContext);
                 } else
                     return null;
             }
 
-            protected Object getValidityImpl(PipelineContext context) {
-                if (isInputInCache(context, AbstractChooseProcessor.CHOOSE_DATA_INPUT)) {
-                    State state = (State) getState(context);
+            @Override
+            protected Object getValidityImpl(PipelineContext pipelineContext) {
+                if (isInputInCache(pipelineContext, AbstractChooseProcessor.CHOOSE_DATA_INPUT)) {
+                    final State state = (State) getState(pipelineContext);
                     if (!state.started)
-                        start(context);
-                    ProcessorOutput branchOutput = state.selectedBranchOutputs.get(_name);
-                    if (branchOutput instanceof Cacheable)
-                        return ((Cacheable) branchOutput).getValidity(context);
-                    else
-                        return null;
+                        start(pipelineContext);
+                    return state.selectedBranchOutputs.get(_name).getValidity(pipelineContext);
                 } else
                     return null;
             }
@@ -158,8 +153,9 @@ public class ConcreteChooseProcessor extends ProcessorImpl {
         return output;
     }
 
-    public void start(PipelineContext context) {
-        final State state = (State) getState(context);
+    @Override
+    public void start(PipelineContext pipelineContext) {
+        final State state = (State) getState(pipelineContext);
         if (state.started)
             throw new IllegalStateException("ASTChoose Processor already started");
 
@@ -185,12 +181,19 @@ public class ConcreteChooseProcessor extends ProcessorImpl {
 //                break;
 //            }
             // Lazily read input in case there is only a p:otherwise
-            if (hrefDocumentInfo == null)
-                hrefDocumentInfo = readCacheInputAsTinyTree(context, AbstractChooseProcessor.CHOOSE_DATA_INPUT);
+            if (hrefDocumentInfo == null) {
+                final Configuration configuration = XPathCache.getGlobalConfiguration();
+                hrefDocumentInfo = readCacheInputAsTinyTree(pipelineContext, configuration, AbstractChooseProcessor.CHOOSE_DATA_INPUT);
+            }
             PooledXPathExpression expression = null;
-            final Map namespaces = (Map) branchNamespaces.get(branchIndex);
+            final NamespaceMapping namespaces = branchNamespaces.get(branchIndex);
+
+
             try {
-                expression = XPathCache.getXPathExpression(context, hrefDocumentInfo, "boolean(" + condition + ")", namespaces, null, PipelineFunctionLibrary.instance(), null, locationData);// TODO: location should be that of branch
+                expression = XPathCache.getXPathExpression(pipelineContext, hrefDocumentInfo.getConfiguration(),
+                        hrefDocumentInfo, "boolean(" + condition + ")", namespaces, null,
+                        PipelineFunctionLibrary.instance(), null, locationData);// TODO: location should be that of branch
+
                 if (((Boolean) expression.evaluateSingle()).booleanValue()) {
                     selectedBranch = branchIndex;
                     break;
@@ -232,7 +235,7 @@ public class ConcreteChooseProcessor extends ProcessorImpl {
             }
 
             // Connect branch outputs, or start processor
-            selectedBranchProcessor.reset(context);
+            selectedBranchProcessor.reset(pipelineContext);
             if (outputsById.size() == 0 && outputsByParamRef.size() == 0) {
                 if (logger.isDebugEnabled()) {
                     final String condition = (String) branchConditions.get(selectedBranch);
@@ -242,12 +245,13 @@ public class ConcreteChooseProcessor extends ProcessorImpl {
                     else
                         logger.debug("Choose: taking otherwise branch at " + locationData);
                 }
-                selectedBranchProcessor.start(context);
+                selectedBranchProcessor.start(pipelineContext);
             }
             state.started = true;
         }
     }
 
+    @Override
     public void reset(PipelineContext context) {
         setState(context, new State());
     }

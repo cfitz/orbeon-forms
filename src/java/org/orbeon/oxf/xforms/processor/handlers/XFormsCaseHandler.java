@@ -13,6 +13,7 @@
  */
 package org.orbeon.oxf.xforms.processor.handlers;
 
+import org.orbeon.oxf.xforms.XFormsUtils;
 import org.orbeon.oxf.xforms.control.XFormsControl;
 import org.orbeon.oxf.xforms.control.controls.XFormsCaseControl;
 import org.orbeon.oxf.xml.*;
@@ -25,7 +26,7 @@ import org.xml.sax.helpers.AttributesImpl;
  */
 public class XFormsCaseHandler extends XFormsControlLifecyleHandler {
 
-    private DeferredContentHandler currentSavedOutput;
+    private DeferredXMLReceiver currentSavedOutput;
     private OutputInterceptor currentOutputInterceptor;
     private String currentCaseEffectiveId;
     private boolean isVisible;
@@ -74,7 +75,8 @@ public class XFormsCaseHandler extends XFormsControlLifecyleHandler {
                     if (isMustGenerateBeginEndDelimiters) {
                         // Output begin delimiter
                         outputInterceptor.outputDelimiter(currentSavedOutput, outputInterceptor.getDelimiterNamespaceURI(),
-                                outputInterceptor.getDelimiterPrefix(), outputInterceptor.getDelimiterLocalName(), "xforms-case-begin-end", "xforms-case-begin-" + currentCaseEffectiveId);
+                                outputInterceptor.getDelimiterPrefix(), outputInterceptor.getDelimiterLocalName(), "xforms-case-begin-end",
+                                "xforms-case-begin-" + XFormsUtils.namespaceId(containingDocument, currentCaseEffectiveId));
                     }
                 }
             });
@@ -82,10 +84,10 @@ public class XFormsCaseHandler extends XFormsControlLifecyleHandler {
             currentOutputInterceptor.setAddedClasses(isVisible ? "xforms-case-selected" : "xforms-case-deselected");
 
             // TODO: is the use of XFormsElementFilterContentHandler necessary now?
-            handlerContext.getController().setOutput(new DeferredContentHandlerImpl(new XFormsElementFilterContentHandler(currentOutputInterceptor)));
+            handlerContext.getController().setOutput(new DeferredXMLReceiverImpl(new XFormsElementFilterXMLReceiver(currentOutputInterceptor)));
         } else if (!isVisible) {
             // Case not visible, set output to a black hole
-            handlerContext.getController().setOutput(new DeferredContentHandlerAdapter());
+            handlerContext.getController().setOutput(new DeferredXMLReceiverAdapter());
         }
     }
 
@@ -102,14 +104,15 @@ public class XFormsCaseHandler extends XFormsControlLifecyleHandler {
                 if (currentOutputInterceptor.getDelimiterNamespaceURI() != null) {
                     // Output end delimiter
                     currentOutputInterceptor.outputDelimiter(currentSavedOutput, currentOutputInterceptor.getDelimiterNamespaceURI(),
-                        currentOutputInterceptor.getDelimiterPrefix(), currentOutputInterceptor.getDelimiterLocalName(), "xforms-case-begin-end", "xforms-case-end-" + currentCaseEffectiveId);
+                        currentOutputInterceptor.getDelimiterPrefix(), currentOutputInterceptor.getDelimiterLocalName(), "xforms-case-begin-end",
+                            "xforms-case-end-" + XFormsUtils.namespaceId(containingDocument, currentCaseEffectiveId));
                 } else {
                     // Output start and end delimiter using xhtml:span
                     final String xhtmlPrefix = handlerContext.findXHTMLPrefix();
                     currentOutputInterceptor.outputDelimiter(currentSavedOutput, XMLConstants.XHTML_NAMESPACE_URI,
-                        xhtmlPrefix, "span", "xforms-case-begin-end", "xforms-case-begin-" + currentCaseEffectiveId);
+                        xhtmlPrefix, "span", "xforms-case-begin-end", "xforms-case-begin-" + XFormsUtils.namespaceId(containingDocument, currentCaseEffectiveId));
                     currentOutputInterceptor.outputDelimiter(currentSavedOutput, XMLConstants.XHTML_NAMESPACE_URI,
-                        xhtmlPrefix, "span", "xforms-case-begin-end", "xforms-case-end-" + currentCaseEffectiveId);
+                        xhtmlPrefix, "span", "xforms-case-begin-end", "xforms-case-end-" + XFormsUtils.namespaceId(containingDocument, currentCaseEffectiveId));
                 }
             }
         } else if (!isVisible) {

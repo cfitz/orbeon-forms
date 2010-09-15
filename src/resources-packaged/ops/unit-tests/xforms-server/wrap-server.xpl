@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright (C) 2009 Orbeon, Inc.
+  Copyright (C) 2010 Orbeon, Inc.
 
   This program is free software; you can redistribute it and/or modify it under the terms of the
   GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -37,9 +37,11 @@
         <p:input name="config">
             <xsl:transform version="2.0">
                 <xsl:output method="xml" name="xml"/>
+                <xsl:variable name="uuid" select="uuid:createPseudoUUID()" xmlns:uuid="org.orbeon.oxf.util.UUIDUtils"/>
                 <xsl:template match="/">
-                    <event-request xmlns="http://orbeon.org/oxf/xml/xforms" xmlns:context="java:org.orbeon.oxf.pipeline.StaticExternalContext">
-                        <static-state>
+                    <xxforms:event-request xmlns:context="java:org.orbeon.oxf.pipeline.StaticExternalContext">
+                        <xxforms:uuid><xsl:value-of select="$uuid"/></xxforms:uuid>
+                        <xxforms:static-state>
                             <xsl:variable name="static-state" as="document-node()">
                                 <xsl:document>
                                     <static-state xmlns="">
@@ -51,12 +53,12 @@
                                 </xsl:document>
                             </xsl:variable>
                             <xsl:value-of select="context:encodeXML($static-state)"/>
-                        </static-state>
-                        <dynamic-state>
+                        </xxforms:static-state>
+                        <xxforms:dynamic-state>
                             <xsl:if test="doc('input:instances')/instances/instance">
                                 <xsl:variable name="dynamic-state" as="document-node()">
                                     <xsl:document>
-                                        <dynamic-state xmlns="">
+                                        <dynamic-state xmlns="" uuid="{$uuid}" sequence="0">
                                             <instances>
                                                 <xsl:for-each select="doc('input:instances')/instances/instance">
                                                     <xsl:copy>
@@ -70,11 +72,11 @@
                                 </xsl:variable>
                                 <xsl:value-of select="context:encodeXML($dynamic-state)"/>
                             </xsl:if>
-                        </dynamic-state>
-                        <action>
+                        </xxforms:dynamic-state>
+                        <xxforms:action>
                             <xsl:copy-of select="doc('input:action')/*/*"/>
-                        </action>
-                    </event-request>
+                        </xxforms:action>
+                    </xxforms:event-request>
                 </xsl:template>
             </xsl:transform>
         </p:input>
@@ -90,23 +92,7 @@
     <!-- Decode -->
     <p:processor name="oxf:unsafe-xslt">
         <p:input name="data" href="#encoded-response"/>
-        <p:input name="config">
-            <xsl:stylesheet version="2.0" xmlns:context="java:org.orbeon.oxf.pipeline.StaticExternalContext">
-                <xsl:import href="oxf:/oxf/xslt/utils/copy.xsl"/>
-                <xsl:template match="xxforms:static-state|xxforms:dynamic-state">
-                    <xsl:copy>
-                        <xsl:apply-templates select="context:decodeXML(normalize-space(.))/*"/>
-                    </xsl:copy>
-                </xsl:template>
-                <xsl:template match="instances/instance">
-                    <xsl:copy>
-                        <xsl:copy-of select="@*"/>
-                        <!-- Not sure why we can have the instance either serialized as text or directly inline! -->
-                        <xsl:copy-of select="if (*) then * else saxon:parse(string(.))"/>
-                    </xsl:copy>
-                </xsl:template>
-            </xsl:stylesheet>
-        </p:input>
+        <p:input name="config" href="wrap-server-decode.xsl"/>
         <p:output name="data" ref="response"/>
     </p:processor>
 

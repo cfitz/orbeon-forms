@@ -17,21 +17,18 @@ import org.orbeon.oxf.cache.OutputCacheKey;
 import org.orbeon.oxf.cache.SimpleOutputCacheKey;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
-import org.orbeon.oxf.processor.ProcessorImpl;
-import org.orbeon.oxf.processor.ProcessorInputOutputInfo;
-import org.orbeon.oxf.processor.ProcessorOutput;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
+import org.orbeon.oxf.processor.*;
+import org.orbeon.oxf.processor.impl.CacheableTransformerOutputImpl;
 import org.orbeon.oxf.xml.TransformerUtils;
 import org.orbeon.oxf.xml.dom4j.Dom4jUtils;
 import org.orbeon.oxf.xml.dom4j.NonLazyUserDataDocument;
+import org.orbeon.saxon.Configuration;
 import org.orbeon.saxon.om.DocumentInfo;
 import org.orbeon.saxon.om.NodeInfo;
-import org.xml.sax.ContentHandler;
 
 import javax.xml.transform.Source;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
 import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.sax.SAXResult;
 
 /**
  * DOM Document to sax event processor.
@@ -115,12 +112,15 @@ public final class DOMGenerator extends ProcessorImpl {
             super(DOMGenerator.class, OUTPUT_DATA, id);
         }
 
+        @Override
         public String toString() {
             return "DocKey [ " + super.toString() + " ]";
         }
 
-        public boolean equals(final Object rhsObj) {
-            return rhsObj == this;
+        @Override
+        public boolean equals(final Object other) {
+            // ???
+            return other == this;
         }
     }
 
@@ -138,7 +138,7 @@ public final class DOMGenerator extends ProcessorImpl {
         if (nodeInfo instanceof DocumentInfo)
             return (DocumentInfo) nodeInfo;
         else
-            return TransformerUtils.readTinyTree(nodeInfo, false);
+            return TransformerUtils.readTinyTree(new Configuration(), nodeInfo, false);
     }
 
     private final SourceFactory sourceFactory;
@@ -188,28 +188,24 @@ public final class DOMGenerator extends ProcessorImpl {
         this(id, v, new TinyTreeSourceFactory(makeCopyDoc(nodeInfo), sid));
     }
 
+    @Override
     public ProcessorOutput createOutput(final String nm) {
 
         final Class clazz = getClass();
-        final ProcessorOutput ret = new ProcessorImpl.CacheableTransformerOutputImpl(clazz, nm) {
-            public void readImpl(final PipelineContext pipelineContext, final ContentHandler contentHandler) {
-                try {
-                    final Transformer identityTransformer = TransformerUtils.getIdentityTransformer();
-                    // NOTE: source cannot be an instance var.  Reason is that the XMLReader it
-                    // will create is stateful.  ( Meaning that if it used by multiple threads
-                    // confusion will ensue.
-                    final Source source = sourceFactory.makeSource();
-                    final SAXResult result = new SAXResult(contentHandler);
-                    identityTransformer.transform(source, result);
-                } catch (final TransformerException e) {
-                    throw new OXFException(e);
-                }
+        final ProcessorOutput ret = new CacheableTransformerOutputImpl(DOMGenerator.this, nm) {
+            public void readImpl(final PipelineContext pipelineContext, final XMLReceiver xmlReceiver) {
+                // NOTE: source cannot be an instance var.  Reason is that the XMLReader it
+                // will create is stateful.  ( Meaning that if it used by multiple threads
+                // confusion will ensue.
+                TransformerUtils.sourceToSAX(sourceFactory.makeSource(), xmlReceiver);
             }
 
-            public OutputCacheKey getKeyImpl(final PipelineContext pipelineContext) {
+            @Override
+            public OutputCacheKey getKeyImpl(PipelineContext pipelineContext) {
                 return key;
             }
 
+            @Override
             public Object getValidityImpl(final PipelineContext pipelineContext) {
                 return validity;
             }

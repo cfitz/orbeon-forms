@@ -15,6 +15,8 @@ package org.orbeon.oxf.xforms;
 
 import org.dom4j.*;
 import org.orbeon.oxf.common.OXFException;
+import org.orbeon.oxf.pipeline.api.TransformerXMLReceiver;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
 import org.orbeon.oxf.util.IndentedLogger;
 import org.orbeon.oxf.util.PropertyContext;
 import org.orbeon.oxf.xforms.control.XFormsControl;
@@ -39,11 +41,7 @@ import org.orbeon.saxon.om.DocumentInfo;
 import org.orbeon.saxon.om.Item;
 import org.orbeon.saxon.om.NodeInfo;
 import org.orbeon.saxon.om.VirtualNode;
-import org.xml.sax.ContentHandler;
 
-import javax.xml.transform.Transformer;
-import javax.xml.transform.sax.SAXResult;
-import javax.xml.transform.sax.TransformerHandler;
 import javax.xml.transform.stream.StreamResult;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,6 +65,7 @@ public class XFormsInstance implements XFormsEventTarget, XFormsEventObserver {
     private long timeToLive;
     private String username;
     private String password;
+    private String domain;
     private String validation;
     private boolean handleXInclude;
     private boolean exposeXPathTypes;
@@ -78,7 +77,7 @@ public class XFormsInstance implements XFormsEventTarget, XFormsEventObserver {
     private boolean replaced;
 
     /**
-     * Create an XFormsInstance from a container element. The container contains meta-informationa about the instance,
+     * Create an XFormsInstance from a container element. The container contains meta-information about the instance,
      * such as id, username, URI, etc.
      *
      * <instance readonly="true" cache="true" id="instance-id" model-id="model-id" source-uri="http://..." username="jdoe" password="password">
@@ -90,9 +89,9 @@ public class XFormsInstance implements XFormsEventTarget, XFormsEventObserver {
      *
      * @param containerElement  container element
      */
-    public XFormsInstance(Element containerElement) {
+    public XFormsInstance(Configuration configuration, Element containerElement) {
 
-        this.instanceStaticId = containerElement.attributeValue("id");
+        this.instanceStaticId = XFormsUtils.getElementStaticId(containerElement);
         this.modelEffectiveId = containerElement.attributeValue("model-id");
 
         this.sourceURI = containerElement.attributeValue("source-uri");
@@ -105,6 +104,7 @@ public class XFormsInstance implements XFormsEventTarget, XFormsEventObserver {
 
         this.username = containerElement.attributeValue("username");
         this.password = containerElement.attributeValue("password");
+        this.domain = containerElement.attributeValue("domain");
         this.validation = containerElement.attributeValue("validation");
         this.handleXInclude = "true".equals(containerElement.attributeValue("xinclude"));
         this.exposeXPathTypes = "true".equals(containerElement.attributeValue("types"));
@@ -121,14 +121,14 @@ public class XFormsInstance implements XFormsEventTarget, XFormsEventObserver {
                 if (!readonly) {
                     if (exposeXPathTypes) {
                         // Make a typed document wrapper
-                        documentInfo = new TypedDocumentWrapper((Document) Dom4jUtils.normalizeTextNodes(Dom4jUtils.readDom4j(xmlString, false, false)), null, new Configuration());
+                        documentInfo = new TypedDocumentWrapper((Document) Dom4jUtils.normalizeTextNodes(Dom4jUtils.readDom4j(xmlString, false, false)), null, configuration);
                     } else {
                         // Make a non-typed document wrapper
-                        documentInfo = new DocumentWrapper((Document) Dom4jUtils.normalizeTextNodes(Dom4jUtils.readDom4j(xmlString, false, false)), null, new Configuration());
+                        documentInfo = new DocumentWrapper((Document) Dom4jUtils.normalizeTextNodes(Dom4jUtils.readDom4j(xmlString, false, false)), null, configuration);
                     }
                 } else {
                     // Just use TinyTree as is
-                    documentInfo = TransformerUtils.stringToTinyTree(xmlString, false);
+                    documentInfo = TransformerUtils.stringToTinyTree(configuration, xmlString, false, true);
                 }
             } else {
                 // Instance document is not available, defer to later initialization
@@ -141,19 +141,20 @@ public class XFormsInstance implements XFormsEventTarget, XFormsEventObserver {
         this.documentInfo = documentInfo;
     }
 
-    public XFormsInstance(String modelEffectiveId, String instanceStaticId, Document instanceDocument, String instanceSourceURI, String requestBodyHash,
-                          String username, String password, boolean cache, long timeToLive, String validation, boolean handleXInclude, boolean exposeXPathTypes) {
+    public XFormsInstance(Configuration configuration, String modelEffectiveId, String instanceStaticId, Document instanceDocument,
+                          String instanceSourceURI, String requestBodyHash, String username, String password, String domain,
+                          boolean cache, long timeToLive, String validation, boolean handleXInclude, boolean exposeXPathTypes) {
         // We normalize the Document before setting it, so that text nodes follow the XPath constraints
         // NOTE: Make a typed document wrapper
         this(modelEffectiveId, instanceStaticId,
                 exposeXPathTypes
-                        ? new TypedDocumentWrapper((Document) Dom4jUtils.normalizeTextNodes(instanceDocument), null, new Configuration())
-                        : new DocumentWrapper((Document) Dom4jUtils.normalizeTextNodes(instanceDocument), null, new Configuration()),
-                instanceSourceURI, requestBodyHash, username, password, cache, timeToLive, validation, handleXInclude, exposeXPathTypes);
+                        ? new TypedDocumentWrapper((Document) Dom4jUtils.normalizeTextNodes(instanceDocument), null, configuration)
+                        : new DocumentWrapper((Document) Dom4jUtils.normalizeTextNodes(instanceDocument), null, configuration),
+                instanceSourceURI, requestBodyHash, username, password, domain, cache, timeToLive, validation, handleXInclude, exposeXPathTypes);
     }
 
     protected XFormsInstance(String modelEffectiveId, String instanceStaticId, DocumentInfo instanceDocumentInfo, String instanceSourceURI, String requestBodyHash,
-                             String username, String password, boolean cache, long timeToLive, String validation, boolean handleXInclude, boolean exposeXPathTypes) {
+                             String username, String password, String domain, boolean cache, long timeToLive, String validation, boolean handleXInclude, boolean exposeXPathTypes) {
 
         if (cache && instanceSourceURI == null)
             throw new OXFException("Only XForms instances externally loaded through the src attribute may have xxforms:cache=\"true\".");
@@ -170,6 +171,7 @@ public class XFormsInstance implements XFormsEventTarget, XFormsEventObserver {
 
         this.username = username;
         this.password = password;
+        this.domain = domain;
         this.validation = validation;
         this.handleXInclude = handleXInclude;
         this.exposeXPathTypes = exposeXPathTypes;
@@ -209,6 +211,8 @@ public class XFormsInstance implements XFormsEventTarget, XFormsEventObserver {
             instanceElement.addAttribute("username", username);
         if (password != null)
             instanceElement.addAttribute("password", password);
+        if (domain != null)
+            instanceElement.addAttribute("domain", domain);
         if (validation != null)
             instanceElement.addAttribute("validation", validation);
         if (handleXInclude)
@@ -310,8 +314,25 @@ public class XFormsInstance implements XFormsEventTarget, XFormsEventObserver {
         return password;
     }
 
+    public String getDomain() {
+        return domain;
+    }
+
     public String getValidation() {
         return validation;
+    }
+
+    public boolean isLaxValidation() {
+        return validation == null || "lax".equals(validation);
+    }
+
+    public boolean isStrictValidation() {
+        return "strict".equals(validation);
+    }
+
+    public boolean isSchemaValidation() {
+        // NOTE: For now don't validate read-only instances. Might change in future.
+        return (isLaxValidation() || isStrictValidation()) && !isReadOnly();
     }
 
     public boolean isHandleXInclude() {
@@ -365,7 +386,7 @@ public class XFormsInstance implements XFormsEventTarget, XFormsEventObserver {
      * @param newValue          value to set
      * @param type              type of the value to set (xs:anyURI or xs:base64Binary), null if none
      */
-    public static void setValueForNode(PropertyContext propertyContext, Node node, String newValue, String type) {
+    private static void setValueForNode(PropertyContext propertyContext, Node node, String newValue, String type) {
 
         // Convert value based on types if possible
         if (type != null) {
@@ -434,24 +455,19 @@ public class XFormsInstance implements XFormsEventTarget, XFormsEventObserver {
     /**
      * Output the instance to the specified ContentHandler
      *
-     * @param contentHandler    ContentHandler to write to
+     * @param xmlReceiver   receiver to write to
      */
-    public void read(ContentHandler contentHandler) {
-        try {
-            final Transformer identity = TransformerUtils.getIdentityTransformer();
-            identity.transform(documentInfo, new SAXResult(contentHandler));
-        } catch (Exception e) {
-            throw new OXFException(e);
-        }
+    public void read(XMLReceiver xmlReceiver) {
+        TransformerUtils.sourceToSAX(documentInfo, xmlReceiver);
     }
 
     /**
      * This prints the instance with extra annotation attributes to System.out. For debug only.
      */
     public void debugReadOut() {
-        final TransformerHandler  th = TransformerUtils.getIdentityTransformerHandler();
-        th.setResult(new StreamResult(System.out));
-        read(th);
+        final TransformerXMLReceiver identityTransformerHandler = TransformerUtils.getIdentityTransformerHandler();
+        identityTransformerHandler.setResult(new StreamResult(System.out));
+        read(identityTransformerHandler);
     }
 
     /**
@@ -606,7 +622,7 @@ public class XFormsInstance implements XFormsEventTarget, XFormsEventObserver {
     }
 
     public static String getInstanceStaticId(Element xformsInstanceElement) {
-        return xformsInstanceElement.attributeValue("id");
+        return XFormsUtils.getElementStaticId(xformsInstanceElement);
     }
 
     public static boolean isReadonlyHint(Element element) {

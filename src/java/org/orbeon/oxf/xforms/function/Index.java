@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the
  * GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -16,13 +16,12 @@ package org.orbeon.oxf.xforms.function;
 import org.orbeon.oxf.common.ValidationException;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
 import org.orbeon.oxf.xforms.XFormsModel;
-import org.orbeon.oxf.xforms.XFormsUtils;
 import org.orbeon.oxf.xforms.event.events.XFormsComputeExceptionEvent;
 import org.orbeon.oxf.xforms.xbl.XBLContainer;
 import org.orbeon.saxon.expr.XPathContext;
 import org.orbeon.saxon.om.Item;
 import org.orbeon.saxon.trans.XPathException;
-import org.orbeon.saxon.value.IntegerValue;
+import org.orbeon.saxon.value.Int64Value;
 
 /**
  * XForms index() function.
@@ -33,7 +32,7 @@ public class Index extends XFormsFunction {
 
     public Item evaluateItem(XPathContext xpathContext) throws XPathException {
 
-        final String repeatId = XFormsUtils.namespaceId(getContainingDocument(xpathContext), argument[0].evaluateAsString(xpathContext));
+        final String repeatId = argument[0].evaluateAsString(xpathContext).toString();
 
         // New implementation
         return findIndexForRepeatId(xpathContext, repeatId);
@@ -63,6 +62,6 @@ public class Index extends XFormsFunction {
         }
 
         // Return value found
-        return new IntegerValue(index);
+        return new Int64Value(index);
     }
 }

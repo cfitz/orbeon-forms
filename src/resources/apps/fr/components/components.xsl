@@ -177,7 +177,9 @@
                       xxforms:offline="false"
                       xxforms:noscript="{$is-noscript}"
                       xxforms:noscript-support="{$is-noscript-support}"
-                      xxforms:xforms11-switch="false">
+                      xxforms:xforms11-switch="false"
+                      xxforms:xpath-analysis="false"
+                      xxforms:xhtml-layout="nospan">
 
             <!-- Parameters passed to this page -->
             <!-- NOTE: the <document> element may be modified, so we don't set this as read-only -->
@@ -226,22 +228,20 @@
             <!-- Mark all controls as visited when certain buttons are activated -->
             <xforms:action ev:event="DOMActivate" ev:observer="fr-save-button fr-workflow-review-button fr-workflow-send-button fr-print-button fr-pdf-button fr-email-button fr-refresh-button fr-submit-button">
                 <!-- Dispatch to the appropriate error summaries -->
+                <!-- Don't dispatch to top error-summary if not present; but always dispatch to button error summary as it is always included -->
                 <xsl:if test="$error-summary-top">
                     <xforms:dispatch name="fr-visit-all" targetid="error-summary-control-top"/>
                 </xsl:if>
-                <xsl:if test="$error-summary-bottom">
-                    <xforms:dispatch name="fr-visit-all" targetid="error-summary-control-bottom"/>
-                </xsl:if>
+                <xforms:dispatch name="fr-visit-all" targetid="error-summary-control-bottom"/>
             </xforms:action>
             <!-- Mark all controls as un-visited when certain buttons are activated -->
             <xforms:action ev:event="fr-unvisit-all">
                 <!-- Dispatch to the appropriate error summaries -->
+                <!-- Don't dispatch to top error-summary if not present; but always dispatch to button error summary as it is always included -->
                 <xsl:if test="$error-summary-top">
                     <xforms:dispatch name="fr-unvisit-all" targetid="error-summary-control-top"/>
                 </xsl:if>
-                <xsl:if test="$error-summary-bottom">
-                    <xforms:dispatch name="fr-unvisit-all" targetid="error-summary-control-bottom"/>
-                </xsl:if>
+                <xforms:dispatch name="fr-unvisit-all" targetid="error-summary-control-bottom"/>
             </xforms:action>
         </xforms:model>
         <!-- This model handles document persistence -->

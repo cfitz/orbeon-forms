@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the
  * GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -13,11 +13,12 @@
  */
 package org.orbeon.oxf.xforms.function.exforms;
 
+import org.orbeon.oxf.util.PooledXPathExpression;
 import org.orbeon.oxf.xforms.function.xxforms.XXFormsSort;
 import org.orbeon.saxon.expr.Expression;
-import org.orbeon.saxon.expr.StaticContext;
+import org.orbeon.saxon.expr.ExpressionVisitor;
+import org.orbeon.saxon.expr.StaticProperty;
 import org.orbeon.saxon.expr.XPathContext;
-import org.orbeon.saxon.expr.XPathContextMajor;
 import org.orbeon.saxon.om.SequenceIterator;
 import org.orbeon.saxon.trans.XPathException;
 
@@ -26,29 +27,33 @@ import org.orbeon.saxon.trans.XPathException;
  */
 public class EXFormsSort extends XXFormsSort {
 
+    @Override
     public SequenceIterator iterate(XPathContext xpathContext) throws XPathException {
 
         final Expression sequenceToSortExpression = argument[0];
         final Expression selectExpression = argument[1];
 
+        final XPathContext sortKeyContext;
         final Expression sortKeyExpression;
-        final XPathContextMajor newXPathContext;
         {
-            // NOTE: It would be better if we could use XPathCache/PooledXPathExpression instead of rewriting custom
-            // code below. This would provide caching of compiled expressions, abstraction and some simplicity.
+            // Prepare dynamic sort expression and its dynamic context
+            final PooledXPathExpression pooledExpression = prepareExpression(xpathContext, selectExpression, false);
 
-            // Prepare expression and context
-            final PreparedExpression preparedExpression = prepareExpression(xpathContext, selectExpression, false);
-            newXPathContext = prepareXPathContext(xpathContext, preparedExpression);
-            // Return expression
-            sortKeyExpression = preparedExpression.expression;
+            sortKeyContext = pooledExpression.prepareDynamicContext(null, PooledXPathExpression.getFunctionContext(xpathContext)).getXPathContextObject();
+            sortKeyExpression = pooledExpression.getExpression();
         }
 
-        return sort(newXPathContext, sequenceToSortExpression, sortKeyExpression);
+        return sort(xpathContext, sortKeyContext, sequenceToSortExpression, sortKeyExpression);
     }
 
-    public void checkArguments(StaticContext env) throws XPathException {
+    @Override
+    public void checkArguments(ExpressionVisitor visitor) throws XPathException {
         // Needed by prepareExpression()
-        copyStaticContextIfNeeded(env);
+        copyStaticContextIfNeeded(visitor);
+    }
+
+    @Override
+    public int getIntrinsicDependencies() {
+	    return StaticProperty.DEPENDS_ON_CONTEXT_ITEM;
     }
 }

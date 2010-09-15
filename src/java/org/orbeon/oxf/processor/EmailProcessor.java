@@ -22,31 +22,19 @@ import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.common.ValidationException;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
 import org.orbeon.oxf.processor.generator.URLGenerator;
-import org.orbeon.oxf.processor.serializer.BinaryTextContentHandler;
+import org.orbeon.oxf.processor.serializer.BinaryTextXMLReceiver;
 import org.orbeon.oxf.resources.URLFactory;
-import org.orbeon.oxf.util.LoggerFactory;
-import org.orbeon.oxf.util.NetUtils;
-import org.orbeon.oxf.util.StringBuilderWriter;
-import org.orbeon.oxf.xml.ProcessorOutputXMLReader;
-import org.orbeon.oxf.xml.TransformerUtils;
-import org.orbeon.oxf.xml.XMLUtils;
-import org.orbeon.oxf.xml.dom4j.Dom4jUtils;
-import org.orbeon.oxf.xml.dom4j.LocationData;
-import org.orbeon.oxf.xml.dom4j.LocationSAXWriter;
-import org.orbeon.oxf.xml.dom4j.NonLazyUserDataDocument;
-import org.xml.sax.ContentHandler;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
+import org.orbeon.oxf.util.*;
+import org.orbeon.oxf.xml.*;
+import org.orbeon.oxf.xml.dom4j.*;
+import org.xml.sax.*;
 
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
 import javax.mail.*;
 import javax.mail.internet.*;
 import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
-import javax.xml.transform.sax.SAXResult;
 import javax.xml.transform.sax.SAXSource;
 import javax.xml.transform.sax.TransformerHandler;
 import javax.xml.transform.stream.StreamResult;
@@ -413,9 +401,8 @@ public class EmailProcessor extends ProcessorImpl {
             throws IOException, TransformerException {
 
         final FileItem fileItem = NetUtils.prepareFileItem(pipelineContext, NetUtils.REQUEST_SCOPE);
-        final ContentHandler ch = new BinaryTextContentHandler(fileItem.getOutputStream());
-        final Transformer identity = TransformerUtils.getIdentityTransformer();
-        identity.transform(source, new SAXResult(ch));
+        TransformerUtils.sourceToSAX(source, new BinaryTextXMLReceiver(fileItem.getOutputStream()));
+
         return fileItem;
     }
 

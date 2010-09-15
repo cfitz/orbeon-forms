@@ -22,8 +22,8 @@ import org.orbeon.oxf.util.NetUtils;
 import org.orbeon.oxf.util.PropertyContext;
 import org.orbeon.oxf.xforms.XFormsConstants;
 import org.orbeon.oxf.xforms.XFormsUtils;
+import org.orbeon.oxf.xforms.analysis.XPathDependencies;
 import org.orbeon.oxf.xforms.control.XFormsControl;
-import org.orbeon.oxf.xforms.control.XFormsSingleNodeControl;
 import org.orbeon.oxf.xforms.control.XFormsValueControl;
 import org.orbeon.oxf.xforms.event.XFormsEvents;
 import org.orbeon.oxf.xforms.xbl.XBLContainer;
@@ -80,8 +80,8 @@ public class XFormsOutputControl extends XFormsValueControl {
     }
 
     @Override
-    protected void evaluate(PropertyContext propertyContext, boolean isRefresh) {
-        super.evaluate(propertyContext, isRefresh);
+    protected void evaluateImpl(PropertyContext propertyContext) {
+        super.evaluateImpl(propertyContext);
 
         getState(propertyContext);
         getFileMediatype(propertyContext);
@@ -90,8 +90,8 @@ public class XFormsOutputControl extends XFormsValueControl {
     }
 
     @Override
-    public void markDirty() {
-        super.markDirty();
+    protected void markDirtyImpl(XPathDependencies xpathDependencies) {
+        super.markDirtyImpl(xpathDependencies);
         fileInfo.markDirty();
     }
 
@@ -149,7 +149,7 @@ public class XFormsOutputControl extends XFormsValueControl {
                 // xs:anyURI type
                 if (!urlNorewrite) {
                     // Resolve xml:base and try to obtain a path which is an absolute path without the context
-                    final String resolvedURI = XFormsUtils.resolveResourceURL(propertyContext, getControlElement(), internalValue, ExternalContext.Response.REWRITE_MODE_ABSOLUTE_PATH_NO_CONTEXT);
+                    final String resolvedURI = XFormsUtils.resolveResourceURL(propertyContext, containingDocument, getControlElement(), internalValue, ExternalContext.Response.REWRITE_MODE_ABSOLUTE_PATH_NO_CONTEXT);
                     final long lastModified = NetUtils.getLastModifiedIfFast(resolvedURI);
                     updatedValue = NetUtils.proxyURI(propertyContext, resolvedURI, fileInfo.getFileName(propertyContext), mediatype, lastModified);
                 } else {
@@ -182,7 +182,7 @@ public class XFormsOutputControl extends XFormsValueControl {
                 // External value is not blank, rewrite as absolute path. Two cases:
                 // o URL is proxied:        /xforms-server/dynamic/27bf...  => [/context]/xforms-server/dynamic/27bf...
                 // o URL is default value:  /ops/images/xforms/spacer.gif   => [/context][/version]/ops/images/xforms/spacer.gif
-                return XFormsUtils.resolveResourceURL(pipelineContext, getControlElement(), externalValue, ExternalContext.Response.REWRITE_MODE_ABSOLUTE_PATH);
+                return XFormsUtils.resolveResourceURL(pipelineContext, containingDocument, getControlElement(), externalValue, ExternalContext.Response.REWRITE_MODE_ABSOLUTE_PATH);
             } else {
                 // Empty value, return as is
                 return externalValue;
@@ -200,7 +200,7 @@ public class XFormsOutputControl extends XFormsValueControl {
     public String getNonRelevantEscapedExternalValue(PropertyContext propertyContext) {
         if (mediatypeAttribute != null && mediatypeAttribute.startsWith("image/")) {
             // Return rewritten URL of dummy image URL
-            return XFormsUtils.resolveResourceURL(propertyContext, getControlElement(), XFormsConstants.DUMMY_IMAGE_URI,
+            return XFormsUtils.resolveResourceURL(propertyContext, containingDocument, getControlElement(), XFormsConstants.DUMMY_IMAGE_URI,
                     ExternalContext.Response.REWRITE_MODE_ABSOLUTE_PATH);
         } else {
             return super.getNonRelevantEscapedExternalValue(propertyContext);
@@ -267,13 +267,14 @@ public class XFormsOutputControl extends XFormsValueControl {
     }
 
     @Override
-    public boolean addCustomAttributesDiffs(PipelineContext pipelineContext, XFormsSingleNodeControl other, AttributesImpl attributesImpl, boolean isNewRepeatIteration) {
-        final XFormsOutputControl outputControlInfo1 = (XFormsOutputControl) other;
-        final XFormsOutputControl outputControlInfo2 = this;
+    protected boolean addAjaxCustomAttributes(PipelineContext pipelineContext, AttributesImpl attributesImpl, boolean isNewRepeatIteration, XFormsControl other) {
+
+        final XFormsOutputControl outputControl1 = (XFormsOutputControl) other;
+        final XFormsOutputControl outputControl2 = this;
 
         // Mediatype
-        final String mediatypeValue1 = (outputControlInfo1 == null) ? null : outputControlInfo1.getMediatypeAttribute();
-        final String mediatypeValue2 = outputControlInfo2.getMediatypeAttribute();
+        final String mediatypeValue1 = (outputControl1 == null) ? null : outputControl1.getMediatypeAttribute();
+        final String mediatypeValue2 = outputControl2.getMediatypeAttribute();
 
         boolean added = false;
         if (!((mediatypeValue1 == null && mediatypeValue2 == null) || (mediatypeValue1 != null && mediatypeValue2 != null && mediatypeValue1.equals(mediatypeValue2)))) {

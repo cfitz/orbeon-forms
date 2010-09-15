@@ -244,7 +244,7 @@
 
                 <!-- Create elements holding structured search data -->
                 <xforms:action xxforms:iterate="$summary-elements">
-                    <xxforms:variable name="control" select="."/>
+                    <xxforms:variable name="control" select="." as="element()"/>
 
                     <!-- Insert empty template -->
                     <xforms:insert context="instance('fr-search-instance')" nodeset="query" origin="instance('fr-search-template')"/>
@@ -256,13 +256,30 @@
                     <!-- Add whether we must show the search field -->
                     <xforms:setvalue ref="$query/@search-field" value="tokenize($control/@class, '\s+') = ('fr-search')"/>
 
+                    <!-- All the control's "ancestor" @ref, @context or @bind -->
+                    <xxforms:variable name="all-ancestors" select="$control/ancestor-or-self::*/(@ref | @context | @bind)" as="attribute()*"/>
+                    <!-- First control @bind ancestor and its own ancestors with @ref, @context or @bind  -->
+                    <xxforms:variable name="bind-ancestors" select="reverse($all-ancestors)[name() = 'bind'][1]/ancestor-or-self::*/(@ref | @context | @bind)" as="attribute()*"/>
+
+                    <!-- All control's ancestors based on a path (@ref or @context) up to the first @bind if any -->
+                    <xxforms:variable name="path-ancestors" select="reverse($all-ancestors except $bind-ancestors)" as="attribute()*"/>
+                    <!-- First ancestor @bind if any -->
+                    <xxforms:variable name="bind-ancestor" select="reverse($bind-ancestors)[1]" as="attribute()?"/>
 
                     <!-- Add meta-information to template -->
-                    <xforms:action if="$control/@bind">
-                        <xxforms:variable name="bind" select="xxforms:instance('fr-source-form-instance')/xhtml:head/xforms:model//xforms:bind[@id = $control/@bind]"/>
+                    <!-- First, try paths -->
+                    <xforms:action if="exists($path-ancestors)">
+                        <xforms:setvalue ref="$query/@name" value="$path-ancestors[1]"/>
+                        <xforms:setvalue ref="$query/@path" value="string-join($path-ancestors, '/')"/>
+                    </xforms:action>
+                    <!-- Then, try binds -->
+                    <xforms:action if="exists($bind-ancestor)">
+                        <xxforms:variable name="bind" select="xxforms:instance('fr-source-form-instance')/xhtml:head/xforms:model//xforms:bind[@id = $bind-ancestor]"/>
 
-                        <xforms:setvalue ref="$query/@name" value="substring-before($bind/@id, '-bind')"/>
-                        <xforms:setvalue ref="$query/@path" value="string-join(($bind/ancestor-or-self::xforms:bind/@nodeset)[position() gt 1], '/')"/>
+                        <!-- Set control name if not already done with @ref -->
+                        <xforms:setvalue if="empty($path-ancestors)" ref="$query/@name" value="substring-before($bind-ancestor, '-bind')"/>
+                        <!-- Prepend path from binds -->
+                        <xforms:setvalue ref="$query/@path" value="string-join((($bind/ancestor-or-self::xforms:bind/(@nodeset | @ref))[position() gt 1], if (normalize-space()) then . else ()), '/')"/>
 
                         <!--<xforms:message level="xxforms:log-info">XXX Bind: <xforms:output value="saxon:serialize($bind, 'xml')"/></xforms:message>-->
                         <!--<xforms:message level="xxforms:log-info">XXX Path: <xforms:output value="$query/@path"/></xforms:message>-->
@@ -276,10 +293,6 @@
                         <xforms:delete nodeset="$query/xforms:bind"/>
 
                         <xforms:setvalue ref="$query/@type" value="if ($bind/@type) then $bind/@type else 'xs:string'"/>
-                    </xforms:action>
-                    <xforms:action if="$control/@ref">
-                        <xforms:setvalue ref="$query/@name" value="$control/@ref"/>
-                        <xforms:setvalue ref="$query/@path" value="string-join(($control/ancestor-or-self::*/(@ref | @context)), '/')"/>
                     </xforms:action>
 
                     <!-- Compute label information -->
@@ -341,17 +354,6 @@
                 <!--</xxforms:script>-->
             </xforms:submission>
 
-            <!-- List of buttons -->
-            <xforms:instance id="fr-buttons-instance">
-                <buttons xmlns=""/>
-            </xforms:instance>
-
-            <!-- Create list of buttons -->
-            <xforms:action ev:event="xforms-model-construct-done">
-                <xxforms:variable name="buttons" select="tokenize(xxforms:property(string-join(('oxf.fr.summary.buttons', $app, $form), '.')), '\s+')" as="xs:string*"/>
-                <xforms:insert context="instance('fr-buttons-instance')" origin="(for $b in $buttons return xxforms:element($b))"/>
-            </xforms:action>
-
         </xforms:model>
     </head>
     <body>
@@ -366,7 +368,7 @@
                     <xforms:action ev:event="xforms-value-changed" ev:propagate="stop"/>
 
                     <xforms:group class="fr-summary-search">
-                        
+
                         <!-- Search also when user presses "enter" in a field -->
                         <xforms:action ev:event="DOMActivate">
                             <!-- Reset search selection and navigation -->
@@ -390,7 +392,6 @@
                                             <!-- Search button -->
                                             <fr:button>
                                                 <xforms:label>
-                                                    <!--<xhtml:img width="10" height="14" src="/apps/fr/style/search.gif" alt=""/>-->
                                                     <xhtml:img width="16" height="16" src="/apps/fr/style/images/pixelmixer/search_16.png" alt=""/>
                                                     <xforms:output value="$fr-resources/summary/search/search-forms"/>
                                                 </xforms:label>
@@ -616,7 +617,7 @@
                                             <th fr:sortable="false" fr:resizeable="true">
                                                 <!-- Output showing as the header of the column -->
                                                 <xforms:output value="
-                                                    for 
+                                                    for
                                                         (: Current node is a control, such as xforms:input :)
                                                         $control-info in .,
                                                         (: Control has id='title-control', $resource-id = 'title' :)
@@ -625,9 +626,9 @@
                                                         $resource in ($form-resources/*[local-name() = $resource-id], '')[1]
                                                     return
                                                         (: If we found a resource, use its label :)
-                                                        if ($resource instance of element()) then $resource/label 
+                                                        if ($resource instance of element()) then $resource/label
                                                         (: If no resource is found, try to use the inline label :)
-                                                        else if (normalize-space($control-info/xforms:label) != '') then $control-info/xforms:label 
+                                                        else if (normalize-space($control-info/xforms:label) != '') then $control-info/xforms:label
                                                         (: If everything fails, display the name of the control between brakets :)
                                                         else concat('[', $resource-id, ']')"/>
                                             </th>
@@ -796,10 +797,11 @@
             <fr:bottom>
                 <!-- Custom buttons for the summary page -->
                 <xforms:group model="fr-form-model" class="fr-buttons">
-                    <xforms:repeat nodeset="instance('fr-buttons-instance')/*">
+                    <!-- Directly iterate over the tokenized propety -->
+                    <xforms:repeat ref="tokenize(xxforms:property(string-join(('oxf.fr.summary.buttons', $app, $form), '.')), '\s+')">
                         <xhtml:span class="fr-button">
                             <!-- New button -->
-                            <xforms:group ref="if (name() = 'new') then instance('fr-summary-triggers-instance')/new else ()">
+                            <xforms:group ref="if (. = 'new') then instance('fr-summary-triggers-instance')/new else ()">
                                 <fr:button>
                                     <xforms:label>
                                         <!--<xhtml:img src="/apps/fr/style/add.gif" alt=""/>-->
@@ -811,8 +813,8 @@
                                     <xforms:dispatch ev:event="DOMActivate" target="fr-form-model" name="fr-summary-create"/>
                                 </fr:button>
                             </xforms:group>
-                            <!-- Print button (if not Form Builder) -->
-                            <xforms:group ref="if (name() = 'print') then instance('fr-summary-triggers-instance')/view[not($is-form-builder)] else ()">
+                            <!-- Print button -->
+                            <xforms:group ref="if (. = 'print') then instance('fr-summary-triggers-instance')/view else ()">
                                 <fr:button>
                                     <xforms:label>
                                         <xhtml:img width="16" height="16" src="/apps/fr/style/images/silk/eye.png" alt=""/>
@@ -827,8 +829,8 @@
                                     </xforms:action>
                                 </fr:button>
                             </xforms:group>
-                            <!-- PDF button (if not Form Builder) -->
-                            <xforms:group ref="if (name() = 'pdf') then instance('fr-summary-triggers-instance')/pdf[not($is-form-builder)] else ()">
+                            <!-- PDF button -->
+                            <xforms:group ref="if (. = 'pdf') then instance('fr-summary-triggers-instance')/pdf else ()">
                                 <fr:button>
                                     <xforms:label>
                                         <xhtml:img width="16" height="16" src="/apps/fr/style/pdf.png" alt=""/>
@@ -841,8 +843,8 @@
                                     </xforms:action>
                                 </fr:button>
                             </xforms:group>
-                            <!-- Test button (if Form Builder) -->
-                            <xforms:group ref="if (name() = 'test') then instance('fr-summary-triggers-instance')/view[$is-form-builder] else ()">
+                            <!-- Test button -->
+                            <xforms:group ref="if (. = 'test') then instance('fr-summary-triggers-instance')/view else ()">
                                 <fr:button>
                                     <xforms:label>
                                         <xhtml:img width="16" height="16" src="/forms/orbeon/builder/images/play.png" alt="" title="Test Form"/>
@@ -856,7 +858,7 @@
                                 </fr:button>
                             </xforms:group>
                             <!-- Delete button -->
-                            <xforms:group ref="if (name() = 'delete') then instance('fr-summary-triggers-instance')/delete else ()">
+                            <xforms:group ref="if (. = 'delete') then instance('fr-summary-triggers-instance')/delete else ()">
                                 <fr:button>
                                     <xforms:label>
                                         <!--<xhtml:img src="/apps/fr/style/delete.gif" alt=""/>-->

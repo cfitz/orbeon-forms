@@ -13,7 +13,6 @@
  */
 package org.orbeon.oxf.xforms.xbl;
 
-import org.dom4j.Document;
 import org.dom4j.Element;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.common.ValidationException;
@@ -21,14 +20,14 @@ import org.orbeon.oxf.pipeline.api.PipelineContext;
 import org.orbeon.oxf.util.IndentedLogger;
 import org.orbeon.oxf.util.PropertyContext;
 import org.orbeon.oxf.xforms.*;
+import org.orbeon.oxf.xforms.analysis.model.Model;
 import org.orbeon.oxf.xforms.control.XFormsComponentControl;
 import org.orbeon.oxf.xforms.control.XFormsControl;
 import org.orbeon.oxf.xforms.control.controls.XFormsRepeatControl;
 import org.orbeon.oxf.xforms.control.controls.XXFormsRootControl;
 import org.orbeon.oxf.xforms.event.*;
-import org.orbeon.oxf.xforms.event.events.XFormsModelDestructEvent;
-import org.orbeon.oxf.xforms.event.events.XFormsUIEvent;
-import org.orbeon.oxf.xforms.event.events.XXFormsValueChangeWithFocusChangeEvent;
+import org.orbeon.oxf.xforms.event.events.*;
+import org.orbeon.oxf.xml.NamespaceMapping;
 import org.orbeon.oxf.xml.dom4j.ExtendedLocationData;
 import org.orbeon.oxf.xml.dom4j.LocationData;
 import org.orbeon.saxon.om.Item;
@@ -83,22 +82,25 @@ public class XBLContainer implements XFormsEventTarget, XFormsEventObserver, XFo
     private List<XFormsModel> models = new ArrayList<XFormsModel>();
     private Map<String, XFormsModel> modelsMap = new HashMap<String, XFormsModel>();    // Map<String, XFormsModel> of effective model id to model
 
+    // Containing control if any
+    private final XFormsComponentControl componentControl;
+
     /**
-     * Create a new container child of the control with id effectiveId.
+     * Create a new container child of the given control
      *
-     * @param effectiveId   effective id of the containing control
-     * @return              new XFormsContainer
+     * @param componentControl  containing control
+     * @return                  new XFormsContainer
      */
-    public XBLContainer createChildContainer(String effectiveId) {
-        return new XBLContainer(effectiveId, this);
+    public XBLContainer createChildContainer(XFormsComponentControl componentControl) {
+        return new XBLContainer(componentControl, this);
     }
 
-    protected XBLContainer(String effectiveId, XBLContainer parentXBLContainer) {
-        this(XFormsUtils.getStaticIdFromId(effectiveId), effectiveId, XFormsUtils.getPrefixedId(effectiveId),
-                XFormsUtils.getPrefixedId(effectiveId) + XFormsConstants.COMPONENT_SEPARATOR, parentXBLContainer);
+    protected XBLContainer(XFormsComponentControl componentControl, XBLContainer parentXBLContainer) {
+        this(XFormsUtils.getStaticIdFromId(componentControl.getEffectiveId()), componentControl.getEffectiveId(), XFormsUtils.getPrefixedId(componentControl.getEffectiveId()),
+                XFormsUtils.getPrefixedId(componentControl.getEffectiveId()) + XFormsConstants.COMPONENT_SEPARATOR, parentXBLContainer, componentControl);
     }
 
-    protected XBLContainer(String staticId, String effectiveId, String prefixedId, String fullPrefix, XBLContainer parentXBLContainer) {
+    protected XBLContainer(String staticId, String effectiveId, String prefixedId, String fullPrefix, XBLContainer parentXBLContainer, XFormsComponentControl componentControl) {
         this.staticId = staticId;
         this.effectiveId = effectiveId;
         this.prefixedId = prefixedId;
@@ -121,6 +123,8 @@ public class XBLContainer implements XFormsEventTarget, XFormsEventObserver, XFo
         }
 
         this.contextStack = new XFormsContextStack(this);
+
+        this.componentControl = componentControl;
     }
 
     public XBLBindings.Scope getResolutionScope() {
@@ -161,7 +165,7 @@ public class XBLContainer implements XFormsEventTarget, XFormsEventObserver, XFo
         modelsMap.clear();
 
         // Update effective ids of all nested models
-        for (XFormsModel currentModel: models) {
+        for (final XFormsModel currentModel: models) {
             // E.g. foo$bar$my-model.1-2 => foo$bar$my-model.1-3
             final String newModelEffectiveId = XFormsUtils.getPrefixedId(currentModel.getEffectiveId()) + XFormsUtils.getEffectiveIdSuffixWithSeparator(effectiveId);
             currentModel.updateEffectiveId(newModelEffectiveId);
@@ -183,8 +187,8 @@ public class XBLContainer implements XFormsEventTarget, XFormsEventObserver, XFo
         }
 
         // Dispatch destruction event to all models
-        for (XFormsModel currentModel: models) {
-            dispatchEvent(propertyContext, new XFormsModelDestructEvent(containingDocument, currentModel));
+        for (final XFormsModel model: models) {
+            dispatchEvent(propertyContext, new XFormsModelDestructEvent(containingDocument, model));
         }
     }
 
@@ -216,11 +220,11 @@ public class XBLContainer implements XFormsEventTarget, XFormsEventObserver, XFo
     /**
      * Return the namespace mappings associated with the given element. The element must be part of this container.
      *
-     * @param element       Element to get namespace mapping for
-     * @return              Map<String prefix, String uri>
+     * @param element       element to get namespace mapping for
+     * @return              mapping
      */
-    public Map<String, String> getNamespaceMappings(Element element) {
-        return containingDocument.getStaticState().getNamespaceMappings(fullPrefix, element);
+    public NamespaceMapping getNamespaceMappings(Element element) {
+        return containingDocument.getStaticState().getNamespaceMapping(fullPrefix, element);
     }
 
     public void setBindingContext(XFormsContextStack.BindingContext bindingContext) {
@@ -280,29 +284,35 @@ public class XBLContainer implements XFormsEventTarget, XFormsEventObserver, XFo
     }
 
     /**
+     * Check whether if the bind id can resolve in this scope
+     *
+     * @param bindId    bind id to check
+     * @return
+     */
+    public boolean containsBind(String bindId) {
+        for (final Model model: containingDocument.getStaticState().getModelsForScope(getResolutionScope())) {
+            if (model.containsBind(bindId))
+                return true;
+        }
+        return false;
+    }
+
+    /**
      * Create and index models corresponding to this container's scope.
      */
     public void addAllModels() {
         // Iterate through all models and finds the one that apply to this container
-        for (Map.Entry<String,Document> currentEntry: containingDocument.getStaticState().getModelDocuments().entrySet()) {
-            final String modelPrefixedId = currentEntry.getKey();
-            final Document modelDocument = currentEntry.getValue();
+        for (final Model model: containingDocument.getStaticState().getModelsForScope(getResolutionScope())) {
+            // Find model's effective id, e.g. if container's effective id is foo$bar.1-2 and models static id is
+            // my-model => foo$bar$my-model.1-2
+            final String modelEffectiveId = model.prefixedId + XFormsUtils.getEffectiveIdSuffixWithSeparator(effectiveId);
 
-            final String modelPrefix = XFormsUtils.getEffectiveIdPrefix(modelPrefixedId);
-            if (fullPrefix.equals(modelPrefix)) {
-                // This model belongs to this container
-
-                // Find model's effective id, e.g. if container's effective id is foo$bar.1-2 and models static id is
-                // my-model => foo$bar$my-model.1-2
-                final String modelEffectiveId = modelPrefixedId + XFormsUtils.getEffectiveIdSuffixWithSeparator(effectiveId);
-
-                // Create and add model
-                addModel(new XFormsModel(this, modelEffectiveId, modelDocument));
-            }
+            // Create and add model
+            addModel(new XFormsModel(this, modelEffectiveId, model));
         }
     }
 
-    public void initializeModels(PipelineContext pipelineContext) {
+    protected void initializeModels(PipelineContext pipelineContext) {
 
         // 4.2 Initialization Events
 
@@ -327,24 +337,14 @@ public class XBLContainer implements XFormsEventTarget, XFormsEventObserver, XFo
             }
 
             // Iterate over all the models
-            for (XFormsModel currentModel: models) {
-                dispatchEvent(propertyContext, XFormsEventFactory.createEvent(containingDocument, eventsToDispatch[i], currentModel));
+            for (final XFormsModel model: models) {
+                dispatchEvent(propertyContext, XFormsEventFactory.createEvent(containingDocument, eventsToDispatch[i], model));
             }
         }
     }
 
     protected void initializeNestedControls(PropertyContext propertyContext) {
         // NOP by default
-    }
-
-    /**
-     * Return model within this container, with the specified static id, null if not found. If the id is the empty
-     * string, return the default model, i.e. the first model.
-     */
-    public XFormsModel findModelByStaticId(String modelStaticId) {
-        return "".equals(modelStaticId)
-                ? getDefaultModel()
-                : modelsMap.get(fullPrefix + modelStaticId + XFormsUtils.getEffectiveIdSuffixWithSeparator(effectiveId));
     }
 
     protected void addModel(XFormsModel model) {// move to private once legacy caller is gone
@@ -367,41 +367,48 @@ public class XBLContainer implements XFormsEventTarget, XFormsEventObserver, XFo
     }
 
     /**
-     * Get a list of all the models in this container and all sub-containers.
+     * Get a list of all the relevant models in this container and all sub-containers.
      */
     public List<XFormsModel> getAllModels() {
-        final List<XFormsModel> result = new ArrayList<XFormsModel>(models);
-
-        if (childrenXBLContainers != null) {
-            for (XBLContainer currentContainer: childrenXBLContainers.values()) {
-                result.addAll(currentContainer.getAllModels());
+        if (isRelevant()) {
+            // Add local models
+            final List<XFormsModel> result = new ArrayList<XFormsModel>(models);
+            // Add models in children containers
+            if (childrenXBLContainers != null) {
+                for (final XBLContainer container: childrenXBLContainers.values()) {
+                    result.addAll(container.getAllModels());
+                }
             }
-        }
 
-        return result;
+            return result;
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     /**
-     * Get object with the effective id specified.
+     * Get object with the effective id specified within this container or descendant containers.
      *
      * @param effectiveId   effective id of the target
      * @return              object, or null if not found
      */
     public Object getObjectByEffectiveId(String effectiveId) {
 
-        // Search in models
-        for (XFormsModel model: models) {
-            final Object resultObject = model.getObjectByEffectiveId(effectiveId);
-            if (resultObject != null)
-                return resultObject;
-        }
-
-        // Search in children
-        if (childrenXBLContainers != null) {
-            for (XBLContainer currentContainer: childrenXBLContainers.values()) {
-                final Object resultObject = currentContainer.getObjectByEffectiveId(effectiveId);
+        if (isRelevant()) {
+            // Search in models
+            for (final XFormsModel model: models) {
+                final Object resultObject = model.getObjectByEffectiveId(effectiveId);
                 if (resultObject != null)
                     return resultObject;
+            }
+
+            // Search in children
+            if (childrenXBLContainers != null) {
+                for (XBLContainer container: childrenXBLContainers.values()) {
+                    final Object resultObject = container.getObjectByEffectiveId(effectiveId);
+                    if (resultObject != null)
+                        return resultObject;
+                }
             }
         }
 
@@ -532,7 +539,7 @@ public class XBLContainer implements XFormsEventTarget, XFormsEventObserver, XFo
     }
 
     private Object searchContainedModels(String sourceEffectiveId, String targetStaticId, Item contextItem) {
-        for (XFormsModel model: models) {
+        for (final XFormsModel model: models) {
             final Object resultObject = model.resolveObjectById(sourceEffectiveId, targetStaticId, contextItem);
             if (resultObject != null)
                 return resultObject;
@@ -556,26 +563,28 @@ public class XBLContainer implements XFormsEventTarget, XFormsEventObserver, XFo
     }
 
     /**
-     * Find the instance containing the specified node, in any model.
+     * Find the instance containing the specified node, in any relevant model.
      *
      * @param nodeInfo  node contained in an instance
      * @return      instance containing the node
      */
     public XFormsInstance getInstanceForNode(NodeInfo nodeInfo) {
 
-        // Search in models
-        for (XFormsModel currentModel: models) {
-            final XFormsInstance currentInstance = currentModel.getInstanceForNode(nodeInfo);
-            if (currentInstance != null)
-                return currentInstance;
-        }
+        if (isRelevant()) {
+            // Search in models
+            for (final XFormsModel model: models) {
+                final XFormsInstance instance = model.getInstanceForNode(nodeInfo);
+                if (instance != null)
+                    return instance;
+            }
 
-        // Search in children
-        if (childrenXBLContainers != null) {
-            for (XBLContainer currentContainer: childrenXBLContainers.values()) {
-                final XFormsInstance currentInstance = currentContainer.getInstanceForNode(nodeInfo);
-                if (currentInstance != null)
-                    return currentInstance;
+            // Search in children
+            if (childrenXBLContainers != null) {
+                for (final XBLContainer container: childrenXBLContainers.values()) {
+                    final XFormsInstance instance = container.getInstanceForNode(nodeInfo);
+                    if (instance != null)
+                        return instance;
+                }
             }
         }
 
@@ -584,16 +593,18 @@ public class XBLContainer implements XFormsEventTarget, XFormsEventObserver, XFo
     }
 
     /**
-     * Find the instance with the specified id, searching in any model.
+     * Find the instance with the specified id, searching in any relevant model.
      *
      * @param instanceId id of the instance to find
      * @return      instance containing the node
      */
     public XFormsInstance findInstance(String instanceId) {
-        for (XFormsModel currentModel: models) {
-            final XFormsInstance currentInstance = currentModel.getInstance(instanceId);
-            if (currentInstance != null)
-                return currentInstance;
+        if (isRelevant()) {
+            for (final XFormsModel model: models) {
+                final XFormsInstance instance = model.getInstance(instanceId);
+                if (instance != null)
+                    return instance;
+            }
         }
         return null;
     }
@@ -604,42 +615,58 @@ public class XBLContainer implements XFormsEventTarget, XFormsEventObserver, XFo
      * @param instancesElement  container element
      */
     protected void serializeInstances(Element instancesElement) {
+        // Only serialize if we are relevant
+        if (isRelevant()) {
+            // Serialize this container's model's
+            for (final XFormsModel currentModel: models) {
+                currentModel.serializeInstances(instancesElement);
+            }
 
-        // Serialize this container's model's
-        for (XFormsModel currentModel: models) {
-            currentModel.serializeInstances(instancesElement);
-        }
-
-        // Recurse into children containers
-        if (childrenXBLContainers != null) {
-            for (XBLContainer currentContainer: childrenXBLContainers.values()) {
-                currentContainer.serializeInstances(instancesElement);
+            // Recurse into children containers
+            if (childrenXBLContainers != null) {
+                for (final XBLContainer currentContainer: childrenXBLContainers.values()) {
+                    currentContainer.serializeInstances(instancesElement);
+                }
             }
         }
+    }
+
+    /**
+     * Whether this container is relevant, i.e. either is a top-level container OR is within a relevant container control.
+     *
+     * @return  true iif container is relevant
+     */
+    public boolean isRelevant() {
+        // componentControl will be null if we are at the top-level
+        return (componentControl == null) || componentControl.isRelevant();
     }
 
     public void restoreModelsState(PropertyContext propertyContext) {
         // Handle this container only
-        for (XFormsModel currentModel: models) {
-            currentModel.restoreState(propertyContext);
+        for (final XFormsModel model: models) {
+            model.restoreState(propertyContext);
         }
     }
 
     public void startOutermostActionHandler() {
-        // Handle this container
-        for (XFormsModel currentModel: models) {
-            currentModel.startOutermostActionHandler();
-        }
-        // Recurse into children containers
-        if (childrenXBLContainers != null) {
-            for (XBLContainer currentContainer: childrenXBLContainers.values()) {
-                currentContainer.startOutermostActionHandler();
+//        if (isRelevant()) {
+            // Handle this container
+            for (XFormsModel model: models) {
+                model.startOutermostActionHandler();
             }
-        }
+            // Recurse into children containers
+            if (childrenXBLContainers != null) {
+                for (XBLContainer container: childrenXBLContainers.values()) {
+                    container.startOutermostActionHandler();
+                }
+            }
+//        }
     }
 
     public void endOutermostActionHandler(PropertyContext propertyContext) {
-        synchronizeAndRefresh(propertyContext);
+//        if (isRelevant()) {
+            synchronizeAndRefresh(propertyContext);
+//        }
     }
 
     public void synchronizeAndRefresh(PropertyContext propertyContext) {
@@ -672,42 +699,49 @@ public class XBLContainer implements XFormsEventTarget, XFormsEventObserver, XFo
     }
 
     private boolean needRebuildRecalculateRevalidate() {
-        for (XFormsModel currentModel: models) {
-            if (currentModel.needRebuildRecalculateRevalidate())
-                return true;
-        }
-        // Recurse into children containers
-        if (childrenXBLContainers != null) {
-            for (XBLContainer currentContainer: childrenXBLContainers.values()) {
-                if (currentContainer.needRebuildRecalculateRevalidate())
+        if (isRelevant()) {
+            for (final XFormsModel model: models) {
+                if (model.needRebuildRecalculateRevalidate())
                     return true;
+            }
+            // Recurse into children containers
+            if (childrenXBLContainers != null) {
+                for (final XBLContainer container: childrenXBLContainers.values()) {
+                    if (container.needRebuildRecalculateRevalidate())
+                        return true;
+                }
             }
         }
         return false;
     }
 
     private void rebuildRecalculateRevalidateIfNeeded(PropertyContext propertyContext) {
-        // Handle this container
-        for (XFormsModel currentModel: models) {
-            currentModel.rebuildRecalculateRevalidateIfNeeded(propertyContext);
-        }
-        // Recurse into children containers
-        if (childrenXBLContainers != null) {
-            // NOTE: childrenContainers might be modified down the line and cause a ConcurrentModificationException
-            // so make a copy here before processing.
-            // TODO: The exact situation is not entirely clear and there might be other places in this class where this
-            // might happen!
-            final Map<String, XBLContainer> tempMap = new LinkedHashMap<String, XBLContainer>(childrenXBLContainers);
-            for (XBLContainer currentContainer: tempMap.values()) {
-                currentContainer.rebuildRecalculateRevalidateIfNeeded(propertyContext);
+        if (isRelevant()) {
+            // Handle this container
+            for (final XFormsModel model: models) {
+                model.rebuildRecalculateRevalidateIfNeeded(propertyContext);
+            }
+            // Recurse into children containers
+            if (childrenXBLContainers != null) {
+                // NOTE: childrenContainers might be modified down the line and cause a ConcurrentModificationException
+                // so make a copy here before processing.
+                // TODO: The exact situation is not entirely clear and there might be other places in this class where this
+                // might happen!
+                final Map<String, XBLContainer> tempMap = new LinkedHashMap<String, XBLContainer>(childrenXBLContainers);
+                for (final XBLContainer container: tempMap.values()) {
+                    container.rebuildRecalculateRevalidateIfNeeded(propertyContext);
+                }
             }
         }
     }
 
     public void requireRefresh() {
-        // Delegate to controls
-        // Note that we don't recurse as for now refresh is global
-        containingDocument.getControls().requireRefresh();
+        // Note that we don't recurse into children container as for now refresh is global
+        final XFormsControls controls = containingDocument.getControls();
+        if (controls.isInitialized()) {
+            // Controls exist, otherwise there is no point in doing anything controls-related
+            controls.requireRefresh();
+        }
     }
 
     public void refreshIfNeeded(PropertyContext propertyContext) {
@@ -716,25 +750,31 @@ public class XBLContainer implements XFormsEventTarget, XFormsEventObserver, XFo
     }
 
     public void rebuildRecalculateIfNeeded(PropertyContext propertyContext) {
-        // Handle this container
-        for (XFormsModel currentModel: models) {
-            currentModel.rebuildRecalculateIfNeeded(propertyContext);
-        }
-        // Recurse into children containers
-        if (childrenXBLContainers != null) {
-            // NOTE: childrenContainers might be modified down the line and cause a ConcurrentModificationException
-            // so make a copy here before processing.
-            // TODO: The exact situation is not entirely clear and there might be other places in this class where this
-            // might happen!
-            final Map<String, XBLContainer> tempMap = new LinkedHashMap<String, XBLContainer>(childrenXBLContainers);
-            for (XBLContainer currentContainer: tempMap.values()) {
-                currentContainer.rebuildRecalculateIfNeeded(propertyContext);
+        if (isRelevant()) {
+            // Handle this container
+            for (final XFormsModel model: models) {
+                model.rebuildRecalculateIfNeeded(propertyContext);
+            }
+            // Recurse into children containers
+            if (childrenXBLContainers != null) {
+                // NOTE: childrenContainers might be modified down the line and cause a ConcurrentModificationException
+                // so make a copy here before processing.
+                // TODO: The exact situation is not entirely clear and there might be other places in this class where this
+                // might happen!
+                final Map<String, XBLContainer> tempMap = new LinkedHashMap<String, XBLContainer>(childrenXBLContainers);
+                for (final XBLContainer container: tempMap.values()) {
+                    container.rebuildRecalculateIfNeeded(propertyContext);
+                }
             }
         }
     }
 
     public String getId() {
         return staticId;
+    }
+
+    public String getPrefixedId() {
+        return prefixedId;
     }
 
     public String getEffectiveId() {
@@ -762,7 +802,9 @@ public class XBLContainer implements XFormsEventTarget, XFormsEventObserver, XFo
         final String eventName = event.getName();
         if (XFormsEvents.XFORMS_BINDING_EXCEPTION.equals(eventName)) {
             // The default action for this event results in the following: Fatal error.
-            throw new ValidationException("Binding exception for target: " + event.getTargetObject().getEffectiveId(), event.getTargetObject().getLocationData());
+            final XFormsBindingExceptionEvent bindingExceptionEvent = (XFormsBindingExceptionEvent) event;
+            throw new ValidationException("Binding exception for target: " + event.getTargetObject().getEffectiveId(),
+                    bindingExceptionEvent.getThrowable(), event.getTargetObject().getLocationData());
         }
     }
 
@@ -1025,16 +1067,12 @@ public class XBLContainer implements XFormsEventTarget, XFormsEventObserver, XFo
     public void setDeferredFlagsForSetindex() {
         // XForms 1.1: "This action affects deferred updates by performing deferred update in its initialization and by
         // setting the deferred update flags for recalculate, revalidate and refresh."
-        for (XFormsModel currentModel: models) {
+        for (final XFormsModel model : models) {
             // NOTE: We used to do this, following XForms 1.0, but XForms 1.1 has changed the behavior
             //currentModel.getBinds().rebuild(pipelineContext);
 
-            final XFormsModel.DeferredActionContext deferredActionContext = currentModel.getDeferredActionContext();
-            deferredActionContext.recalculate = true;
-            deferredActionContext.revalidate = true;
+            model.markValueChange(null, false);
         }
-        // This container requires refresh
-        requireRefresh();
     }
 
     public boolean allowExternalEvent(IndentedLogger indentedLogger, String logType, String eventName) {

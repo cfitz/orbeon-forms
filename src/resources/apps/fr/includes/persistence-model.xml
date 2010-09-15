@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Copyright (C) 2009 Orbeon, Inc.
+  Copyright (C) 2010 Orbeon, Inc.
 
   This program is free software; you can redistribute it and/or modify it under the terms of the
   GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -95,7 +95,8 @@
                 <xforms:insert nodeset="xxforms:instance('fr-form-instance')" origin="$form-data"/>
                 <!-- Set initial data as dirty, because this is the case typically of switching between script/noscript
                      mode, and we can't really know if the data is clean or dirty but would like to enable the save button -->
-                <xforms:setvalue ref="instance('fr-persistence-instance')/initial-data-status">dirty</xforms:setvalue>
+                <xforms:setvalue if="not($parameters/mode = ('test', 'view', 'pdf', 'email'))"
+                                 ref="instance('fr-persistence-instance')/initial-data-status">dirty</xforms:setvalue>
             </xforms:action>
             <xforms:action if="not($form-data)">
                 <!-- Load document with that id from persistence layer -->
@@ -131,6 +132,9 @@
         <!-- In case there is an error, show it (error occurred when the controls are not yet ready) -->
         <xforms:toggle if="instance('fr-persistence-instance')/is-error = 'true'" case="fr-message-fatal-error"/>
 
+        <!-- Set focus on first focusable control -->
+        <!--<xforms:setfocus control="fr-form-group"/>-->
+
         <!-- Force all this so we can safely set the data status -->
         <xforms:rebuild/>
         <xforms:recalculate/>
@@ -152,7 +156,7 @@
     </xforms:action>
 
     <!-- New document operation -->
-    <xforms:setvalue ev:event="fr-new-document" ref="$document" value="digest(string(random(true)), 'MD5', 'hex')"/>
+    <xforms:setvalue ev:event="fr-new-document" ref="$document" value="digest(string(random(true())), 'MD5', 'hex')"/>
 
     <!-- Delete operation -->
     <xforms:action ev:event="fr-delete-data">
@@ -225,7 +229,7 @@
             <xforms:action if="not($continue-with-save)">
                 <!-- Data not valid: display error -->
                 <xforms:setvalue ref="xxforms:instance('fr-persistence-instance')/message"
-                                 model="fr-resources-model" select="$fr-fr-resources/detail/messages/form-validation-error"/>
+                                 model="fr-resources-model" value="$fr-fr-resources/detail/messages/form-validation-error"/>
                 <xforms:toggle case="fr-message-validation-error"/>
                 <!-- Mark all active alerts as visited -->
                 <xforms:dispatch name="fr-visit-alerts" target="fr-persistence-model"/>
@@ -287,7 +291,7 @@
 
                                 <xxforms:variable name="upload-extension" select="normalize-space(tokenize($holder/@filename, '\.')[last()])" as="xs:string"/>
                                 <xxforms:variable name="upload-has-extension" select="count(tokenize($holder/@filename, '\.')) gt 1 and $upload-extension != ''" as="xs:string"/>
-                                <xxforms:variable name="new-id" select="digest(string(random(true)), 'MD5', 'hex')" as="xs:string"/>
+                                <xxforms:variable name="new-id" select="digest(string(random(true())), 'MD5', 'hex')" as="xs:string"/>
                                 <xxforms:variable name="new-filename" select="string-join(($new-id,
                                                                                             if (not($upload-has-extension)) then 'bin' else $upload-extension), '.')" as="xs:string"/>
                                 <xxforms:variable name="resource" as="xs:string"
@@ -430,7 +434,7 @@
 
     <xforms:instance id="fr-triggers-instance">
         <triggers xmlns="">
-            <!-- Regular save/submuit -->
+            <!-- Regular save/submit -->
             <save/>
             <submit/>
             <!-- These versions are disabled when possible -->
@@ -444,6 +448,8 @@
             <workflow-send/>
             <!-- Discard button -->
             <discard/>
+            <!-- Other buttons (bind here to make sure they are not read-only) -->
+            <other/>
         </triggers>
     </xforms:instance>
 
@@ -472,8 +478,8 @@
 
         <!-- Conditions for disabling workflow buttons -->
         <xforms:bind nodeset="workflow-review" readonly="exforms:readonly(../submit)"/>
-        <xforms:bind nodeset="workflow-edit" readonly="exforms:readonly(../strict-submit)"/>
-        <xforms:bind nodeset="workflow-send" readonly="exforms:readonly(../strict-submit)"/>
+        <xforms:bind nodeset="workflow-edit" readonly="exforms:readonly(../submit)"/>
+        <xforms:bind nodeset="workflow-send" readonly="exforms:readonly(../submit)"/>
     </xforms:bind>
 
     <!-- HACK: dependencies: recalculate this model when there is a change in the instance holding error/validity
@@ -482,8 +488,8 @@
 
     <!-- React to successful submission when saving/updating -->
     <xforms:action ev:event="xforms-submit-done" ev:target="fr-create-update-submission">
-        <xforms:setvalue ref="instance('fr-persistence-instance')/message"
-                         model="fr-resources-model" select="$fr-fr-resources/detail/messages/save-success"/>
+        <xforms:setvalue ref="xxforms:instance('fr-persistence-instance')/message"
+                         model="fr-resources-model" value="$fr-fr-resources/detail/messages/save-success"/>
 
         <!-- Show success message -->
         <xforms:toggle case="fr-message-success"/>
@@ -573,7 +579,8 @@
     -->
     <xforms:submission id="fr-workflow-confirmation-submission"
         resource="{xxforms:property(string-join(('oxf.fr.detail.send.uri', $app, $form), '.'))}"
-        method="post" ref="instance('fr-workflow-confirmation-instance')" replace="all" xxforms:ensure-uploads="false"/>
+        method="post" ref="if (instance('fr-workflow-confirmation-instance') != '') then instance('fr-workflow-confirmation-instance') else xxforms:instance('fr-form-instance')"
+        replace="all" xxforms:ensure-uploads="false"/>
 
     <!-- Call email service -->
     <!--
@@ -625,12 +632,12 @@
         <!-- Set error message and show error section in UI -->
         <xforms:action if="event('error-type') = 'validation-error'">
             <xforms:setvalue ref="instance('fr-persistence-instance')/message"
-                             model="fr-resources-model" select="$fr-fr-resources/detail/messages/form-validation-error"/>
+                             model="fr-resources-model" value="$fr-fr-resources/detail/messages/form-validation-error"/>
             <xforms:toggle case="fr-message-validation-error"/>
         </xforms:action>
         <xforms:action if="event('error-type') != 'validation-error'">
             <xforms:setvalue ref="instance('fr-persistence-instance')/message"
-                             model="fr-resources-model" select="$fr-fr-resources/detail/messages/database-error"/>
+                             model="fr-resources-model" value="$fr-fr-resources/detail/messages/database-error"/>
             <xforms:toggle case="fr-message-fatal-error"/>
         </xforms:action>
         <!-- Mark all active alerts as visited -->
@@ -649,12 +656,12 @@
         <!-- Set error message and show error section in UI -->
         <xforms:action if="event('error-type') = 'validation-error'">
             <xforms:setvalue ref="instance('fr-persistence-instance')/message"
-                             model="fr-resources-model" select="$fr-fr-resources/detail/messages/form-validation-error"/>
+                             model="fr-resources-model" value="$fr-fr-resources/detail/messages/form-validation-error"/>
             <xforms:toggle case="fr-message-validation-error"/>
         </xforms:action>
         <xforms:action if="event('error-type') != 'validation-error'">
             <xforms:setvalue ref="instance('fr-persistence-instance')/message"
-                             model="fr-resources-model" select="$fr-fr-resources/detail/messages/database-error"/>
+                             model="fr-resources-model" value="$fr-fr-resources/detail/messages/database-error"/>
             <xforms:toggle case="fr-message-fatal-error"/>
         </xforms:action>
         <!-- Mark all active alerts as visited -->
@@ -664,8 +671,8 @@
     <!-- React to instance mutation events -->
     <xforms:action ev:observer="fr-form-instance" ev:event="xforms-insert xforms-delete xxforms-value-changed">
         <!-- Mark status as dirty if data changes -->
-        <!-- Test mode we don't want the status to be marked as dirty, so that the browser's alert dialog doesn't show -->
-        <xforms:setvalue if="not($parameters/mode = 'test')" ref="instance('fr-persistence-instance')/data-status">dirty</xforms:setvalue>
+        <!-- In test and view modes, we don't want the status to be marked as dirty, so that the browser's alert dialog doesn't show -->
+        <xforms:setvalue if="not($parameters/mode = ('test', 'view', 'pdf', 'email'))" ref="instance('fr-persistence-instance')/data-status">dirty</xforms:setvalue>
     </xforms:action>
 
     <!-- Clear message upon DOMFocusIn on #fr-form-group -->

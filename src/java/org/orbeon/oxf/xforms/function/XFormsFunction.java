@@ -13,8 +13,7 @@
  */
 package org.orbeon.oxf.xforms.function;
 
-import org.dom4j.Namespace;
-import org.dom4j.QName;
+import org.dom4j.*;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.pipeline.StaticExternalContext;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
@@ -22,23 +21,18 @@ import org.orbeon.oxf.util.PooledXPathExpression;
 import org.orbeon.oxf.util.XPathCache;
 import org.orbeon.oxf.xforms.*;
 import org.orbeon.oxf.xforms.xbl.XBLContainer;
+import org.orbeon.oxf.xml.NamespaceMapping;
 import org.orbeon.saxon.expr.*;
 import org.orbeon.saxon.functions.SystemFunction;
-import org.orbeon.saxon.instruct.SlotManager;
 import org.orbeon.saxon.om.NamespaceResolver;
 import org.orbeon.saxon.om.ValueRepresentation;
-import org.orbeon.saxon.style.AttributeValueTemplate;
-import org.orbeon.saxon.trans.DynamicError;
-import org.orbeon.saxon.trans.IndependentContext;
-import org.orbeon.saxon.trans.Variable;
+import org.orbeon.saxon.sxpath.IndependentContext;
+import org.orbeon.saxon.sxpath.XPathVariable;
 import org.orbeon.saxon.trans.XPathException;
-import org.orbeon.saxon.type.Type;
 import org.orbeon.saxon.value.AtomicValue;
 import org.orbeon.saxon.value.QNameValue;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Base class for all XForms functions.
@@ -57,7 +51,8 @@ abstract public class XFormsFunction extends SystemFunction {
      *
      * NOTE: A few functions would benefit from not having this, but it is always safe.
      */
-    public Expression preEvaluate(StaticContext env) {
+    @Override
+    public Expression preEvaluate(ExpressionVisitor visitor) throws XPathException {
         return this;
     }
 
@@ -72,6 +67,10 @@ abstract public class XFormsFunction extends SystemFunction {
     protected XBLContainer getXBLContainer(XPathContext xpathContext) {
         final Context functionContext = (XFormsFunction.Context) PooledXPathExpression.getFunctionContext(xpathContext);
         return functionContext.getXBLContainer();
+    }
+
+    protected Element getSourceElement(XPathContext xpathContext) {
+        return getContext(xpathContext).getSourceElement();
     }
 
     protected String getSourceEffectiveId(XPathContext xpathContext) {
@@ -116,6 +115,7 @@ abstract public class XFormsFunction extends SystemFunction {
         private final XFormsContextStack contextStack;
 
         private String sourceEffectiveId;
+        private Element sourceElement;
         private XFormsModel model;
 
         // Constructor for XBLContainer and XFormsActionInterpreter
@@ -161,6 +161,14 @@ abstract public class XFormsFunction extends SystemFunction {
         public void setSourceEffectiveId(String sourceEffectiveId) {
             this.sourceEffectiveId = sourceEffectiveId;
         }
+
+        public Element getSourceElement() {
+            return sourceElement;
+        }
+
+        public void setSourceElement(Element sourceElement) {
+            this.sourceElement = sourceElement;
+        }
     }
 
     protected QName getQNameFromExpression(XPathContext xpathContext, Expression qNameExpression) throws XPathException {
@@ -191,10 +199,10 @@ abstract public class XFormsFunction extends SystemFunction {
 
                 final XFormsContextStack contextStack = getContextStack(xpathContext);
                 // TODO: function context should directly provide BindingContext
-                final Map namespaceMappings = getXBLContainer(xpathContext).getNamespaceMappings(contextStack.getCurrentBindingContext().getControlElement());
+                final NamespaceMapping namespaceMapping = getXBLContainer(xpathContext).getNamespaceMappings(contextStack.getCurrentBindingContext().getControlElement());
 
                 // Get QName URI
-                final String qNameURI = (String) namespaceMappings.get(prefix);
+                final String qNameURI = namespaceMapping.mapping.get(prefix);
                 if (qNameURI == null)
                     throw new OXFException("Namespace prefix not in space for QName: " + qNameString);
 
@@ -218,80 +226,50 @@ abstract public class XFormsFunction extends SystemFunction {
     }
     
     // The following is inspired by saxon:evaluate()
-    protected PreparedExpression prepareExpression(XPathContext xpathContext, Expression parameterExpression, boolean isAVT) throws XPathException {
+    protected PooledXPathExpression prepareExpression(XPathContext initialXPathContext, Expression parameterExpression, boolean isAVT) throws XPathException {
 
-        final PreparedExpression preparedExpression = new PreparedExpression();
-
-        final String xpathString;
-        {
-            final AtomicValue exprSource = (AtomicValue) parameterExpression.evaluateItem(xpathContext);
-            xpathString = exprSource.getStringValue();
-        }
+        // Evaluate parameter into an XPath string
+        final String xpathString
+                = ((AtomicValue) parameterExpression.evaluateItem(initialXPathContext)).getStringValue();
 
         // Copy static context information
-        final IndependentContext env = staticContext.copy();
-        // We do staticContext.setFunctionLibrary(env.getFunctionLibrary()) above, so why would we need this?
-//        env.setFunctionLibrary(getExecutable().getFunctionLibrary());
-        preparedExpression.expStaticContext = env;
+        final IndependentContext staticContext = this.staticContext.copy();
+        staticContext.setFunctionLibrary(initialXPathContext.getController().getExecutable().getFunctionLibrary());
 
         // Propagate in-scope variable definitions since they are not copied automatically
-        final XFormsContextStack contextStack = getContextStack(xpathContext);
-        preparedExpression.inScopeVariables = contextStack.getCurrentBindingContext().getInScopeVariables();
-        preparedExpression.variables = new HashMap<String, Variable>();
-        {
-            if (preparedExpression.inScopeVariables != null) {
-                for (final Map.Entry<String, ValueRepresentation> currentEntry: preparedExpression.inScopeVariables.entrySet()) {
-                    final String name = currentEntry.getKey();
+        final XFormsContextStack contextStack = getContextStack(initialXPathContext);
 
-                    final Variable variable = env.declareVariable(name);
-                    variable.setUseStack(true);// "Indicate that values of variables are to be found on the stack, not in the Variable object itself"
-
-                    preparedExpression.variables.put(name, variable);
-                }
+        final Map<String, ValueRepresentation> inScopeVariables = contextStack.getCurrentBindingContext().getInScopeVariables();
+        final Map<String, XPathVariable> variableDeclarations = new HashMap<String, XPathVariable>();
+        if (inScopeVariables != null) {
+            for (final String name: inScopeVariables.keySet()) {
+                final XPathVariable variable = staticContext.declareVariable("", name);
+                variableDeclarations.put(name, variable);
             }
         }
 
         // Create expression
-        Expression expression;
-        try {
-            if (isAVT){
-                expression = AttributeValueTemplate.make(xpathString, -1, env);
-            } else {
-                expression = ExpressionTool.make(xpathString, env, 0, Token.EOF, 1);
-            }
-        } catch (XPathException e) {
-            final String name = xpathContext.getNamePool().getDisplayName(getFunctionNameCode());
-            final DynamicError err = new DynamicError("Static error in XPath expression supplied to " + name + ": " +
-                    e.getMessage().trim());
-            err.setXPathContext(xpathContext);
-            throw err;
-        }
+        final PooledXPathExpression pooledXPathExpression
+                = XPathCache.createPoolableXPathExpression(null, staticContext, xpathString, variableDeclarations, isAVT);
 
-        // Prepare expression
-        expression = expression.typeCheck(env, Type.ITEM_TYPE);
-        preparedExpression.stackFrameMap = env.getStackFrameMap();
-        ExpressionTool.allocateSlots(expression, preparedExpression.stackFrameMap.getNumberOfVariables(), preparedExpression.stackFrameMap);
-        preparedExpression.expression = expression;
+        // Set context items and position for use at runtime
+        pooledXPathExpression.setContextItem(initialXPathContext.getContextItem(), initialXPathContext.getContextPosition());
 
-        return preparedExpression;
-    }
-    
-    public static class PreparedExpression implements java.io.Serializable {
-        public IndependentContext expStaticContext;
-        public Expression expression;
-        public Map<String, ValueRepresentation> inScopeVariables;
-        public Map<String, Variable> variables;
-        public SlotManager stackFrameMap;
+        // Set variables for use at runtime
+        pooledXPathExpression.setVariables(inScopeVariables);
+
+        return pooledXPathExpression;
     }
 
     // See comments in Saxon Evaluate.java
     private IndependentContext staticContext;
 
     // The following copies all the StaticContext information into a new StaticContext
-    public void copyStaticContextIfNeeded(StaticContext env) throws XPathException {
+    public void copyStaticContextIfNeeded(ExpressionVisitor visitor) throws XPathException {
         // See same method in Saxon Evaluate.java
         if (staticContext == null) { // only do this once
-            super.checkArguments(env);
+            final StaticContext env = visitor.getStaticContext();
+            super.checkArguments(visitor);
 
             final NamespaceResolver namespaceResolver = env.getNamespaceResolver();
 
@@ -300,7 +278,7 @@ abstract public class XFormsFunction extends SystemFunction {
             staticContext.setBaseURI(env.getBaseURI());
             staticContext.setImportedSchemaNamespaces(env.getImportedSchemaNamespaces());
             staticContext.setDefaultFunctionNamespace(env.getDefaultFunctionNamespace());
-            staticContext.setDefaultElementNamespace(env.getNamePool().getURIFromURICode(env.getDefaultElementNamespace()));
+            staticContext.setDefaultElementNamespace(env.getDefaultElementNamespace());
             staticContext.setFunctionLibrary(env.getFunctionLibrary());
 
             for (Iterator iterator = namespaceResolver.iteratePrefixes(); iterator.hasNext();) {
@@ -311,27 +289,5 @@ abstract public class XFormsFunction extends SystemFunction {
                 }
             }
         }
-    }
-
-    protected XPathContextMajor prepareXPathContext(XPathContext xpathContext, PreparedExpression preparedExpression) {
-        final XPathContextMajor newXPathContext = xpathContext.newCleanContext();
-        newXPathContext.openStackFrame(preparedExpression.stackFrameMap);
-        newXPathContext.setCurrentIterator(xpathContext.getCurrentIterator());
-
-        // Set variable values
-        if (preparedExpression.variables != null) {
-            for (final Map.Entry<String, Variable> entry: preparedExpression.variables.entrySet()) {
-                final String name = entry.getKey();
-                final Variable variable = entry.getValue();
-
-                final Object object = preparedExpression.inScopeVariables.get(name);
-                if (object != null) {
-                    // Convert Java object to Saxon object
-                    final ValueRepresentation valueRepresentation = XFormsUtils.convertJavaObjectToSaxonObject(object);
-                    newXPathContext.setLocalVariable(variable.getLocalSlotNumber(), valueRepresentation);
-                }
-            }
-        }
-        return newXPathContext;
     }
 }
