@@ -29,6 +29,8 @@ The full text of the license is available at http://www.gnu.org/copyleft/lesser.
  
     <property name="src.dir" location="src"/>
  
+    <property name="saxon.jar" value="saxon-9-1-0-8_orbeon_20101011.jar"/>
+ 
     <fileset id="war.libs" dir="${lib.dir}">
         <include name="dom4j-1_6_1.jar"/>
         <include name="log4j-1_2_15.jar"/>
@@ -38,6 +40,7 @@ The full text of the license is available at http://www.gnu.org/copyleft/lesser.
         <include name="xerces-resolver-2_9_orbeon_20070711.jar"/>
         <include name="xerces-serializer-2_9_orbeon_20070711.jar"/>
         <include name="xerces-xml-apis-2_9_orbeon_20070711.jar"/>
+        <include name="xerces-xercesImpl-2_9_orbeon_20070711.jar"/>
  
         <include name="commons-collections-3_1.jar"/>
         <include name="commons-lang-2_3.jar"/>
@@ -71,7 +74,7 @@ The full text of the license is available at http://www.gnu.org/copyleft/lesser.
         <include name="jtidy-8.0-20060801.131059-3.jar"/>
         <include name="tagsoup-1.2.jar"/>
         <include name="junit.jar"/>
-        <include name="saxon-8_8_orbeon_20090617.jar"/>
+        <include name="saxon-9-1-0-8_orbeon_20100810.jar"/>
         <include name="batik-all-1_6.jar"/>
         <include name="avalon-framework-4_2_0.jar"/>
         <include name="fop-0_93.jar"/>
