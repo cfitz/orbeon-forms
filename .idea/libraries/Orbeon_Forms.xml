@@ -5,14 +5,10 @@
       <root url="file://$PROJECT_DIR$/lib/oracle" />
     </CLASSES>
     <JAVADOC />
-<<<<<<< HEAD
     <SOURCES>
       <root url="file:///Users/cfitz/code/Saxon" />
       <root url="file:///Users/cfitz/code/Xerces/src" />
     </SOURCES>
-=======
-    <SOURCES />
->>>>>>> upstream/master
     <jarDirectory url="file://$PROJECT_DIR$/lib" recursive="false" />
     <jarDirectory url="file://$PROJECT_DIR$/lib/oracle" recursive="false" />
   </library>
