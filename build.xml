@@ -16,34 +16,21 @@
 <project name="orbeon" default="orbeon-war" basedir=".">
 
     <!--<echoproperties/>-->
-<<<<<<< HEAD
 
     <property name="project.name" value="orbeon"/>
 
-=======
- 
->>>>>>> 988654aaf6b848d5c06345eecd98c62e5351e06b
     <!-- set global build.root to be dir containing this file. -->
     <dirname property="build.root" file="${ant.file}"/>
     <property name="lib.dir" location="lib"/>
     <property name="build.dir" location="build"/>
-    <property name="project.name" value="orbeon"/>
     <property name="war.dir" value="${build.dir}/${project.name}-war"/>
     <property name="war.inf" value="${war.dir}/WEB-INF"/>
     <property name="war.classes" value="${war.inf}/classes"/>
     <property name="war.lib" value="${war.inf}/lib"/>
-<<<<<<< HEAD
     <property name="rsync.dir" value="${build.dir}/rsync"/>
 
     <property name="src.dir" location="src"/>
 
-=======
- 
-    <property name="src.dir" location="src"/>
- 
-    <property name="saxon.jar" value="saxon-9-1-0-8_orbeon_20101011.jar"/>
- 
->>>>>>> 988654aaf6b848d5c06345eecd98c62e5351e06b
     <fileset id="war.libs" dir="${lib.dir}">
         <include name="dom4j-1_6_1.jar"/>
         <include name="log4j-1_2_15.jar"/>
@@ -54,11 +41,7 @@
         <include name="xerces-serializer-2_9_orbeon_20070711.jar"/>
         <include name="xerces-xml-apis-2_9_orbeon_20070711.jar"/>
         <include name="xerces-xercesImpl-2_9_orbeon_20070711.jar"/>
-<<<<<<< HEAD
 
-=======
- 
->>>>>>> 988654aaf6b848d5c06345eecd98c62e5351e06b
         <include name="commons-collections-3_1.jar"/>
         <include name="commons-lang-2_3.jar"/>
         <include name="commons-cli-1_0.jar"/>
@@ -72,12 +55,8 @@
 
         <include name="commons-digester-1_5.jar"/>
         <include name="commons-validator-1_0_2.jar"/>
-<<<<<<< HEAD
         <include name="commons-logging-1_0_4.jar"/>
 
-=======
- 
->>>>>>> 988654aaf6b848d5c06345eecd98c62e5351e06b
         <include name="axis_1_2_1-axis.jar"/>
         <include name="axis_1_2_1-jaxrpc.jar"/>
         <include name="axis_1_2_1-saaj.jar"/>
@@ -95,7 +74,6 @@
         <include name="activation-1_0_2.jar"/>
         <include name="jtidy-8.0-20060801.131059-3.jar"/>
         <include name="tagsoup-1.2.jar"/>
-        <include name="junit.jar"/>
         <include name="saxon-9-1-0-8_orbeon_20100810.jar"/>
         <include name="batik-all-1_6.jar"/>
         <include name="avalon-framework-4_2_0.jar"/>
@@ -122,14 +100,8 @@
         <include name="exist-xmlrpc-client-3_1_1.jar"/>
         <include name="exist-xmlrpc-common-3_1_1.jar"/>
         <include name="exist-xmlrpc-server-3_1_1.jar"/>
-<<<<<<< HEAD
 
         <include name="flyingsaucer-core-renderer_orbeon_20100512.jar"/>
-=======
- 
-        <include name="flyingsaucer-20100212-core-renderer.jar"/>
-        <include name="flyingsaucer-20100212-core-renderer-minimal.jar"/>
->>>>>>> 988654aaf6b848d5c06345eecd98c62e5351e06b
         <include name="flyingsaucer-20100212-itext-2_1_7.jar"/>
         <include name="itext-bcmail-jdk14-138.jar"/>
         <include name="itext-bcprov-jdk14-138.jar"/>
@@ -148,19 +120,10 @@
         <include name="ant-jsch-1_6_5.jar"/>
         <include name="jsch-0.1.42.jar"/>
     </fileset>
-<<<<<<< HEAD
 
-=======
-    <fileset id="war.libs.private" dir="${lib.dir}">
-        <include name="xerces-xercesImpl-2_9_orbeon_20070711.jar"/>
-        <include name="commons-logging-1_0_4.jar"/>
-    </fileset>
- 
->>>>>>> 988654aaf6b848d5c06345eecd98c62e5351e06b
     <target name="init">
 
         <tstamp/>
-<<<<<<< HEAD
         <!--
             Past version numbers:
 
@@ -183,30 +146,16 @@
          -->
         <property name="version.number" value="3.8.0.post"/>
         <property name="edition" value="CE"/>
-=======
-        <!-- E.g.:
-dev-3.7.1 => released dev version
-dev-post-3.7.1 => post-release nightly build
-beta1-3.8.0 => beta for 3.8.0
-rc1-3.8.0 => release candidate for 3.8.0
-stable-3.8.0 => released stable version
--->
-        <property name="version.number" value="dev-post-3.7.1"/>
->>>>>>> 988654aaf6b848d5c06345eecd98c62e5351e06b
         <!-- Can be overridden on command-line to provide different suffix -->
-        <property name="artifact.suffix" value=""/>
+        <property name="artifact.suffix" value="-${edition}"/>
+        <property name="version.suffix" value=""/>
         <tstamp>
             <format property="time" pattern="yyyyMMddHHmm" timezone="GMT"/>
         </tstamp>
-<<<<<<< HEAD
         <property name="release.number" value="${version.number}.${time}${version.suffix}"/>
         <property name="full.release.name" value="${project.name}-${release.number}-${edition}"/>
         <property name="artifact.name" value="${project.name}${artifact.suffix}"/>
 
-=======
-        <property name="release.number" value="${version.number}.${time}${artifact.suffix}"/>
- 
->>>>>>> 988654aaf6b848d5c06345eecd98c62e5351e06b
         <!-- User-friendly message -->
         <echo message="Building Orbeon Forms ${release.number}"/>
 
@@ -258,15 +207,11 @@ stable-3.8.0 => released stable version
         <property name="build.compiler.fulldepend" value="true"/>
         <property name="build.debug" value="on"/>
     </target>
-<<<<<<< HEAD
 
     <target name="clean" depends="init" description="Remove all generated files">
         <delete dir="${build.dir}"/>
     </target>
 
-=======
- 
->>>>>>> 988654aaf6b848d5c06345eecd98c62e5351e06b
     <!-- Create build dir and web application dir -->
     <target name="prepare" depends="init">
         <mkdir dir="${build.classes.dir}"/>
@@ -280,6 +225,7 @@ stable-3.8.0 => released stable version
     <target name="classpath" depends="prepare">
         <path id="class.path">
             <pathelement location="${jar.file}"/>
+            <pathelement location="${xforms-filter.jar.file}"/>
             <fileset dir="${lib.dir}">
                 <include name="**/*.jar"/>
             </fileset>
@@ -294,6 +240,7 @@ stable-3.8.0 => released stable version
         <copy todir="${build.dir}/src" file="${java-src.dir}/org/orbeon/oxf/common/Version.java" overwrite="true">
             <filterset>
                 <filter token="RELEASE" value="${release.number}"/>
+                <filter token="EDITION" value="${edition}"/>
             </filterset>
         </copy>
         <javac destdir="${build.classes.dir}"
@@ -303,29 +250,10 @@ stable-3.8.0 => released stable version
             <src path="${build.dir}/src"/>
             <src path="${java-src.dir}"/>
             <exclude name="org/orbeon/oxf/common/Version.java"/>
+            <exclude name="org/orbeon/oxf/xforms/analysis/PathMapUIDependencies.java"/>
         </javac>
     </target>
-<<<<<<< HEAD
 
-=======
- 
-    <!-- Compile with hotswap -->
-    <target name="hotswap" depends="init">
-        <!-- Usage: get the hotswap task (http://code.google.com/p/hotswap/).
-On Mac OS X add the jar file in /usr/share/ant/lib -->
-        <taskdef name="hotswap" classname="dak.ant.taskdefs.Hotswap"/>
-        <tstamp>
-            <format property="class.tstamp" pattern="MM/dd/yyyy kk:mm:ss" />
-        </tstamp>
-        <antcall target="classes"/>
-        <hotswap verbose="true" port="61155">
-            <fileset dir="${build.classes.dir}" includes="**/*.class">
-                <date datetime="${class.tstamp}" pattern="MM/dd/yyyy kk:mm:ss" when="after" granularity="0"/>
-            </fileset>
-        </hotswap>
-    </target>
- 
->>>>>>> 988654aaf6b848d5c06345eecd98c62e5351e06b
     <!-- Compile test source -->
     <target name="test-classes" depends="classes">
         <mkdir dir="${build.test-classes.dir}"/>
@@ -336,28 +264,15 @@ On Mac OS X add the jar file in /usr/share/ant/lib -->
     </target>
 
     <target name="transform" depends="prepare">
-      <property name="xsd-prefix" value="/org/orbeon/oxf/xml/schemas/page-flow-controller"/>
-      <xslt
-        style="src/xslt/page-flow-controller-xsd.xslt"
-        in="${java-src.dir}${xsd-prefix}.xsd"
-        out="${build.classes.dir}${xsd-prefix}-runtime.xsd"
-      />
+        <property name="xsd-prefix" value="/org/orbeon/oxf/xml/schemas/page-flow-controller"/>
+        <xslt style="src/xslt/page-flow-controller-xsd.xslt"
+              in="${java-src.dir}${xsd-prefix}.xsd"
+              out="${build.classes.dir}${xsd-prefix}-runtime.xsd"/>
     </target>
 
     <!-- JARs -->
-<<<<<<< HEAD
     <target name="jars" depends="classes, transform, orbeon-css-templates, orbeon-minify-js">
-=======
-    <target name="jars" depends="classes,transform,orbeon-css-templates,orbeon-minify-js">
-      <pathconvert dirsep="/" pathsep=" " property="jar.mf.cp" refid="war.libs.private">
-        <map from="${lib.dir}" to="private"/>
-      </pathconvert>
- 
->>>>>>> 988654aaf6b848d5c06345eecd98c62e5351e06b
       <jar destfile="${jar.file}" compress="false">
-          <manifest>
-              <attribute name="Class-Path" value="${jar.mf.cp}"/>
-          </manifest>
           <fileset dir="${java-src.dir}">
               <include name="**/*.xml"/>
               <include name="**/*.rng"/>
@@ -368,24 +283,22 @@ On Mac OS X add the jar file in /usr/share/ant/lib -->
           <fileset dir="${build.classes.dir}">
               <include name="**/*.class"/>
               <include name="**/*.xsd"/>
-              <!-- These classes go into their own JAR -->
-              <exclude name="org/orbeon/oxf/servlet/OPSXFormsFilter*.class"/>
+              <!-- This goes into a separate JAR -->
               <exclude name="org/orbeon/oxf/servlet/OrbeonXFormsFilter*.class"/>
+              <exclude name="org/orbeon/oxf/portlet/OrbeonPortletXFormsFilter*.class"/>
+              <exclude name="org/orbeon/oxf/portlet/OrbeonTrampolineServlet*.class"/>
           </fileset>
           <fileset dir="${resources-packaged.dir}">
               <include name="config/*-processors.xml"/>
               <include name="*.xml"/>
           </fileset>
-          <!-- WHY DO WE NEED THIS? WE DON'T WANT ANYBODY TO TOUCH OUR XERCES, RIGHT? -->
-          <!--<zipfileset dir="descriptors/jar" prefix="META-INF">-->
-            <!--<exclude name='*.MF' />-->
-          <!--</zipfileset>-->
         </jar>
 
         <jar destfile="${xforms-filter.jar.file}" compress="false">
           <fileset dir="${build.classes.dir}">
-              <include name="org/orbeon/oxf/servlet/OPSXFormsFilter*.class"/>
               <include name="org/orbeon/oxf/servlet/OrbeonXFormsFilter*.class"/>
+              <include name="org/orbeon/oxf/portlet/OrbeonPortletXFormsFilter*.class"/>
+              <include name="org/orbeon/oxf/portlet/OrbeonTrampolineServlet*.class"/>
           </fileset>
         </jar>
 
@@ -409,8 +322,10 @@ On Mac OS X add the jar file in /usr/share/ant/lib -->
                 <include name="xbl/**/*.xsl"/>
                 <include name="xbl/**/*.xml"/>
                 <include name="ops/**"/>
+                <exclude name="ops/unit-tests"/>
                 <exclude name="ops/unit-tests/**"/>
-                <exclude name="ops/css-templates/**/*.*"/>
+                <exclude name="ops/css-templates"/>
+                <exclude name="ops/css-templates/**"/>
                 <exclude name="ops/**/*.css"/>
                 <exclude name="ops/**/*.js"/>
                 <exclude name="ops/**/*.gif"/>
@@ -419,8 +334,11 @@ On Mac OS X add the jar file in /usr/share/ant/lib -->
                 <exclude name="ops/**/*.jpg"/>
                 <exclude name="ops/**/*.html"/>
                 <exclude name="ops/**/*.htc"/>
+                <exclude name="ops/fckeditor/_samples"/>
                 <exclude name="ops/fckeditor/_samples/**"/>
+                <exclude name="ops/fckeditor/editor/_source"/>
                 <exclude name="ops/fckeditor/editor/_source/**"/>
+                <exclude name="ops/fckeditor/_testcases"/>
                 <exclude name="ops/fckeditor/_testcases/**"/>
                 <exclude name="ops/fckeditor/**/*.cfm"/>
                 <exclude name="ops/fckeditor/**/*.cfc"/>
@@ -434,6 +352,7 @@ On Mac OS X add the jar file in /usr/share/ant/lib -->
                 <exclude name="ops/fckeditor/**/*.lasso"/>
                 <include name="oxf/**"/>
                 <include name="config/**"/>
+                <exclude name="config/theme"/>
                 <exclude name="config/theme/**"/>
                 <!-- We keep these in orbeon.jar -->
                 <exclude name="config/*-processors.xml"/>
@@ -459,8 +378,11 @@ On Mac OS X add the jar file in /usr/share/ant/lib -->
                 <include name="ops/**/*.jpg"/>
                 <include name="ops/**/*.html"/>
                 <include name="ops/**/*.htc"/>
+                <exclude name="ops/fckeditor/_samples"/>
                 <exclude name="ops/fckeditor/_samples/**"/>
+                <exclude name="ops/fckeditor/editor/_source"/>
                 <exclude name="ops/fckeditor/editor/_source/**"/>
+                <exclude name="ops/fckeditor/_testcases"/>
                 <exclude name="ops/fckeditor/_testcases/**"/>
                 <include name="config/theme/**/*.*"/>
             </fileset>
@@ -476,6 +398,9 @@ On Mac OS X add the jar file in /usr/share/ant/lib -->
         <jar destfile="${form-runner.jar.file}" compress="false">
             <fileset dir="${resources.dir}">
                 <include name="apps/fr/**/*.*"/>
+                <exclude name="apps/fr/persistence/oracle/**/*.*"/>
+                <exclude name="apps/fr/alfresco/**/*.*"/>
+                <exclude name="apps/fr/print/print-pdf-template.xpl"/>
             </fileset>
         </jar>
 
@@ -502,15 +427,7 @@ On Mac OS X add the jar file in /usr/share/ant/lib -->
         <copy file="${resources-public.jar.file}" todir="${war.lib}"/>
         <copy file="${form-runner.jar.file}" todir="${war.lib}"/>
         <copy file="${form-builder.jar.file}" todir="${war.lib}"/>
-<<<<<<< HEAD
 
-=======
- 
-        <copy todir="${war.lib}/private">
-          <fileset refid="war.libs.private"/>
-        </copy>
- 
->>>>>>> 988654aaf6b848d5c06345eecd98c62e5351e06b
         <copy todir="${war.inf}">
             <fileset dir="${lib.dir}">
                 <include name="commons-cli-1_0.jar"/>
@@ -543,7 +460,8 @@ On Mac OS X add the jar file in /usr/share/ant/lib -->
             <param name="target" expression="${target}"/>
             <param name="build-root" expression="${build.root}"/>
             <param name="build-root" expression="${build.root}"/>
-            <param name="version-number" expression="${release.number}"/>
+            <param name="version" expression="${release.number} ${edition}"/>
+            <param name="edition" expression="${edition}"/>
         </xslt>
     </target>
 
@@ -559,14 +477,16 @@ On Mac OS X add the jar file in /usr/share/ant/lib -->
     <!-- Zip sources file -->
     <target name="orbeon-src" depends="prepare" description="Create Zip file with the sources">
         <mkdir dir="${build.distrib.dir}"/>
-        <zip zipfile="${build.distrib.dir}/${project.name}-src.zip">
+        <zip zipfile="${build.distrib.dir}/${full.release.name}-src.zip">
             <zipfileset dir="${build.root}">
+                <exclude name="**/.git"/>
+                <exclude name="**/.git/**"/>
+                <exclude name="build"/>
                 <exclude name="build/**"/>
-                <exclude name="src/examples/**"/>
-                <exclude name="tools/*.zip"/>
-                <exclude name="tools/*.sh"/>
-                <exclude name="tools/dom4j-1_4/**"/>
-                <exclude name="tools/commons-httpclient-3.2/**"/>
+                <exclude name="tools"/>
+                <exclude name="tools/**"/>
+                <exclude name="src/scala/"/>
+                <exclude name="src/scala/**"/>
             </zipfileset>
         </zip>
     </target>
@@ -724,7 +644,6 @@ On Mac OS X add the jar file in /usr/share/ant/lib -->
     </target>
 
     <target name="test" depends="jars, test-classes, debug-enabled, debug-disabled">
-<<<<<<< HEAD
     	<!-- 11/14/2004 d : Found Processor was sorta invalid cause once it ran successfully
     	     				it would leave behind .class files in java.io.tmpdir.  This
     	     				meant that on subsequent runs of the test it wouldn't try to
@@ -746,22 +665,6 @@ On Mac OS X add the jar file in /usr/share/ant/lib -->
             </classpath>
         </taskdef>
 
-=======
-     <!-- 11/14/2004 d : Found Processor was sorta invalid cause once it ran successfully
-it would leave behind .class files in java.io.tmpdir. This
-meant that on subsequent runs of the test it wouldn't try to
-compile anything.
- 
-So now we delete,create,and specify a specific dir as the temp
-dir so that compiles always occur.
--->
-     <delete dir="${test.tmp.dir}"/>
-     <mkdir dir="${test.tmp.dir}"/>
- 
-<delete dir="${test.exist-db.dir}"/>
-     <mkdir dir="${test.exist-db.dir}"/>
- 
->>>>>>> 988654aaf6b848d5c06345eecd98c62e5351e06b
         <junit fork="true" haltonerror="yes" haltonfailure="yes">
             <!-- Enable assertions -->
             <jvmarg value="-ea"/>
@@ -804,66 +707,7 @@ dir so that compiles always occur.
             </classpath>
         </junit>
     </target>
-<<<<<<< HEAD
 
-=======
- 
-    <target name="teamcity-release" depends="clean, orbeon-dist, test-classes, debug-enabled, debug-disabled, test">
- 
-        <property name="deployDir" value="${build.dir}/deploy"/>
-        <mkdir dir="${deployDir}"/>
-        <copy todir="${deployDir}">
-            <fileset dir="${build.distrib.dir}">
-                <include name="*"/>
-            </fileset>
-        </copy>
- 
-        <!--<copy file='${deployDir}/buildLogs/ops-${version}-build.log' tofile='${deployDir}/${release.number}/build.log'/>-->
- 
-        <property name="artifact.name" value="${project.name}${artifact.suffix}"/>
-        <echo message="Using artifact name: ${artifact.name}"/>
- 
-        <!-- Move to generic file name so that rsync overwrites -->
-        <move file="${deployDir}/${project.name}-${release.number}.zip" tofile="${deployDir}/${artifact.name}.zip"/>
-        <move file="${deployDir}/${project.name}.war" tofile="${deployDir}/${artifact.name}.war"/>
-        <move file="${deployDir}/${project.name}-src.zip" tofile="${deployDir}/${artifact.name}-src.zip"/>
- 
-        <!-- Create md5 for all files -->
-        <checksum algorithm="MD5">
-            <fileset dir="${deployDir}">
-                <include name="*.*"/>
-            </fileset>
-        </checksum>
- 
-        <!-- Post the unstable build -->
-        <exec executable="rsync" failonerror="true" dir="${deployDir}">
-            <arg value="-vv"/>
-            <arg value="--stats"/>
-            <arg value="-z"/>
-            <arg value="-c"/>
-            <arg value="--rsh=/usr/bin/ssh"/>
-            <arg value="--bwlimit=50"/>
-            <arg value="${artifact.name}.war"/>
-            <arg value="${artifact.name}.zip"/>
-            <arg value="${artifact.name}-src.zip"/>
-            <arg value="orbeonbld2@forge.objectweb.org:/var/lib/gforge/chroot/home/groups/ops/htdocs/unstable/ops"/>
-        </exec>
- 
-    </target>
- 
-    <!--<target name="test-checksum" depends="init">-->
-        <!--<checksum>-->
-            <!--<fileset dir="${build.dir}/lib">-->
-                <!--<include name="*"/>-->
-            <!--</fileset>-->
-        <!--</checksum>-->
-    <!--</target>-->
- 
-    <target name="clean" depends="init" description="Remove all generated files">
-        <delete dir="${build.dir}"/>
-    </target>
- 
->>>>>>> 988654aaf6b848d5c06345eecd98c62e5351e06b
     <target name="orbeon-doc" depends="jars,orbeon-css-templates">
         <mkdir dir="${build.doc.dir}/reference"/>
         <mkdir dir="${build.doc.dir}/reference/theme"/>
@@ -891,29 +735,9 @@ dir so that compiles always occur.
                 <include name="*.css"/>
             </fileset>
         </copy>
-        <!--<copy todir="${build.doc.dir}" file="doc/OPS Tutorial.pdf"/>-->
-        <!--<copy todir="${build.doc.dir}" file="doc/OPS User Guide.pdf"/>-->
     </target>
-<<<<<<< HEAD
 
     <target name="orbeon-dist-war" depends="jars">
-=======
- 
-    <target name="orbeon-pdf-doc" depends="jars">
-        <mkdir dir="${build.doc.dir}/reference"/>
-        <java classname="org.orbeon.oxf.main.OPS" fork="false" failonerror="true">
-            <classpath>
-                <path refid="class.path"/>
-                <pathelement location="${resources-private.jar.file}"/>
-            </classpath>
-            <arg value="-r"/>
-            <arg value="${resources.dir}"/>
-            <arg value="oxf:/apps/doc/generate-single-static-html.xpl"/>
-        </java>
-    </target>
- 
-    <target name="orbeon-dist-war" depends="init">
->>>>>>> 988654aaf6b848d5c06345eecd98c62e5351e06b
         <mkdir dir="${build.distrib.dir}"/>
 
         <antcall target="war"/>
@@ -921,9 +745,10 @@ dir so that compiles always occur.
             <param name="target" value="war"/>
             <param name="build.root" value="${build.root}"/>
         </antcall>
-        <zip zipfile="${build.distrib.dir}/${project.name}.war">
+        <zip zipfile="${build.distrib.dir}/${full.release.name}.war">
             <zipfileset dir="${war.dir}">
                 <!-- This is already added to orbeon-resources-public.jar -->
+                <exclude name="WEB-INF/resources/ops"/>
                 <exclude name="WEB-INF/resources/ops/**"/>
                 <!-- These shouldn't be there, but just in case filter them out -->
                 <exclude name="WEB-INF/exist-data/*.dbx"/>
@@ -935,30 +760,26 @@ dir so that compiles always occur.
                 <exclude name="apps/doc/**/*.cdr"/>
                 <exclude name="apps/doc/**/*.cpl"/>
                 <!-- Form Runner is packaged as a JAR -->
+                <exclude name="apps/fr"/>
                 <exclude name="apps/fr/**"/>
                 <!-- Form Builder is packaged as a JAR -->
+                <exclude name="forms/orbeon/builder"/>
                 <exclude name="forms/orbeon/builder/**"/>
             </zipfileset>
         </zip>
     </target>
-<<<<<<< HEAD
 
     <target name="orbeon-dist-packages" depends="orbeon-dist-war, orbeon-javadoc, orbeon-src">
-=======
- 
-    <target name="orbeon-dist-packages" depends="orbeon-dist-war, orbeon-doc, orbeon-javadoc, orbeon-src">
-        <property name="prefix" value="${project.name}-${release.number}"/>
->>>>>>> 988654aaf6b848d5c06345eecd98c62e5351e06b
         <!-- Create temporary zip file -->
-        <property name="tmp-zip" value="${build.distrib.dir}/${project.name}-${release.number}-tmp.zip"/>
+        <property name="tmp-zip" value="${build.distrib.dir}/${full.release.name}-tmp.zip"/>
         <zip zipfile="${tmp-zip}">
-            <zipfileset dir="${build.distrib.dir}" prefix="${prefix}">
-                <include name="${project.name}.war"/>
+            <zipfileset dir="${build.distrib.dir}" fullpath="${full.release.name}/${project.name}.war">
+                <include name="${full.release.name}.war"/>
             </zipfileset>
-            <zipfileset file="README.txt"/>
-            <zipfileset dir="${build.doc.dir}" prefix="${prefix}/doc"/>
-            <zipfileset dir="doc/dist" prefix="${prefix}"/>
-            <zipfileset dir="${examples-cli-src.dir}" prefix="${prefix}/examples-cli"/>
+            <zipfileset file="README.txt" prefix="${full.release.name}"/>
+            <zipfileset dir="${build.doc.dir}" prefix="${full.release.name}/doc"/>
+            <zipfileset dir="doc/dist" prefix="${full.release.name}"/>
+            <zipfileset dir="${examples-cli-src.dir}" prefix="${full.release.name}/examples-cli"/>
         </zip>
         <!-- Fix EOL for Windows platform -->
         <delete dir="${build.temp.dir}/distrib"/>
@@ -981,7 +802,7 @@ dir so that compiles always occur.
             <include name="**/*.xhtml"/>
             <include name="**/*.wsdl"/>
         </fixcrlf>
-        <zip zipfile="${build.distrib.dir}/${project.name}-${release.number}.zip" basedir="${build.temp.dir}/distrib"/>
+        <zip zipfile="${build.distrib.dir}/${full.release.name}.zip" basedir="${build.temp.dir}/distrib"/>
         <!-- Fix EOL for Unix platform -->
         <fixcrlf srcDir="${build.temp.dir}/distrib" eol="lf">
             <include name="**/*.txt"/>
@@ -1000,10 +821,9 @@ dir so that compiles always occur.
             <include name="**/*.xhtml"/>
             <include name="**/*.wsdl"/>
         </fixcrlf>
-        <tar tarfile="${build.distrib.dir}/${project.name}-${release.number}.tar.gz" compression="gzip" basedir="${build.temp.dir}/distrib"/>
+        <tar tarfile="${build.distrib.dir}/${full.release.name}.tgz" compression="gzip" basedir="${build.temp.dir}/distrib"/>
         <delete file="${tmp-zip}"/>
     </target>
-<<<<<<< HEAD
 
     <target name="orbeon-dist-checksum" depends="orbeon-dist-packages">
         <!-- Create md5 for all files -->
@@ -1028,25 +848,37 @@ dir so that compiles always occur.
         <copy todir="${rsync.dir}">
             <fileset dir="${build.distrib.dir}">
                 <include name="*"/>
-=======
- 
-    <target name="orbeon-dist" depends="orbeon-dist-packages"/>
- 
-    <target name="post-update" depends="orbeon-css-templates">
-        <chmod dir="${war.dir}/WEB-INF/exist-data" perm="a+rw"/>
-    </target>
- 
-    <target name="copy-distrib" depends="orbeon-dist">
-        <copy todir="/home/httpd/html/public/oxf/secret">
-            <fileset dir="${build.distrib.dir}">
-                <include name="${project.name}-${release.number}.*"/>
->>>>>>> 988654aaf6b848d5c06345eecd98c62e5351e06b
             </fileset>
         </copy>
-    </target>
-<<<<<<< HEAD
 
-=======
- 
->>>>>>> 988654aaf6b848d5c06345eecd98c62e5351e06b
+        <!-- Move to generic file name so that rsync overwrites -->
+        <move file="${rsync.dir}/${full.release.name}.zip" tofile="${rsync.dir}/${artifact.name}.zip"/>
+        <move file="${rsync.dir}/${full.release.name}.tgz" tofile="${rsync.dir}/${artifact.name}.tgz"/>
+        <move file="${rsync.dir}/${full.release.name}.war" tofile="${rsync.dir}/${artifact.name}.war"/>
+        <move file="${rsync.dir}/${full.release.name}-src.zip" tofile="${rsync.dir}/${artifact.name}-src.zip"/>
+
+        <move file="${rsync.dir}/${full.release.name}.zip.MD5" tofile="${rsync.dir}/${artifact.name}.zip.MD5"/>
+        <move file="${rsync.dir}/${full.release.name}.tgz.MD5" tofile="${rsync.dir}/${artifact.name}.tgz.MD5"/>
+        <move file="${rsync.dir}/${full.release.name}.war.MD5" tofile="${rsync.dir}/${artifact.name}.war.MD5"/>
+        <move file="${rsync.dir}/${full.release.name}-src.zip.MD5" tofile="${rsync.dir}/${artifact.name}-src.zip.MD5"/>
+
+        <!-- Post the unstable build -->
+        <exec executable="rsync" failonerror="true" dir="${rsync.dir}">
+            <arg value="-vv"/>
+            <arg value="--stats"/>
+            <arg value="-z"/>
+            <arg value="-c"/>
+            <arg value="--rsh=/usr/bin/ssh"/>
+            <arg value="--bwlimit=50"/>
+            <arg value="${artifact.name}.war"/>
+            <arg value="${artifact.name}.war.MD5"/>
+            <arg value="${artifact.name}.zip"/>
+            <arg value="${artifact.name}.zip.MD5"/>
+            <arg value="${artifact.name}-src.zip"/>
+            <arg value="${artifact.name}-src.zip.MD5"/>
+            <arg value="orbeonbld2@forge.objectweb.org:/var/lib/gforge/chroot/home/groups/ops/htdocs/unstable/ops"/>
+        </exec>
+
+    </target>
+
 </project>
