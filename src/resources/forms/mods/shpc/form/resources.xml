@@ -40,6 +40,7 @@ xmlns:xxi="http://orbeon.org/oxf/xml/xinclude">
     </summary>
     <detail>
         <titles>
+            <druid>Druid</druid>
             <detail-title>MODS Demo</detail-title>
             <titleInfo>Title Information</titleInfo>
 			<originInfo>Origin Information</originInfo>
@@ -96,9 +97,11 @@ xmlns:xxi="http://orbeon.org/oxf/xml/xinclude">
        			<relatedItemPartName>Folder Name</relatedItemPartName>
        			<relatedItemPartNumber>Folder Number</relatedItemPartNumber>
 			
-			
+            <titletype>Title Type</titletype>
+            <point>Range Point</point>
     </titles>
         <labels>
+            <label>Label</label>
         	<type>Type</type>
             <!-- Triggers labels -->
             <yes>Yes</yes>
@@ -321,7 +324,20 @@ In cases where access to a resource is unrestricted, a statement should appear t
    			 </item>
     	</section>
     	</instance>
-		</relatedItemTitle>        
+       </relatedItemTitle>  
+        <point>
+            <instance>
+                <section>
+                    <item><label>None</label></item>
+                </section>
+                <section>
+                    <item><label>Start Point</label><value>start</value></item>
+                    <item><label>End Point</label><value>end</value></item>
+                </section>
+            </instance>
+        </point>
+
+
     </lists>
         </resource>
 </resources>

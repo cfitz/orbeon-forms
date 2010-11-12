@@ -108,7 +108,6 @@
                 <displayLabel>Display Label</displayLabel>
                 <genreauthority>Genre Authority</genreauthority>
                 <authority>Authority</authority>
-                <note>Note</note>
                 <namePart>Name Part</namePart>
                 <nametype>Name Type</nametype>
                 <roleTerm>Role Term</roleTerm>
@@ -123,11 +122,12 @@
 				<languageSuggest>LC Language Lookup</languageSuggest>
 
 				<manuscript>Manuscript</manuscript>
-
+                <point>Range Point</point>
             </titles>
 
             <!-- Triggers labels -->
             <labels>
+                <label>Label</label>
                  <identifiertype>Type Of Identifier</identifiertype>
                 <displayLabel>Display Label</displayLabel>
                 <type>Type</type>
@@ -612,6 +612,17 @@
                      </section>
                  </instance>
              </notetype>
+            <point>
+                <instance>
+                    <section>
+                        <item><label>None</label></item>
+                    </section>
+                    <section>
+                        <item><label>Start Point</label><value>start</value></item>
+                        <item><label>End Point</label><value>end</value></item>
+                    </section>
+                </instance>
+            </point>
             <typeofresource>
                 <instance>
                     <section>

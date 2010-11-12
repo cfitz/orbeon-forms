@@ -18,10 +18,7 @@ import org.orbeon.oxf.pipeline.api.ExternalContext;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
 import org.orbeon.oxf.processor.converter.XHTMLRewrite;
 import org.orbeon.oxf.util.ContentHandlerWriter;
-import org.orbeon.oxf.xforms.XFormsConstants;
-import org.orbeon.oxf.xforms.XFormsContainingDocument;
-import org.orbeon.oxf.xforms.XFormsProperties;
-import org.orbeon.oxf.xforms.XFormsUtils;
+import org.orbeon.oxf.xforms.*;
 import org.orbeon.oxf.xforms.control.XFormsContainerControl;
 import org.orbeon.oxf.xforms.control.XFormsControl;
 import org.orbeon.oxf.xforms.control.controls.XFormsRepeatControl;
@@ -30,10 +27,7 @@ import org.orbeon.oxf.xml.*;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class ControlsComparator {
 
@@ -139,7 +133,7 @@ public class ControlsComparator {
                     // Repeat grouping control
                     if (control2 instanceof XFormsRepeatControl && children1 != null) {
 
-                        final XFormsRepeatControl repeatControlInfo = (XFormsRepeatControl) control2;
+                        final XFormsRepeatControl repeatControl = (XFormsRepeatControl) control2;
 
                         // Special case of repeat update
 
@@ -156,7 +150,7 @@ public class ControlsComparator {
                             // Size has grown
 
                             // Copy template instructions
-                            outputCopyRepeatTemplate(ch, repeatControlInfo, size1 + 1, size2);
+                            outputCopyRepeatTemplate(ch, repeatControl, size1 + 1, size2);
 
                             // Diff the common subset
                             if (!diff(children1, children2.subList(0, size1))) {
@@ -183,14 +177,14 @@ public class ControlsComparator {
 
                     } else if (control2 instanceof XFormsRepeatControl && control1 == null) {
 
-                        final XFormsRepeatControl repeatControlInfo = (XFormsRepeatControl) control2;
+                        final XFormsRepeatControl repeatControl = (XFormsRepeatControl) control2;
 
                         // Handle new sub-xforms:repeat
 
                         // Copy template instructions
                         final int size2 = children2.size();
                         if (size2 > 1) {
-                            outputCopyRepeatTemplate(ch, repeatControlInfo, 2, size2);// don't copy the first template, which is already copied when the parent is copied
+                            outputCopyRepeatTemplate(ch, repeatControl, 2, size2);// don't copy the first template, which is already copied when the parent is copied
                         } else if (size2 == 1) {
                             // NOP, the client already has the template copied
                         } else if (size2 == 0) {
@@ -206,14 +200,14 @@ public class ControlsComparator {
 
                     } else if (control2 instanceof XFormsRepeatControl && children1 == null) {
 
-                        final XFormsRepeatControl repeatControlInfo = (XFormsRepeatControl) control2;
+                        final XFormsRepeatControl repeatControl = (XFormsRepeatControl) control2;
 
                         // Handle repeat growing from size 0 (case of instance replacement, for example)
 
                         // Copy template instructions
                         final int size2 = children2.size();
                         if (size2 > 0) {
-                            outputCopyRepeatTemplate(ch, repeatControlInfo, 1, size2);
+                            outputCopyRepeatTemplate(ch, repeatControl, 1, size2);
 
                             // Issue new values for the children
                             if (!diff(null, children2)) {
@@ -250,7 +244,7 @@ public class ControlsComparator {
 
                     // Write out incremental updates
                     try {
-                        ((SAXStore) ch.getContentHandler()).replay(tempCH.getContentHandler());
+                        ((SAXStore) ch.getXmlReceiver()).replay(tempCH.getXmlReceiver());
                     } catch (SAXException e) {
                         throw new OXFException(e);
                     }
@@ -266,7 +260,7 @@ public class ControlsComparator {
     }
 
     private boolean mustDoFullUpdate() {
-        return tempCH != null && ((SAXStore) ch.getContentHandler()).getAttributesCount() >= fullUpdateThreshold;
+        return tempCH != null && ((SAXStore) ch.getXmlReceiver()).getAttributesCount() >= fullUpdateThreshold;
     }
 
     private SAXStore.Mark getUpdateFullMark(XFormsControl control) {
@@ -335,11 +329,11 @@ public class ControlsComparator {
             // So for now, perform simple steps here, and later this can be revisited.
             //
             final ExternalContext externalContext = XFormsUtils.getExternalContext(pipelineContext);
-            controller.setOutput(new DeferredContentHandlerImpl(new XHTMLRewrite().getRewriteContentHandler(externalContext,
-                    new HTMLFragmentSerializer(new ContentHandlerWriter(ch.getContentHandler()), true), true)));
+            controller.setOutput(new DeferredXMLReceiverImpl(new XHTMLRewrite().getRewriteXMLReceiver(externalContext,
+                    new HTMLFragmentSerializer(new ContentHandlerWriter(ch.getXmlReceiver()), true), true)));
 
             // Create handler context
-            final HandlerContext handlerContext = new HandlerContext(controller, pipelineContext, containingDocument, null, externalContext, control2.getEffectiveId()) {
+            final HandlerContext handlerContext = new HandlerContext(controller, pipelineContext, containingDocument, externalContext, control2.getEffectiveId()) {
                 @Override
                 public String findXHTMLPrefix() {
                     // We know we serialize to plain HTML so unlike during initial page show, we don't need a particular prefix
@@ -350,7 +344,7 @@ public class ControlsComparator {
             controller.setElementHandlerContext(handlerContext);
 
             attributesImpl.clear();
-            attributesImpl.addAttribute("", "id", "id", ContentHandlerHelper.CDATA, control2.getEffectiveId());
+            attributesImpl.addAttribute("", "id", "id", ContentHandlerHelper.CDATA, XFormsUtils.namespaceId(containingDocument, control2.getEffectiveId()));
             ch.startElement("xxf", XFormsConstants.XXFORMS_NAMESPACE_URI, "inner-html", attributesImpl);
             {
                 // Replay into SAX pipeline
@@ -374,20 +368,20 @@ public class ControlsComparator {
             final String parentIndexes = (indexOfRepeatHierarchySeparator == -1) ? "" : repeatControlId.substring(indexOfRepeatHierarchySeparator + 1);
 
             ch.element("xxf", XFormsConstants.XXFORMS_NAMESPACE_URI, "delete-repeat-elements",
-                    new String[] { "id", templateId, "parent-indexes", parentIndexes, "count", "" + count });
+                    new String[] { "id", XFormsUtils.namespaceId(containingDocument, templateId), "parent-indexes", parentIndexes, "count", "" + count });
         }
     }
 
-    protected void outputCopyRepeatTemplate(ContentHandlerHelper ch, XFormsRepeatControl repeatControlInfo, int startSuffix, int endSuffix) {
+    protected void outputCopyRepeatTemplate(ContentHandlerHelper ch, XFormsRepeatControl repeatControl, int startSuffix, int endSuffix) {
         if (!isTestMode) {
-            final String repeatControlId = repeatControlInfo.getEffectiveId();
+            final String repeatControlId = repeatControl.getEffectiveId();
             final int indexOfRepeatHierarchySeparator = repeatControlId.indexOf(XFormsConstants.REPEAT_HIERARCHY_SEPARATOR_1);
             final String parentIndexes = (indexOfRepeatHierarchySeparator == -1) ? "" : repeatControlId.substring(indexOfRepeatHierarchySeparator + 1);
 
             ch.element("xxf", XFormsConstants.XXFORMS_NAMESPACE_URI, "copy-repeat-template",
                     new String[] {
                             // Get prefixed id without suffix as templates are global
-                            "id", repeatControlInfo.getPrefixedId(),
+                            "id", XFormsUtils.namespaceId(containingDocument, repeatControl.getPrefixedId()),
                             "parent-indexes", parentIndexes,
                             "start-suffix", Integer.toString(startSuffix), "end-suffix", Integer.toString(endSuffix)
                     });

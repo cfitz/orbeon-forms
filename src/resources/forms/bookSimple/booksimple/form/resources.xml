@@ -38,6 +38,7 @@
 <!-- Resources that appear on the form --> 
         <detail>
             <titles>
+                <druid>Druid</druid>
                 <detail-title>MODS Demo</detail-title>
                 <titleInfo>Title Information</titleInfo>
                 <originInfo>Origin Information</originInfo>

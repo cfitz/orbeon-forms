@@ -39,17 +39,17 @@ public class Connection {
     public enum StateScope {
         NONE, REQUEST, SESSION, APPLICATION
     }
-    
+
     public enum Method {
         GET, PUT, POST
     }
 
     public static final String AUTHORIZATION_HEADER = "Authorization";
-    
+
     private static final StateScope DEFAULT_STATE_SCOPE = StateScope.SESSION;
     private static final String LOG_TYPE = "connection";
 
-    public static final String HTTP_FORWARD_HEADERS_PROPERTY = "oxf.http.forward-headers";    
+    public static final String HTTP_FORWARD_HEADERS_PROPERTY = "oxf.http.forward-headers";
 
     public static final String HTTP_STATE_PROPERTY = "oxf.http.state";
     private static final String HTTP_STATE_ATTRIBUTE = HTTP_STATE_PROPERTY;
@@ -70,8 +70,9 @@ public class Connection {
      * o managing SOAP POST and GET a la XForms 1.1 (should this be here?)
      */
     public ConnectionResult open(ExternalContext externalContext, IndentedLogger indentedLogger, boolean logBody,
-                                 String httpMethod, final URL connectionURL, String username, String password, String contentType,
-                                 byte[] messageBody, Map<String, String[]> headerNameValues, String headersToForward) {
+                                 String httpMethod, final URL connectionURL, String username, String password, String domain,
+                                 String contentType, byte[] messageBody, Map<String, String[]> headerNameValues,
+                                 String headersToForward) {
 
         indentedLogger.startHandleOperation(LOG_TYPE, "opening connection");
         try {
@@ -88,9 +89,9 @@ public class Connection {
             // Get  the headers to forward if any
             final Map<String, String[]> headersMap = (externalContext.getRequest() != null) ?
                     getHeadersMap(externalContext, indentedLogger, username, headerNameValues, headersToForward) : headerNameValues;
-            
+
             // Open the connection
-            final ConnectionResult result = connect(indentedLogger, logBody, httpMethod, connectionURL, username, password, contentType, messageBody, headersMap);
+            final ConnectionResult result = connect(indentedLogger, logBody, httpMethod, connectionURL, username, password, domain, contentType, messageBody, headersMap);
 
             // Save state if possible
             if (isHTTPOrHTTPS)
@@ -197,7 +198,7 @@ public class Connection {
                             indentedLogger.logDebug(LOG_TYPE, "forwarding cookies",
                                     "cookie", cookieString,
                                     "requested session id", externalContext.getRequest().getRequestedSessionId());
-                            StringUtils.addValueToStringArrayMap(headersMap, "Cookie", cookieString );
+                            StringConversions.addValueToStringArrayMap(headersMap, "Cookie", cookieString );
                         }
                     }
                 }
@@ -211,7 +212,7 @@ public class Connection {
                 if (session != null) {
 
                     // This will work with Tomcat, but may not work with other app servers
-                    StringUtils.addValueToStringArrayMap(headersMap, "Cookie", "JSESSIONID=" + session.getId());
+                    StringConversions.addValueToStringArrayMap(headersMap, "Cookie", "JSESSIONID=" + session.getId());
 
                     if (indentedLogger.isDebugEnabled()) {
 
@@ -269,7 +270,7 @@ public class Connection {
                         // Only forward Authorization header if there is no username provided
                         indentedLogger.logDebug(LOG_TYPE, "forwarding header",
                                 "name", currentHeaderName, "value", currentIncomingHeaderValues.toString());
-                        StringUtils.addValuesToStringArrayMap(headersMap, currentHeaderName, currentIncomingHeaderValues);
+                        StringConversions.addValuesToStringArrayMap(headersMap, currentHeaderName, currentIncomingHeaderValues);
                     } else {
                         // Just log this information
                         indentedLogger.logDebug(LOG_TYPE,
@@ -354,7 +355,7 @@ public class Connection {
      */
     private ConnectionResult connect(IndentedLogger indentedLogger, boolean logBody,
                                      String httpMethod, final URL connectionURL, String username, String password,
-                                     String contentType, byte[] messageBody, Map<String, String[]> headersMap) {
+                                     String domain, String contentType, byte[] messageBody, Map<String, String[]> headersMap) {
 
         final boolean isDebugEnabled = indentedLogger.isDebugEnabled();
 
@@ -389,6 +390,8 @@ public class Connection {
                         httpURLConnection.setUsername(username);
                         if (password != null)
                            httpURLConnection.setPassword(password);
+                        if (domain != null)
+                        	httpURLConnection.setDomain(domain);
                     }
                 }
 
@@ -498,7 +501,7 @@ public class Connection {
                     }
                 };
 
-                // Get response information that needs to be forwarded                
+                // Get response information that needs to be forwarded
                 {
                     // Status code
                     connectionResult.statusCode = (httpURLConnection != null) ? httpURLConnection.getResponseCode() : 200;
@@ -569,7 +572,7 @@ public class Connection {
                     final String charsetParameter = parameters.get("charset");
                     if (charsetParameter != null) {
                         // Append charset parameter
-                        sb.append("; ");
+                        sb.append("; charset=");
                         sb.append(charsetParameter);
                     }
                 }
@@ -608,7 +611,7 @@ public class Connection {
                     final String charsetParameter = parameters.get("charset");
                     if (charsetParameter != null) {
                         // Append charset parameter
-                        sb.append("; ");
+                        sb.append("; charset=");
                         sb.append(charsetParameter);
                     }
                 }

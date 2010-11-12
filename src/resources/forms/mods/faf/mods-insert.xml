@@ -13,7 +13,7 @@
 
   The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
   -->
-<instance xmlns:mods="http://www.loc.gov/mods/v3" type=" ">
+<instance xmlns:mods="http://www.loc.gov/mods/v3" point=" " type=" "> 
  <insert name="identifierdruid">
   <mods:identifier type="local" displayLabel="SU DRUID"/>
  </insert>
@@ -22,7 +22,7 @@
   <mods:identifier type="local" displayLabel="Stanford University Libraries Catalog Key"/>
  </insert>
  <insert name="identifier">
-  <mods:identifier type="local"/>
+  <mods:identifier type="local" displayLabel=""/>
  </insert>
 
  <insert name="titleInfo">
@@ -189,7 +189,7 @@
   <mods:abstract/>
  </insert>
  <insert name="note">
-  <mods:note displayLabel="general note"/>
+  <mods:note displayLabel="general note"></mods:note>
  </insert>
  <insert name="typeOfResource">
   <mods:typeOfResource/>

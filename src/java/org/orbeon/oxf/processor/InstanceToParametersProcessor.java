@@ -1,38 +1,35 @@
 /**
- *  Copyright (C) 2004 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify it under the terms of the
- *  GNU Lesser General Public License as published by the Free Software Foundation; either version
- *  2.1 of the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU Lesser General Public License as published by the Free Software Foundation; either version
+ * 2.1 of the License, or (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *  See the GNU Lesser General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Lesser General Public License for more details.
  *
- *  The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+ * The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
  */
 package org.orbeon.oxf.processor;
 
-import org.dom4j.Attribute;
-import org.dom4j.Document;
-import org.dom4j.Element;
-import org.dom4j.VisitorSupport;
+import org.dom4j.*;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
+import org.orbeon.oxf.processor.impl.ProcessorOutputImpl;
 import org.orbeon.oxf.util.PooledXPathExpression;
 import org.orbeon.oxf.util.XPathCache;
 import org.orbeon.oxf.xforms.XFormsUtils;
+import org.orbeon.oxf.xml.NamespaceMapping;
 import org.orbeon.oxf.xml.XMLUtils;
 import org.orbeon.oxf.xml.dom4j.Dom4jUtils;
 import org.orbeon.oxf.xml.dom4j.LocationData;
-import org.orbeon.saxon.Configuration;
 import org.orbeon.saxon.dom4j.DocumentWrapper;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Convert an XForms instance into a list of parameters.
@@ -64,23 +61,23 @@ public class InstanceToParametersProcessor extends ProcessorImpl {
     }
 
     public ProcessorOutput createOutput(String name) {
-        ProcessorOutput output = new ProcessorImpl.ProcessorOutputImpl(getClass(), name) {
-            public void readImpl(PipelineContext pipelineContext, final ContentHandler contentHandler) {
+        final ProcessorOutput output = new ProcessorOutputImpl(InstanceToParametersProcessor.this, name) {
+            public void readImpl(PipelineContext pipelineContext, final XMLReceiver xmlReceiver) {
                 try {
                     Element filterElement = readInputAsDOM4J(pipelineContext, INPUT_FILTER).getRootElement();
                     Document instance = ( Document )readInputAsDOM4J( pipelineContext, INPUT_INSTANCE ).clone();
                     DocumentWrapper instanceWrapper = new DocumentWrapper(instance,
-                            ((LocationData) instance.getRootElement().getData()).getSystemID(), new Configuration());
+                            ((LocationData) instance.getRootElement().getData()).getSystemID(), XPathCache.getGlobalConfiguration());
 
                     // Mark all nodes referenced by XPath expressions
-                    final Set markedNodes = new HashSet();
+                    final Set<Object> markedNodes = new HashSet<Object>();
                     for (Iterator i = filterElement.elements().iterator(); i.hasNext();) {
                         Element paramElement = (Element) i.next();
                         Attribute refAttribute = paramElement.attribute("ref");
                         String excludeRef = refAttribute.getValue();
-                        PooledXPathExpression xpath = XPathCache.getXPathExpression(pipelineContext,
+                        PooledXPathExpression xpath = XPathCache.getXPathExpression(pipelineContext, instanceWrapper.getConfiguration(),
                                 instanceWrapper.wrap(instance), excludeRef,
-                                Dom4jUtils.getNamespaceContextNoDefault(paramElement), getLocationData());
+                                new NamespaceMapping(Dom4jUtils.getNamespaceContextNoDefault(paramElement)), getLocationData());
                         try {
                             markedNodes.add(xpath.evaluateSingle());
                         } finally {
@@ -105,14 +102,14 @@ public class InstanceToParametersProcessor extends ProcessorImpl {
                     });
 
                     // Output as SAX
-                    contentHandler.startDocument();
-                    contentHandler.startElement("", PARAMETERS_ELEMENT, PARAMETERS_ELEMENT, XMLUtils.EMPTY_ATTRIBUTES);
+                    xmlReceiver.startDocument();
+                    xmlReceiver.startElement("", PARAMETERS_ELEMENT, PARAMETERS_ELEMENT, XMLUtils.EMPTY_ATTRIBUTES);
                     if (!allMarked[0]) {
                         // If all the nodes of the instance map to parameters, we don't output the instance parameter
-                        outputParameter("$instance", XFormsUtils.encodeXML(pipelineContext, instance, false), contentHandler);
+                        outputParameter("$instance", XFormsUtils.encodeXML(pipelineContext, instance, false), xmlReceiver);
                     }
-                    contentHandler.endElement("", PARAMETERS_ELEMENT, PARAMETERS_ELEMENT);
-                    contentHandler.endDocument();
+                    xmlReceiver.endElement("", PARAMETERS_ELEMENT, PARAMETERS_ELEMENT);
+                    xmlReceiver.endDocument();
 
                 } catch (Exception e) {
                     throw new OXFException(e);
@@ -136,4 +133,3 @@ public class InstanceToParametersProcessor extends ProcessorImpl {
         contentHandler.endElement("", name, name);
     }
 }
-

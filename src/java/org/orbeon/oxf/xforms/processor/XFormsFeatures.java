@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the
  * GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -60,7 +60,7 @@ public class XFormsFeatures {
                 }
             }
     };
-    
+
     public static class FeatureConfig {
         private String name;
 //        private String id;
@@ -227,6 +227,7 @@ public class XFormsFeatures {
             new ResourceConfig("/ops/yui/animation/animation.js", "/ops/yui/animation/animation-min.js"),
             new ResourceConfig("/ops/yui/dragdrop/dragdrop.js", "/ops/yui/dragdrop/dragdrop-min.js"),
             new ResourceConfig("/ops/yui/container/container.js", "/ops/yui/container/container-min.js"),
+            new ResourceConfig("/ops/yui/examples/container/assets/containerariaplugin.js", "/ops/yui/examples/container/assets/containerariaplugin-min.js"),
 //            new ResourceConfig("/ops/yui/get/get.js", "/ops/yui/get/get-min.js"),
 
             new ResourceConfig("/ops/yui/calendar/calendar.js", "/ops/yui/calendar/calendar-min.js") {
@@ -449,7 +450,7 @@ public class XFormsFeatures {
 
             // Make the Orbeon Forms version part of the path if requested
             if (isVersioned) {
-                sb.append(Version.getVersion());
+                sb.append(Version.getVersionNumber());
                 sb.append('/');
             }
 

@@ -1,22 +1,20 @@
 /**
- *  Copyright (C) 2004 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify it under the terms of the
- *  GNU Lesser General Public License as published by the Free Software Foundation; either version
- *  2.1 of the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU Lesser General Public License as published by the Free Software Foundation; either version
+ * 2.1 of the License, or (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *  See the GNU Lesser General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Lesser General Public License for more details.
  *
- *  The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+ * The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
  */
 package org.orbeon.oxf.processor.sql;
 
 import org.dom4j.Node;
-import org.jaxen.Function;
-import org.jaxen.FunctionContext;
-import org.jaxen.UnresolvableException;
+import org.jaxen.*;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.common.ValidationException;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
@@ -24,16 +22,13 @@ import org.orbeon.oxf.processor.DatabaseContext;
 import org.orbeon.oxf.processor.Datasource;
 import org.orbeon.oxf.processor.sql.delegates.SQLProcessorGenericDelegate;
 import org.orbeon.oxf.properties.PropertySet;
-import org.orbeon.oxf.xml.DeferredContentHandler;
+import org.orbeon.oxf.xml.DeferredXMLReceiver;
 import org.orbeon.oxf.xml.XPathContentHandler;
 import org.orbeon.oxf.xml.dom4j.LocationData;
 import org.xml.sax.Locator;
 import org.xml.sax.helpers.NamespaceSupport;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.sql.*;
 import java.util.*;
 
 /**
@@ -53,12 +48,13 @@ public class SQLProcessorInterpreterContext extends DatabaseContext {
     private PipelineContext pipelineContext;
     private Node input;
     private XPathContentHandler xpathContentHandler;
-    private DeferredContentHandler output;
+    private DeferredXMLReceiver output;
     private NamespaceSupport namespaceSupport;
 
     private List executionContextStack;
     private List currentNodes;
     private List currentFunctions = new ArrayList();
+    public static final String SQL_PROCESSOR_CONTEXT = "sql-processor-context"; // used by SQLProcessor and related
 
     public SQLProcessorInterpreterContext(PropertySet propertySet) {
         this.propertySet = propertySet;
@@ -149,6 +145,17 @@ public class SQLProcessorInterpreterContext extends DatabaseContext {
                     } catch (Throwable t) {
                         // Ignore
                     }
+                    // Try JBoss delegate
+                    if (clazz == null) {
+                        try {
+                            clazz = getClass().getClassLoader().loadClass("org.orbeon.oxf.processor.sql.delegates.SQLProcessorOracleJBossDelegate");
+                            SQLProcessor.logger.info("Using Oracle JBoss delegate.");
+                        } catch (Throwable t) {
+                            // Ignore
+                        	t.printStackTrace();
+                        }
+                    }
+
                     // First try Tomcat 4
                     if (clazz == null) {
                         try {
@@ -371,11 +378,11 @@ public class SQLProcessorInterpreterContext extends DatabaseContext {
         this.xpathContentHandler = xpathContentHandler;
     }
 
-    public DeferredContentHandler getOutput() {
+    public DeferredXMLReceiver getOutput() {
         return output;
     }
 
-    public void setOutput(DeferredContentHandler output) {
+    public void setOutput(DeferredXMLReceiver output) {
         this.output = output;
     }
 
@@ -461,10 +468,10 @@ public class SQLProcessorInterpreterContext extends DatabaseContext {
     }
 
     private Context getContext(PipelineContext pipelineContext) {
-        Context context = (Context) pipelineContext.getAttribute(PipelineContext.SQL_PROCESSOR_CONTEXT);
+        Context context = (Context) pipelineContext.getAttribute(SQL_PROCESSOR_CONTEXT);
         if (context == null) {
             context = new Context();
-            pipelineContext.setAttribute(PipelineContext.SQL_PROCESSOR_CONTEXT, context);
+            pipelineContext.setAttribute(SQL_PROCESSOR_CONTEXT, context);
         }
         return context;
     }

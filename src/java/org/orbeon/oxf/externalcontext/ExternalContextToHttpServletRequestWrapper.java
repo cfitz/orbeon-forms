@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the
  * GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -16,7 +16,7 @@ package org.orbeon.oxf.externalcontext;
 import org.orbeon.oxf.pipeline.api.ExternalContext;
 import org.orbeon.oxf.util.FastHttpDateFormat;
 import org.orbeon.oxf.util.NetUtils;
-import org.orbeon.oxf.util.StringUtils;
+import org.orbeon.oxf.util.StringConversions;
 
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Cookie;
@@ -149,7 +149,7 @@ public class ExternalContextToHttpServletRequestWrapper extends HttpServletReque
 
     public String[] getParameterValues(String name) {
         // Convert as parameters MAY contain FileItem values
-        return StringUtils.objectArrayToStringArray(request.getParameterMap().get(name));
+        return StringConversions.objectArrayToStringArray(request.getParameterMap().get(name));
     }
 
     /* SUPPORTED: request body */
@@ -180,7 +180,8 @@ public class ExternalContextToHttpServletRequestWrapper extends HttpServletReque
 
     public BufferedReader getReader() throws IOException {
         final Reader reader = request.getReader();
-        return (reader instanceof BufferedReader) ? ((BufferedReader) reader) : new BufferedReader(request.getReader());
+        // NOTE: Not sure why reader can be null, but a user reported that it can happen so returning null if that's the case
+        return (reader instanceof BufferedReader) ? ((BufferedReader) reader) : (reader != null) ? new BufferedReader(reader) : null;
     }
 
     public void setCharacterEncoding(String encoding) throws UnsupportedEncodingException {

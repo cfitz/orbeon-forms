@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<instance xmlns:mods="http://www.loc.gov/mods/v3" type=" ">   
+
+<instance xmlns:mods="http://www.loc.gov/mods/v3" point=" " type=" ">     
  <insert name="identifierdruid">
   <mods:identifier type="local" displayLabel="SU DRUID"/>
 </insert>

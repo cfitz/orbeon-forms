@@ -38,6 +38,7 @@
 <!-- Resources that appear on the form --> 
         <detail>
             <titles>
+                <druid>Druid</druid>
                 <detail-title>MODS Demo</detail-title>
                 <titleInfo>Title Information</titleInfo>
                 <originInfo>Origin Information</originInfo>
@@ -104,11 +105,11 @@
                 <nameauthority>Name Authority</nameauthority>
                 <removeidentifier>Remove Identifier</removeidentifier>
                 <identifiertype>Type Of Identifier</identifiertype>
-                <note>Note</note>
+                <point>Range Point</point>
                 <namePart>Name Part</namePart>
                 <nametype>Name Type</nametype>
                 <roleTerm>Role Term</roleTerm>
-                <seriesInfo>Series Information</seriesInfo>
+                
                 <relatedItemTitle>Series Title</relatedItemTitle>
                 <relatedItemSubtitle>Series Type</relatedItemSubtitle>
                 <relatedItemSubtitle>Box or Drawer Name</relatedItemSubtitle>
@@ -124,6 +125,7 @@
 
             <!-- Triggers labels -->
             <labels>
+                <label>Label</label>
                 <type>Type</type>
                 <yes>Yes</yes>
                 <no>No</no>
@@ -653,6 +655,17 @@
                     </section>
                 </instance>
             </nametype>
+            <point>
+                <instance>
+                    <section>
+                        <item><label>None</label></item>
+                    </section>
+                    <section>
+                        <item><label>Start Point</label><value>start</value></item>
+                        <item><label>End Point</label><value>end</value></item>
+                    </section>
+                </instance>
+            </point>
             <nameauthority>
                 <instance>
                     <section>

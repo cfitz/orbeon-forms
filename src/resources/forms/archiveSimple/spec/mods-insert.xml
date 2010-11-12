@@ -3,7 +3,7 @@
 <instance xmlns:mods="http://www.loc.gov/mods/v3" type=" ">   
 
  <insert name="identifier">
-  <mods:identifier type="local"></mods:identifier> 
+  <mods:identifier type="local" displayLabel=""></mods:identifier> 
  </insert>
  
  <insert name="titleInfo">

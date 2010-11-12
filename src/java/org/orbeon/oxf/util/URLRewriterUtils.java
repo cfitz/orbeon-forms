@@ -18,10 +18,7 @@ import org.dom4j.QName;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.common.Version;
 import org.orbeon.oxf.pipeline.api.ExternalContext;
-import org.orbeon.oxf.processor.MatchProcessor;
-import org.orbeon.oxf.processor.Processor;
-import org.orbeon.oxf.processor.ProcessorFactory;
-import org.orbeon.oxf.processor.ProcessorFactoryRegistry;
+import org.orbeon.oxf.processor.*;
 import org.orbeon.oxf.properties.Properties;
 import org.orbeon.oxf.servlet.OrbeonXFormsFilter;
 import org.orbeon.oxf.xml.dom4j.Dom4jUtils;
@@ -41,6 +38,9 @@ public class URLRewriterUtils {
     public static final String RESOURCES_VERSIONED_PROPERTY = "oxf.resources.versioned";
     public static final boolean RESOURCES_VERSIONED_DEFAULT = false;
 
+    private static final String REWRITING_PLATFORM_PATHS_PROPERTY = "oxf.url-rewriting.platform-paths";
+    private static final String REWRITING_APP_PATHS_PROPERTY = "oxf.url-rewriting.app-paths";
+    private static final String REWRITING_APP_PREFIX_PROPERTY = "oxf.url-rewriting.app-prefix";
     private static final String REWRITING_STRATEGY_PROPERTY_PREFIX = "oxf.url-rewriting.strategy.";
     private static final String REWRITING_CONTEXT_PROPERTY_PREFIX = "oxf.url-rewriting.";
     private static final String REWRITING_CONTEXT_PROPERTY_SUFFIX = ".context";
@@ -53,7 +53,7 @@ public class URLRewriterUtils {
     public static final List<PathMatcher> EMPTY_PATH_MATCHER_LIST = Collections.emptyList();
 
     private static final PathMatcher MATCH_ALL_PATH_MATCHER;
-    private static final List<URLRewriterUtils.PathMatcher> MATCH_ALL_PATH_MATCHERS;
+    public static final List<URLRewriterUtils.PathMatcher> MATCH_ALL_PATH_MATCHERS;
 
     static {
         MATCH_ALL_PATH_MATCHER = new URLRewriterUtils.PathMatcher("/*", null, null, true);
@@ -161,12 +161,15 @@ public class URLRewriterUtils {
      * @param port              base URL port
      * @param contextPath       base URL context path
      * @param requestPath       base URL request path
-     * @param urlString         URL to rewrite
+     * @param urlString         URL to rewrite (accept human-readable URI)
      * @param rewriteMode       rewrite mode (see ExternalContext.Response)
      * @return                  rewritten URL
      */
     private static String rewriteURL(String scheme, String host, int port, String contextPath, String requestPath, String urlString, int rewriteMode) {
-        // Case where a protocol is specified: the URL is left untouched in any case
+        // Accept human-readable URI
+        urlString = NetUtils.encodeHRRI(urlString, true);
+
+        // Case where a protocol is specified: the URL is left untouched (except for human-readable processing)
         if (NetUtils.urlHasProtocol(urlString))
             return urlString;
 
@@ -266,7 +269,7 @@ public class URLRewriterUtils {
             }
 
             // 3. Iterate through matchers and see if we get a match
-            for (PathMatcher pathMatcher: pathMatchers) {
+            for (final PathMatcher pathMatcher: pathMatchers) {
 
                 final boolean isMatch;
                 if (pathMatcher.matcher == null) {
@@ -306,7 +309,7 @@ public class URLRewriterUtils {
                 if (isMatch) {
                     // 4. Found a match, perform additional rewrite at the beginning
 
-                    final String version = isPlatformURL ? Version.getVersion() : applicationVersion;
+                    final String version = isPlatformURL ? Version.getVersionNumber() : applicationVersion;
                     // Call full method so that we can get the proper client context path
                     return rewriteURL(request.getScheme(), request.getServerName(), request.getServerPort(),
                             request.getClientContextPath(urlString), request.getRequestPath(), "/" + version + absoluteURINoContext, rewriteMode);
@@ -321,11 +324,6 @@ public class URLRewriterUtils {
         }
     }
 
-    // TODO: add test for /forms/orbeon; should make this a property!
-    public static final String[] PLATFORM_PATHS = {
-        "/ops/", "/config/", "/xbl/orbeon/", "/xforms-server"
-    };
-
     /**
      * Check if the given path is a platform path (as opposed to a user application path).
      *
@@ -333,27 +331,77 @@ public class URLRewriterUtils {
      * @return                      true iif path is a platform path
      */
     public static boolean isPlatformPath(String absolutePathNoContext) {
-        for (final String path: PLATFORM_PATHS) {
-            if (absolutePathNoContext.startsWith(path))
-                return true;
-        }
-        return false;
+        final String regexp = Properties.instance().getPropertySet().getString(REWRITING_PLATFORM_PATHS_PROPERTY, null);
+        // TODO: do not compile the regexp every time
+        return regexp != null && new Perl5MatchProcessor().match(regexp, absolutePathNoContext).matches;
     }
 
-//    public static String getPlatformPathsAsSequence() {
-//        final StringBuilder sb = new StringBuilder("(");
-//        for (final String path: PLATFORM_PATHS) {
-//            sb.append('\'');
-//            sb.append(path);
-//            sb.append('\'');
-//        }
-//        sb.append(')');
-//        return sb.toString();
-//        // XXX issue: PFC tests tokenize($path, '/')[3] = ('ops', 'config'), need better way
-//    }
+    /**
+     * Check if the given path is an application path, assuming it is not already a platform path.
+     *
+     * @param absolutePathNoContext path to check
+     * @return                      true iif path is a platform path
+     */
+    public static boolean isNonPlatformPathAppPath(String absolutePathNoContext) {
+        final String regexp = Properties.instance().getPropertySet().getString(REWRITING_APP_PATHS_PROPERTY, null);
+        // TODO: do not compile the regexp every time
+        return regexp != null && new Perl5MatchProcessor().match(regexp, absolutePathNoContext).matches;
+    }
+
+    /**
+     * Decode an absolute path with no context, depending on whether there is an app version or not.
+     *
+     * @param absolutePathNoContext path
+     * @param isVersioned           whether the resource is versioned or not
+     * @return                      decoded path, or initial path if no decoding needed
+     */
+    public static String decodeResourceURI(String absolutePathNoContext, boolean isVersioned) {
+        if (isVersioned) {
+            // Versioned case
+            final boolean hasApplicationVersion = URLRewriterUtils.getApplicationResourceVersion() != null;
+            if (hasApplicationVersion) {
+                // Remove version on any path
+                return prependAppPathIfNeeded(removeVersionPrefix(absolutePathNoContext));
+            } else {
+                // Try to remove version then test for platform path
+                final String pathWithVersionRemoved = removeVersionPrefix(absolutePathNoContext);
+                if (isPlatformPath(pathWithVersionRemoved)) {
+                    // This was a versioned platform path
+                    return pathWithVersionRemoved;
+                } else {
+                    // Not a versioned platform path
+                    // Don't remove version
+                    return prependAppPathIfNeeded(absolutePathNoContext);
+                }
+            }
+        } else {
+            // Non-versioned case
+            return prependAppPathIfNeeded(absolutePathNoContext);
+        }
+    }
+
+    private static String prependAppPathIfNeeded(String path) {
+        if (isPlatformPath(path) || isNonPlatformPathAppPath(path)) {
+            // Path doesn't need adjustment
+            return path;
+        } else {
+            // Adjust to make an app path
+            return Properties.instance().getPropertySet().getString(REWRITING_APP_PREFIX_PROPERTY, "") + path;
+        }
+    }
+
+    private static String removeVersionPrefix(String absolutePathNoContext) {
+        if (absolutePathNoContext.length() == 0) {
+            return absolutePathNoContext;
+        } else {
+            final int slashIndex = absolutePathNoContext.indexOf('/', 1);
+            return (slashIndex != -1) ? absolutePathNoContext.substring(slashIndex) : absolutePathNoContext;
+        }
+    }
 
     public static boolean isResourcesVersioned() {
-        return Properties.instance().getPropertySet().getBoolean(RESOURCES_VERSIONED_PROPERTY, RESOURCES_VERSIONED_DEFAULT);
+        final boolean requested = Properties.instance().getPropertySet().getBoolean(RESOURCES_VERSIONED_PROPERTY, RESOURCES_VERSIONED_DEFAULT);
+        return Version.instance().isPEFeatureEnabled(requested, RESOURCES_VERSIONED_PROPERTY);
     }
 
     public static String getRewritingStrategy(String containerType, String defaultStrategy) {

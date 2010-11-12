@@ -28,7 +28,6 @@ public class XFormsProperties {
     public static final String STATE_HANDLING_PROPERTY = "state-handling";
     public static final String STATE_HANDLING_SERVER_VALUE = "server";
     public static final String STATE_HANDLING_CLIENT_VALUE = "client";
-    public static final String STATE_HANDLING_SESSION_VALUE = "session"; // deprecated
 
     public static final String NOSCRIPT_PROPERTY = "noscript";
     public static final String NOSCRIPT_SUPPORT_PROPERTY = "noscript-support";
@@ -51,21 +50,18 @@ public class XFormsProperties {
 
     private static final String OPTIMIZE_GET_ALL_PROPERTY = "optimize-get-all";
     private static final String OPTIMIZE_LOCAL_SUBMISSION_REPLACE_ALL_PROPERTY = "optimize-local-submission";
-    private static final String OPTIMIZE_LOCAL_SUBMISSION_FORWARD_PROPERTY = "local-submission-forward";
-    private static final String OPTIMIZE_LOCAL_SUBMISSION_INCLUDE_PROPERTY = "local-submission-include";
-    private static final String OPTIMIZE_LOCAL_INSTANCE_INCLUDE_PROPERTY = "local-instance-include";
+    private static final String LOCAL_SUBMISSION_FORWARD_PROPERTY = "local-submission-forward";
+    private static final String LOCAL_SUBMISSION_INCLUDE_PROPERTY = "local-submission-include";
+    private static final String LOCAL_INSTANCE_INCLUDE_PROPERTY = "local-instance-include";
 //    private static final String XFORMS_OPTIMIZE_LOCAL_INSTANCE_LOADS_PROPERTY = "optimize-local-instance-loads";
     private static final String OPTIMIZE_RELEVANCE_PROPERTY = "optimize-relevance";
     private static final String EXPOSE_XPATH_TYPES_PROPERTY = "expose-xpath-types";
-    private static final String INITIAL_REFRESH_EVENTS_PROPERTY = "server.events.initial-refresh-events";
     private static final String AJAX_SHOW_LOADING_ICON_PROPERTY = "ajax.show-loading-icon";
     private static final String AJAX_SHOW_ERRORS_PROPERTY = "ajax.show-errors";
     private static final String AJAX_UPDATE_FULL_THRESHOLD = "ajax.update.full.threshold";
 
     private static final String MINIMAL_RESOURCES_PROPERTY = "minimal-resources";
     private static final String COMBINE_RESOURCES_PROPERTY = "combine-resources";
-
-    private static final String SKIP_SCHEMA_VALIDATION_PROPERTY = "skip-schema-validation";
 
     private static final String TYPE_OUTPUT_FORMAT_PROPERTY_PREFIX = "format.output.";
     private static final String TYPE_INPUT_FORMAT_PROPERTY_PREFIX = "format.input.";
@@ -100,7 +96,6 @@ public class XFormsProperties {
     private static final String DELAY_BEFORE_AJAX_TIMEOUT_PROPERTY = "delay-before-ajax-timeout";
     private static final String INTERNAL_SHORT_DELAY_PROPERTY = "internal-short-delay";
     private static final String DELAY_BEFORE_DISPLAY_LOADING_PROPERTY = "delay-before-display-loading";
-    private static final String REQUEST_RETRIES_PROPERTY = "request-retries";
     private static final String DEBUG_WINDOW_HEIGHT_PROPERTY = "debug-window-height";
     private static final String DEBUG_WINDOW_WIDTH_PROPERTY = "debug-window-width";
     private static final String LOADING_MIN_TOP_PADDING_PROPERTY = "loading-min-top-padding";
@@ -118,18 +113,20 @@ public class XFormsProperties {
 
     private static final String ASYNC_SUBMISSION_POLL_DELAY = "submission-poll-delay";
 
-    private static final String COMPUTED_BINDS_PROPERTY = "computed-binds";
-    public static final String COMPUTED_BINDS_RECALCULATE_VALUE = "recalculate";
-    public static final String COMPUTED_BINDS_REVALIDATE_VALUE = "revalidate";
-
     public static final String NEW_XHTML_LAYOUT = "new-xhtml-layout";   // deprecated
     public static final String XHTML_LAYOUT = "xhtml-layout";
+    public static final String RETRY_DELAY_INCREMENT = "retry.delay-increment";
+    public static final String RETRY_MAX_DELAY = "retry.max-delay";
 
     public static final String XFORMS11_SWITCH_PROPERTY = "xforms11-switch";
 
     public enum XHTMLLayout { NOSPAN, SPAN }
 
     private static final String ENCRYPT_ITEM_VALUES_PROPERTY = "encrypt-item-values";
+    public static final String XPATH_ANALYSIS_PROPERTY = "xpath-analysis";
+
+    public static final String CACHE_DOCUMENT_PROPERTY = "cache.document";
+    private static final boolean CACHE_DOCUMENT_DEFAULT = true;
 
     public static class PropertyDefinition {
 
@@ -193,18 +190,15 @@ public class XFormsProperties {
             new PropertyDefinition(EXTERNAL_EVENTS_PROPERTY, "", false),
             new PropertyDefinition(OPTIMIZE_GET_ALL_PROPERTY, true, false),
             new PropertyDefinition(OPTIMIZE_LOCAL_SUBMISSION_REPLACE_ALL_PROPERTY, true, false),
-            new PropertyDefinition(OPTIMIZE_LOCAL_SUBMISSION_FORWARD_PROPERTY, true, false),
-            new PropertyDefinition(OPTIMIZE_LOCAL_SUBMISSION_INCLUDE_PROPERTY, false, false),
-            new PropertyDefinition(OPTIMIZE_LOCAL_INSTANCE_INCLUDE_PROPERTY, false, false),
+            new PropertyDefinition(LOCAL_SUBMISSION_FORWARD_PROPERTY, true, false),
+            new PropertyDefinition(LOCAL_SUBMISSION_INCLUDE_PROPERTY, false, false),
+            new PropertyDefinition(LOCAL_INSTANCE_INCLUDE_PROPERTY, false, false),
             new PropertyDefinition(OPTIMIZE_RELEVANCE_PROPERTY, false, false),
             new PropertyDefinition(EXPOSE_XPATH_TYPES_PROPERTY, false, false),
-            new PropertyDefinition(INITIAL_REFRESH_EVENTS_PROPERTY, true, false),
             new PropertyDefinition(AJAX_SHOW_LOADING_ICON_PROPERTY, true, false),
             new PropertyDefinition(AJAX_SHOW_ERRORS_PROPERTY, true, false),
             new PropertyDefinition(MINIMAL_RESOURCES_PROPERTY, true, false),
             new PropertyDefinition(COMBINE_RESOURCES_PROPERTY, true, false),
-            new PropertyDefinition(SKIP_SCHEMA_VALIDATION_PROPERTY, false, false),
-            new PropertyDefinition(COMPUTED_BINDS_PROPERTY, COMPUTED_BINDS_RECALCULATE_VALUE, false),
             new PropertyDefinition(DATE_FORMAT_PROPERTY, "if (. castable as xs:date) then format-date(xs:date(.), '[FNn] [MNn] [D], [Y] [ZN]', 'en', (), ()) else .", false),
             new PropertyDefinition(DATETIME_FORMAT_PROPERTY, "if (. castable as xs:dateTime) then format-dateTime(xs:dateTime(.), '[FNn] [MNn] [D], [Y] [H01]:[m01]:[s01] [ZN]', 'en', (), ()) else .", false),
             new PropertyDefinition(TIME_FORMAT_PROPERTY, "if (. castable as xs:time) then format-time(xs:time(.), '[H01]:[m01]:[s01] [ZN]', 'en', (), ()) else .", false),
@@ -218,10 +212,14 @@ public class XFormsProperties {
             new PropertyDefinition(ASYNC_SUBMISSION_POLL_DELAY, 10 * 1000, false), // 10 seconds
             new PropertyDefinition(AJAX_UPDATE_FULL_THRESHOLD, 20, false),
             new PropertyDefinition(XFORMS11_SWITCH_PROPERTY, false, false), // false for now, but default should change at some point
+            new PropertyDefinition(XPATH_ANALYSIS_PROPERTY, false, false),
+            new PropertyDefinition(CACHE_DOCUMENT_PROPERTY, CACHE_DOCUMENT_DEFAULT, false),
 
             // Properties to propagate to the client
             new PropertyDefinition(NEW_XHTML_LAYOUT, false, true),
             new PropertyDefinition(XHTML_LAYOUT, XHTMLLayout.NOSPAN.toString().toLowerCase(), true),
+            new PropertyDefinition(RETRY_DELAY_INCREMENT, 5000, true),
+            new PropertyDefinition(RETRY_MAX_DELAY, 30000, true),
             new PropertyDefinition(SESSION_HEARTBEAT_PROPERTY, true, true),
             new PropertyDefinition(SESSION_HEARTBEAT_DELAY_PROPERTY, 12 * 60 * 60 * 800, true), // dynamic; 80 % of 12 hours in ms
             new PropertyDefinition(FCK_EDITOR_BASE_PATH_PROPERTY, "/ops/fckeditor/", true),// dynamic
@@ -229,10 +227,9 @@ public class XFormsProperties {
             new PropertyDefinition(DELAY_BEFORE_FORCE_INCREMENTAL_REQUEST_PROPERTY, 2000, true),
             new PropertyDefinition(DELAY_BEFORE_GECKO_COMMUNICATION_ERROR_PROPERTY, 5000, true),
             new PropertyDefinition(DELAY_BEFORE_CLOSE_MINIMAL_DIALOG_PROPERTY, 5000, true),
-            new PropertyDefinition(DELAY_BEFORE_AJAX_TIMEOUT_PROPERTY, -1, true),
+            new PropertyDefinition(DELAY_BEFORE_AJAX_TIMEOUT_PROPERTY, 30000, true),
             new PropertyDefinition(INTERNAL_SHORT_DELAY_PROPERTY, 10, true),
             new PropertyDefinition(DELAY_BEFORE_DISPLAY_LOADING_PROPERTY, 500, true),
-            new PropertyDefinition(REQUEST_RETRIES_PROPERTY, 1, true),
             new PropertyDefinition(DEBUG_WINDOW_HEIGHT_PROPERTY, 600, true),
             new PropertyDefinition(DEBUG_WINDOW_WIDTH_PROPERTY, 300, true),
             new PropertyDefinition(LOADING_MIN_TOP_PADDING_PROPERTY, 10, true),
@@ -262,8 +259,6 @@ public class XFormsProperties {
 
     // Global properties
     private static final String PASSWORD_PROPERTY = XFORMS_PROPERTY_PREFIX + "password";
-    private static final String CACHE_DOCUMENT_PROPERTY = XFORMS_PROPERTY_PREFIX + "cache.document";
-    private static final boolean CACHE_DOCUMENT_DEFAULT = true;
 
     private static final String STORE_APPLICATION_SIZE_PROPERTY = XFORMS_PROPERTY_PREFIX + "store.application.size";
     private static final int STORE_APPLICATION_SIZE_DEFAULT = 20 * 1024 * 1024;
@@ -290,13 +285,12 @@ public class XFormsProperties {
     private static final String TEST_AJAX_PROPERTY = XFORMS_PROPERTY_PREFIX + "test.ajax";
     private static final boolean TEST_AJAX_DEFAULT = false;
 
-    // The following global properties are deprecated in favor of the persistent application store
-    private static final String CACHE_APPLICATION_SIZE_PROPERTY = XFORMS_PROPERTY_PREFIX + "cache.application.size";
-    private static final int CACHE_APPLICATION_SIZE_DEFAULT = 1024 * 1024;
-
     private static final String DEBUG_LOGGING_PROPERTY = XFORMS_PROPERTY_PREFIX + "logging.debug";
     private static final String ERROR_LOGGING_PROPERTY = XFORMS_PROPERTY_PREFIX + "logging.error";
 
+    public static final String PIPELINE_TRACE_CLASS_PROPERTY = XFORMS_PROPERTY_PREFIX + "pipeline.trace.class";
+
+    // == Global properties ============================================================================================
     /**
      * Return a PropertyDefinition given a property name.
      *
@@ -318,7 +312,7 @@ public class XFormsProperties {
 
     public  static Object parseProperty(String propertyName, String propertyValue) {
         assert propertyName != null && propertyValue != null;
-        
+
         final PropertyDefinition propertyDefinition = getPropertyDefinition(propertyName);
         return (propertyDefinition == null) ? null : propertyDefinition.parseProperty(propertyValue);
     }
@@ -345,11 +339,6 @@ public class XFormsProperties {
     public static int getApplicationStateStoreSize() {
         return Properties.instance().getPropertySet().getInteger
                 (STORE_APPLICATION_SIZE_PROPERTY, STORE_APPLICATION_SIZE_DEFAULT);
-    }
-
-    public static int getApplicationCacheSize() {
-        return Properties.instance().getPropertySet().getInteger
-                (CACHE_APPLICATION_SIZE_PROPERTY, CACHE_APPLICATION_SIZE_DEFAULT);
     }
 
     public static boolean isGZIPState() {
@@ -392,23 +381,14 @@ public class XFormsProperties {
                 (CACHE_COMBINED_RESOURCES_PROPERTY, CACHE_COMBINED_RESOURCES_DEFAULT);
     }
 
+    // == XForms document properties ===================================================================================
+
     public static String getStateHandling(XFormsContainingDocument containingDocument) {
         return getStringProperty(containingDocument, STATE_HANDLING_PROPERTY);
     }
 
     public static boolean isClientStateHandling(XFormsContainingDocument containingDocument) {
         return getStateHandling(containingDocument).equals(STATE_HANDLING_CLIENT_VALUE);
-    }
-
-    public static boolean isNoscript(XFormsContainingDocument containingDocument) {
-        // Special behavior here: depends on other property as well
-        // Later move this logic somewhere else esp. when depends on more stuff like XBL controls used
-        return getBooleanProperty(containingDocument, NOSCRIPT_PROPERTY)
-                && isNoscriptSupport(containingDocument);
-    }
-
-    public static boolean isNoscriptSupport(XFormsContainingDocument containingDocument) {
-        return getBooleanProperty(containingDocument, NOSCRIPT_SUPPORT_PROPERTY);
     }
 
     public static boolean isAjaxPortlet(XFormsContainingDocument containingDocument) {
@@ -419,9 +399,9 @@ public class XFormsProperties {
         return getBooleanProperty(containingDocument, OPTIMIZE_GET_ALL_PROPERTY);
     }
 
-    public static boolean isOptimizeLocalSubmissionForward(XFormsContainingDocument containingDocument) {
+    public static boolean isLocalSubmissionForward(XFormsContainingDocument containingDocument) {
         // Try new property first
-        final boolean newPropertyValue = getBooleanProperty(containingDocument, OPTIMIZE_LOCAL_SUBMISSION_FORWARD_PROPERTY);
+        final boolean newPropertyValue = getBooleanProperty(containingDocument, LOCAL_SUBMISSION_FORWARD_PROPERTY);
         if (!newPropertyValue)
             return newPropertyValue;
 
@@ -429,12 +409,12 @@ public class XFormsProperties {
         return getBooleanProperty(containingDocument, OPTIMIZE_LOCAL_SUBMISSION_REPLACE_ALL_PROPERTY);
     }
 
-    public static boolean isOptimizeLocalSubmissionInclude(XFormsContainingDocument containingDocument) {
-        return getBooleanProperty(containingDocument, OPTIMIZE_LOCAL_SUBMISSION_INCLUDE_PROPERTY);
+    public static boolean isLocalSubmissionInclude(XFormsContainingDocument containingDocument) {
+        return getBooleanProperty(containingDocument, LOCAL_SUBMISSION_INCLUDE_PROPERTY);
     }
 
-    public static boolean isOptimizeLocalInstanceInclude(XFormsContainingDocument containingDocument) {
-        return getBooleanProperty(containingDocument, OPTIMIZE_LOCAL_INSTANCE_INCLUDE_PROPERTY);
+    public static boolean isLocalInstanceInclude(XFormsContainingDocument containingDocument) {
+        return getBooleanProperty(containingDocument, LOCAL_INSTANCE_INCLUDE_PROPERTY);
     }
 
     public static boolean isAjaxShowLoadingIcon(XFormsContainingDocument containingDocument) {
@@ -455,14 +435,6 @@ public class XFormsProperties {
 
     public static boolean isOptimizeRelevance(XFormsContainingDocument containingDocument) {
         return getBooleanProperty(containingDocument, OPTIMIZE_RELEVANCE_PROPERTY);
-    }
-
-    public static boolean isSkipSchemaValidation(XFormsContainingDocument containingDocument) {
-        return getBooleanProperty(containingDocument, SKIP_SCHEMA_VALIDATION_PROPERTY);
-    }
-
-    public static String getComputedBinds(XFormsContainingDocument containingDocument) {
-        return getStringProperty(containingDocument, COMPUTED_BINDS_PROPERTY);
     }
 
     public static boolean isSpanHTMLLayout(XFormsContainingDocument containingDocument) {
@@ -590,6 +562,8 @@ public class XFormsProperties {
     public static String getHTMLEditor(XFormsContainingDocument containingDocument) {
         return getStringProperty(containingDocument, XHTML_EDITOR_PROPERTY);
     }
+
+    // == Helpers ======================================================================================================
 
     public static Object getProperty(XFormsContainingDocument containingDocument, String propertyName) {
         return containingDocument.getStaticState().getProperty(propertyName);

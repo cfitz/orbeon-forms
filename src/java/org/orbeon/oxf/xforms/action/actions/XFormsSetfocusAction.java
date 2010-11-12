@@ -21,9 +21,7 @@ import org.orbeon.oxf.xforms.XFormsContainingDocument;
 import org.orbeon.oxf.xforms.action.XFormsAction;
 import org.orbeon.oxf.xforms.action.XFormsActionInterpreter;
 import org.orbeon.oxf.xforms.control.XFormsControl;
-import org.orbeon.oxf.xforms.event.XFormsEvent;
-import org.orbeon.oxf.xforms.event.XFormsEventObserver;
-import org.orbeon.oxf.xforms.event.XFormsEventTarget;
+import org.orbeon.oxf.xforms.event.*;
 import org.orbeon.oxf.xforms.event.events.XFormsFocusEvent;
 import org.orbeon.oxf.xforms.xbl.XBLBindings;
 import org.orbeon.saxon.om.Item;
@@ -46,11 +44,15 @@ public class XFormsSetfocusAction extends XFormsAction {
         final String resolvedControlStaticId;
         {
             // Resolve AVT
-            resolvedControlStaticId = actionInterpreter.resolveAVTProvideValue(propertyContext, actionElement, controlIdAttributeValue, true);
+            resolvedControlStaticId = actionInterpreter.resolveAVTProvideValue(propertyContext, actionElement, controlIdAttributeValue);
             if (resolvedControlStaticId == null)
                 return;
         }
 
+        // "This XForms Action begins by invoking the deferred update behavior."
+        containingDocument.synchronizeAndRefresh(propertyContext);
+
+        // Find control
         final Object controlObject = actionInterpreter.resolveEffectiveControl(propertyContext, actionElement, resolvedControlStaticId);
         if (controlObject instanceof XFormsControl) {
             // Dispatch event to control object

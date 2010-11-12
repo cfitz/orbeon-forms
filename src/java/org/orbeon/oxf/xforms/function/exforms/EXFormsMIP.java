@@ -1,19 +1,19 @@
 /**
- *  Copyright (C) 2005 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify it under the terms of the
- *  GNU Lesser General Public License as published by the Free Software Foundation; either version
- *  2.1 of the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU Lesser General Public License as published by the Free Software Foundation; either version
+ * 2.1 of the License, or (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *  See the GNU Lesser General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Lesser General Public License for more details.
  *
- *  The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+ * The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
  */
 package org.orbeon.oxf.xforms.function.exforms;
 
-import org.orbeon.oxf.xforms.function.XFormsFunction;
+import org.orbeon.oxf.xforms.function.xxforms.XXFormsMIPFunction;
 import org.orbeon.saxon.dom4j.NodeWrapper;
 import org.orbeon.saxon.expr.Expression;
 import org.orbeon.saxon.expr.XPathContext;
@@ -25,8 +25,9 @@ import org.orbeon.saxon.value.BooleanValue;
 /**
  * Base class for eXForms MIP functions.
  */
-public abstract class EXFormsMIP extends XFormsFunction {
+public abstract class EXFormsMIP extends XXFormsMIPFunction {
 
+    @Override
     public Item evaluateItem(XPathContext c) throws XPathException {
 
         final Expression nodesetExpression = (argument.length > 0) ? argument[0] : null;

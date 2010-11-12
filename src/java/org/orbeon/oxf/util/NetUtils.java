@@ -25,7 +25,7 @@ import org.orbeon.oxf.pipeline.api.PipelineContext;
 import org.orbeon.oxf.processor.generator.RequestGenerator;
 import org.orbeon.oxf.resources.URLFactory;
 import org.orbeon.oxf.servlet.ServletExternalContext;
-import org.orbeon.oxf.xml.ContentHandlerAdapter;
+import org.orbeon.oxf.xml.XMLReceiverAdapter;
 import org.orbeon.oxf.xml.XMLUtils;
 
 import javax.servlet.http.HttpServletRequest;
@@ -146,7 +146,7 @@ public class NetUtils {
             if (servletPath == null)
                 servletPath = "";
         }
-        
+
         // Get path info
         String pathInfo = (String) request.getAttribute("javax.servlet.include.path_info");
         if (pathInfo == null) {
@@ -217,7 +217,9 @@ public class NetUtils {
             try {
                 return getLastModified(urlConnection);
             } finally {
-                urlConnection.getInputStream().close();
+                final InputStream is = urlConnection.getInputStream();
+                if (is != null)
+                    is.close();
             }
         }
     }
@@ -371,7 +373,7 @@ public class NetUtils {
                     final String name = URLDecoder.decode(matcher.group(1), NetUtils.STANDARD_PARAMETER_ENCODING);
                     final String value = URLDecoder.decode(matcher.group(2), NetUtils.STANDARD_PARAMETER_ENCODING);
 
-                    StringUtils.addValueToStringArrayMap(result, name, value);
+                    StringConversions.addValueToStringArrayMap(result, name, value);
                 } catch (UnsupportedEncodingException e) {
                     // Should not happen as we are using a required encoding
                     throw new OXFException(e);
@@ -485,8 +487,8 @@ public class NetUtils {
     /**
      * Resolve a URI against a base URI. (Be sure to pay attention to the order or parameters.)
      *
-     * @param href  URI to resolve
-     * @param base  URI base
+     * @param href  URI to resolve (accept human-readable URI)
+     * @param base  URI base (accept human-readable URI)
      * @return      resolved URI
      */
     public static String resolveURI(String href, String base) {
@@ -494,13 +496,13 @@ public class NetUtils {
         if (base != null) {
             final URI baseURI;
             try {
-                baseURI = new URI(base);
+                baseURI = new URI(encodeHRRI(base, true));
             } catch (URISyntaxException e) {
                 throw new OXFException(e);
             }
-            resolvedURIString = baseURI.resolve(href).normalize().toString();// normalize to remove "..", etc.
+            resolvedURIString = baseURI.resolve(encodeHRRI(href, true)).normalize().toString();// normalize to remove "..", etc.
         } else {
-            resolvedURIString = href;
+            resolvedURIString = encodeHRRI(href, true);
         }
         return resolvedURIString;
     }
@@ -630,7 +632,8 @@ public class NetUtils {
 
         // Return a file URL
         final File storeLocation = ((DiskFileItem) fileItem).getStoreLocation();
-        return storeLocation.toURI().toString();
+        // Escape "+" because at least in one environment (JBoss 5.1.0 GA on OS X) not escaping the "+" in a file URL causes later incorrect conversion to space
+        return storeLocation.toURI().toString().replace("+", "%2B");
     }
 
     private static FileItem prepareFileItemFromInputStream(PipelineContext pipelineContext, InputStream inputStream, int scope) {
@@ -766,7 +769,7 @@ public class NetUtils {
             // Read from URL and convert to Base64
             is = URLFactory.createURL(value).openStream();
             final StringBuffer sb = new StringBuffer();
-            XMLUtils.inputStreamToBase64Characters(is, new ContentHandlerAdapter() {
+            XMLUtils.inputStreamToBase64Characters(is, new XMLReceiverAdapter() {
                 public void characters(char ch[], int start, int length) {
                     sb.append(ch, start, length);
                 }
@@ -996,10 +999,10 @@ public class NetUtils {
                     if (fileItem.isFormField()) {
                         // Simple form field
                         // Assume that form fields are in UTF-8. Can they have another encoding? If so, how is it specified?
-                        StringUtils.addValueToObjectArrayMap(uploadParameterMap, fileItem.getFieldName(), fileItem.getString(STANDARD_PARAMETER_ENCODING));
+                        StringConversions.addValueToObjectArrayMap(uploadParameterMap, fileItem.getFieldName(), fileItem.getString(STANDARD_PARAMETER_ENCODING));
                     } else {
                         // File
-                        StringUtils.addValueToObjectArrayMap(uploadParameterMap, fileItem.getFieldName(), fileItem);
+                        StringConversions.addValueToObjectArrayMap(uploadParameterMap, fileItem.getFieldName(), fileItem);
                     }
                 }
             } catch (FileUploadBase.SizeLimitExceededException e) {
@@ -1026,6 +1029,51 @@ public class NetUtils {
         } catch (FileUploadException e) {
             throw new OXFException(e);
         }
+    }
+
+    /**
+     * Encode a Human Readable Resource Identifier to a URI. Leading and trailing spaces are removed first.
+     *
+     * NOTE: See more recent W3C note: http://www.w3.org/TR/2008/NOTE-leiri-20081103/
+     *
+     * @param uriString    URI to encode
+     * @param processSpace whether to process the space character or leave it unchanged
+     * @return             encoded URI, or null if uriString was null
+     */
+    public static String encodeHRRI(String uriString, boolean processSpace) {
+
+        if (uriString == null)
+            return null;
+
+        // Note that the XML Schema spec says "Spaces are, in principle, allowed in the ·lexical space· of anyURI,
+        // however, their use is highly discouraged (unless they are encoded by %20).".
+
+        // We assume that we never want leading or trailing spaces. You can use %20 if you really want this.
+        uriString = uriString.trim();
+
+        // We try below to follow the "Human Readable Resource Identifiers" RFC, in draft as of 2007-06-06.
+        // * the control characters #x0 to #x1F and #x7F to #x9F
+        // * space #x20
+        // * the delimiters "<" #x3C, ">" #x3E, and """ #x22
+        // * the unwise characters "{" #x7B, "}" #x7D, "|" #x7C, "\" #x5C, "^" #x5E, and "`" #x60
+        final StringBuilder sb = new StringBuilder(uriString.length() * 2);
+        for (int i = 0; i < uriString.length(); i++) {
+            final char currentChar = uriString.charAt(i);
+
+            if (currentChar >= 0
+                    && (currentChar <= 0x1f || (processSpace && currentChar == 0x20) || currentChar == 0x22
+                     || currentChar == 0x3c || currentChar == 0x3e
+                     || currentChar == 0x5c || currentChar == 0x5e || currentChar == 0x60
+                     || (currentChar >= 0x7b && currentChar <= 0x7d)
+                     || (currentChar >= 0x7f && currentChar <= 0x9f))) {
+                sb.append('%');
+                sb.append(NumberUtils.toHexString((byte) currentChar).toUpperCase());
+            } else {
+                sb.append(currentChar);
+            }
+        }
+
+        return sb.toString();
     }
 
     public static class DynamicResource {

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the
  * GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -27,19 +27,17 @@ import org.orbeon.oxf.util.IndentedLogger;
 import org.orbeon.oxf.util.LoggerFactory;
 import org.orbeon.oxf.xforms.XFormsContainingDocument;
 import org.orbeon.oxf.xml.TransformerUtils;
+import org.orbeon.oxf.xml.XMLReaderToReceiver;
 import org.orbeon.oxf.xml.dom4j.LocationData;
-import org.orbeon.oxf.xml.dom4j.LocationDocumentResult;
+import org.orbeon.saxon.Configuration;
 import org.orbeon.saxon.om.DocumentInfo;
-import org.orbeon.saxon.tinytree.TinyBuilder;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
-import org.xml.sax.helpers.XMLFilterImpl;
 
 import javax.xml.transform.Source;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.sax.SAXSource;
-import javax.xml.transform.sax.TransformerHandler;
 import java.net.MalformedURLException;
 import java.net.URL;
 
@@ -62,12 +60,14 @@ public class XFormsURIResolver extends TransformerURIResolver {
         this.processorOutput = processorOutput;
     }
 
+    @Override
     public Source resolve(String href, String base) throws TransformerException {
         // Use global definition for headers to forward
-        return resolve(href, base, null, null, Connection.getForwardHeaders());
+        return resolve(href, base, null, null, null, Connection.getForwardHeaders());
     }
 
-    public Source resolve(String href, String base, final String username, final String password, final String headersToForward) throws TransformerException {
+    public Source resolve(String href, String base, final String username, final String password,
+    		final String domain, final String headersToForward) throws TransformerException {
 
         final String inputName = ProcessorImpl.getProcessorInputSchemeInputName(href);
         if (inputName != null) {
@@ -91,18 +91,14 @@ public class XFormsURIResolver extends TransformerURIResolver {
                 final URIProcessorOutputImpl.URIReferencesState state = (URIProcessorOutputImpl.URIReferencesState) getProcessor().getState(getPipelineContext());
 
                 // First, put in state if necessary
-                processorOutput.readURLToStateIfNeeded(getPipelineContext(), url, state, username, password, headersToForward);
+                processorOutput.readURLToStateIfNeeded(getPipelineContext(), url, state, username, password, domain, headersToForward);
 
                 // Then try to read from state
                 if (state.isDocumentSet(urlString, username, password)) {// not sure why this would not be the case
                     // This means the document requested is already available. We use the cached document.
-                    final XMLReader xmlReader = new XMLFilterImpl() {
+                    final XMLReader xmlReader = new XMLReaderToReceiver() {
                         public void parse(String systemId) throws SAXException {
-                            state.getDocument(urlString, username, password).replay(getContentHandler());
-                        }
-
-                        public void setFeature(String name, boolean state) {
-                            // Not sure if this is necessary
+                            state.getDocument(urlString, username, password).replay(createXMLReceiver());
                         }
                     };
 
@@ -120,39 +116,22 @@ public class XFormsURIResolver extends TransformerURIResolver {
         }
     }
 
-    public Document readURLAsDocument(String urlString, String username, String password, String headersToForward) {
+    public Document readAsDom4j(String urlString, String username, String password, String domain, String headersToForward) {
         try {
-            final SAXSource source = (SAXSource) resolve(urlString, null, username, password, headersToForward);
-
-            final LocationDocumentResult documentResult = new LocationDocumentResult();
-            final TransformerHandler identity = TransformerUtils.getIdentityTransformerHandler();
-            identity.setResult(documentResult);
-
-            final XMLReader xmlReader = source.getXMLReader();
-            xmlReader.setContentHandler(identity);
-            xmlReader.parse(urlString);
-
-            return documentResult.getDocument();
-
+            final SAXSource source = (SAXSource) resolve(urlString, null, username, password, domain, headersToForward);
+            // XInclude handled by source if needed
+            return TransformerUtils.readDom4j(source, false);
         } catch (Exception e) {
             throw ValidationException.wrapException(e, new LocationData(urlString, -1, -1));
         }
     }
 
-    public DocumentInfo readURLAsDocumentInfo(String urlString, String username, String password, String headersToForward) {
+    public DocumentInfo readAsTinyTree(Configuration configuration, String urlString, String username, String password,
+    		String domain, String headersToForward) {
         try {
-            final SAXSource source = (SAXSource) resolve(urlString, null, username, password, headersToForward);
-
-            final TinyBuilder treeBuilder = new TinyBuilder();
-            final TransformerHandler identity = TransformerUtils.getIdentityTransformerHandler();
-            identity.setResult(treeBuilder);
-
-            final XMLReader xmlReader = source.getXMLReader();
-            xmlReader.setContentHandler(identity);
-            xmlReader.parse(urlString);
-
-            return (DocumentInfo) treeBuilder.getCurrentRoot();
-
+            final SAXSource source = (SAXSource) resolve(urlString, null, username, password, domain, headersToForward);
+            // XInclude handled by source if needed
+            return TransformerUtils.readTinyTree(configuration, source, false);
         } catch (Exception e) {
             throw ValidationException.wrapException(e, new LocationData(urlString, -1, -1));
         }

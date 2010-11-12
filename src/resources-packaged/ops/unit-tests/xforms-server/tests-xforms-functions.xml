@@ -367,7 +367,7 @@
                     <p:input name="document">
                         <xhtml:html xmlns:exforms="http://www.exforms.org/exf/1-0">
                             <xhtml:head>
-                                <xforms:model id="my-model">
+                                <xforms:model id="my-model" xxforms:encrypt-item-values="false">
                                     <xforms:instance id="value">
                                         <value/>
                                     </xforms:instance>
@@ -461,8 +461,8 @@
                 </xxf:dynamic-state>
                 <xxf:action>
                     <xxf:control-values>
-                        <xxf:control id="my-select">+s85RSYyKV8=</xxf:control>
-                        <xxf:itemset id="my-select">[["Select...",""],["One","A21R1qCnPIg="],["Two","+s85RSYyKV8="],["Three","PAIYFi0+row="]]</xxf:itemset>
+                        <xxf:control id="my-select">2</xxf:control>
+                        <xxf:itemset id="my-select">[["Select...",""],["One","1"],["Two","2"],["Three","3"]]</xxf:itemset>
                     </xxf:control-values>
                 </xxf:action>
             </xxf:event-response>
@@ -671,7 +671,7 @@
         </output>
     </test>
 
-    <test description="Text exforms:sort() / xxforms:sort()" name="oxf:pipeline">
+    <test description="exforms:sort() / xxforms:sort()" name="oxf:pipeline">
         <input name="config">
             <p:config xmlns:oxf="http://www.orbeon.com/oxf/processors" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms">
                 <p:param name="response" type="output"/>
@@ -788,7 +788,7 @@
                 </xhtml:head>
                 <xhtml:body>
                     <xforms:output id="output1" value="xxforms:evaluate-avt('state={state}')"/>
-                    <xforms:variable name="city" select="city"/>
+                    <xxforms:variable name="city" select="city"/>
                     <xforms:output id="output2" value="xxforms:evaluate-avt('state={state}&amp;city={$city}')"/>
                     <xforms:repeat id="repeat" nodeset="*">
                         <xforms:output id="output3" value="xxforms:evaluate-avt('position={position()}&amp;index={index(''repeat'')}')"/>
@@ -1400,6 +1400,607 @@
                 </xxf:action>
             </xxf:event-response>
         </output>
-    </test>    
+    </test>
+
+    <test description="saxon:in-summer-time() function" name="oxf:pipeline">
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl" />
+        <input name="document">
+           <xhtml:html xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xforms="http://www.w3.org/2002/xforms"
+                       xmlns:saxon="http://saxon.sf.net/">
+                <xhtml:head>
+                    <xforms:model id="model"/>
+                </xhtml:head>
+                <xhtml:body>
+                    <xforms:output value="saxon:in-summer-time(xs:dateTime('2010-01-01T12:00:00Z'), 'America/New_York') " id="my-output1"/>
+                    <xforms:output value="saxon:in-summer-time(xs:dateTime('2010-07-01T12:00:00Z'), 'America/New_York') " id="my-output2"/>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances/>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values>
+                        <xxf:control id="my-output1">false</xxf:control>
+                        <xxf:control id="my-output2">true</xxf:control>
+                    </xxf:control-values>
+                </xxf:action>
+            </xxf:event-response>
+        </output>
+    </test>
+
+    <test description="Top-level last() function" name="oxf:pipeline">
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl" />
+        <input name="document">
+           <xhtml:html xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xforms="http://www.w3.org/2002/xforms"
+                       xmlns:saxon="http://saxon.sf.net/">
+                <xhtml:head>
+                    <xforms:model id="model">
+                        <xforms:instance id="instance">
+                            <xforms:instance>
+                                <value>42</value>
+                                <value>43</value>
+                                <value>45</value>
+                            </xforms:instance>
+                        </xforms:instance>
+
+                        <xforms:insert ev:event="xforms-ready" nodeset="value" at="last()" position="before"
+                                       origin="xxforms:element('value', 44)"/>
+
+                    </xforms:model>
+                </xhtml:head>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances>
+                            <instance id="instance" model-id="model">
+                                <xforms:instance xmlns:xforms="http://www.w3.org/2002/xforms">
+                                    <value>42</value>
+                                    <value>43</value>
+                                    <value>44</value>
+                                    <value>45</value>
+                                </xforms:instance>
+                            </instance>
+                        </instances>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values/>
+                </xxf:action>
+            </xxf:event-response>
+        </output>
+    </test>
+
+    <test description="saxon:evaluate() function in AVT" name="oxf:pipeline">
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl" />
+        <input name="document">
+           <xhtml:html xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xforms="http://www.w3.org/2002/xforms"
+                       xmlns:saxon="http://saxon.sf.net/">
+                <xhtml:head>
+                    <xforms:model id="model">
+                        <xforms:instance id="instance">
+                            <expressions>
+                                <expression>'gaga'</expression>
+                                <expression>concat('The message is ', expression[1])</expression>
+                            </expressions>
+                        </xforms:instance>
+
+                        <xforms:action ev:event="xforms-ready">
+                            <xforms:load resource="{saxon:evaluate(expression[1])}"/>
+                            <xforms:load resource="{saxon:evaluate(expression[2])}"/>
+                        </xforms:action>
+                    </xforms:model>
+                </xhtml:head>
+                <xhtml:body>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances>
+                            <instance id="instance" model-id="model">
+                                <expressions>
+                                    <expression>'gaga'</expression>
+                                    <expression>concat('The message is ', expression[1])</expression>
+                                </expressions>
+                            </instance>
+                        </instances>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values/>
+                    <xxf:load resource="/orbeon/doc/gaga" show="replace"/>
+                    <xxf:load resource="/orbeon/doc/The%20message%20is%20'gaga'" show="replace"/>
+                </xxf:action>
+            </xxf:event-response>
+        </output>
+    </test>
+
+    <test description="current() function" name="oxf:pipeline">
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl" />
+        <input name="document">
+           <xhtml:html xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xforms="http://www.w3.org/2002/xforms"
+                       xmlns:saxon="http://saxon.sf.net/">
+                <xhtml:head>
+                    <xforms:model id="model">
+                        <!-- These instances are inspired from the XForms 1.1 spec -->
+                        <xforms:instance xmlns="">
+                           <converter>
+                              <amount>100</amount>
+                              <currency>jpy</currency>
+                              <convertedAmount/>
+                           </converter>
+                        </xforms:instance>
+
+                        <xforms:instance xmlns="" id="convTable">
+                           <convTable date="20040212" currency="cdn">
+                              <rate currency="eur">0.59376</rate>
+                              <rate currency="mxn">8.37597</rate>
+                              <rate currency="jpy">80.23451</rate>
+                              <rate currency="usd">0.76138</rate>
+                           </convTable>
+                        </xforms:instance>
+
+                        <xforms:bind ref="convertedAmount"
+                                     calculate="xs:decimal(../amount) * instance('convTable')/rate[@currency = current()/../currency]"/>
+
+
+                        <!-- Test from actions -->
+                        <xforms:instance xmlns="" id="values">
+                           <values>
+                               <value/>
+                               <value/>
+                               <value/>
+                           </values>
+                        </xforms:instance>
+
+                        <xforms:action ev:event="xforms-ready">
+                            <!-- Set value[1] to 100 -->
+                            <xforms:setvalue ref="instance('values')/value[1]" value="context()/amount"/>
+                            <!-- Set value[1] to 101-->
+                            <xforms:setvalue ref="instance('values')/value[2]" value="current()/../value[1] + 1"/>
+                            <!-- Set value[2] to 101-->
+                            <xforms:setvalue ref="instance('values')/value[3]" value="preceding-sibling::value[1]"/>
+                            <!-- Set value[3] to the sum of all value elements that have value 101 -->
+                            <xforms:setvalue ref="instance('values')/value[3]" value="sum((../value[. = current()]))"/>
+                        </xforms:action>
+                    </xforms:model>
+                </xhtml:head>
+                <xhtml:body>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances>
+                            <instance id="xf-1" model-id="model">
+                                <converter>
+                                    <amount>100</amount>
+                                    <currency>jpy</currency>
+                                    <convertedAmount>8023.451</convertedAmount>
+                                </converter>
+                            </instance>
+                            <instance id="convTable" model-id="model">
+                                <convTable date="20040212" currency="cdn">
+                                    <rate currency="eur">0.59376</rate>
+                                    <rate currency="mxn">8.37597</rate>
+                                    <rate currency="jpy">80.23451</rate>
+                                    <rate currency="usd">0.76138</rate>
+                                </convTable>
+                            </instance>
+                            <instance id="values" model-id="model">
+                                <values>
+                                    <value>100</value>
+                                    <value>101</value>
+                                    <value>202</value>
+                                </values>
+                            </instance>
+                        </instances>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values/>
+                </xxf:action>
+            </xxf:event-response>
+        </output>
+    </test>
+
+    <test description="exforms:sort() doesn't cause 'invalid slot for variable' error in Saxon" name="oxf:pipeline">
+        <!-- See: http://forge.ow2.org/tracker/index.php?func=detail&aid=315140&group_id=168&atid=350207 -->
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl"/>
+        <input name="document">
+            <xhtml:html xmlns:exf="http://www.exforms.org/exf/1-0" xmlns:xhtml="http://www.w3.org/1999/xhtml"
+                        xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms">
+                <xhtml:head>
+                    <xforms:model id="model">
+                        <xforms:instance id="instance">
+                            <instance xmlns="">
+                                <record code="c">C</record>
+                            </instance>
+                        </xforms:instance>
+                    </xforms:model>
+                </xhtml:head>
+                <xhtml:body>
+                    <xforms:output id="output" ref="exf:sort(record[@code = 'c'], '@code', 'text', 'ascending', 'lower-first')"/>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances>
+                            <instance id="instance" model-id="model">
+                                <instance>
+                                    <record code="c">C</record>
+                                </instance>
+                            </instance>
+                        </instances>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values>
+                        <xxf:control id="output">C</xxf:control>
+                    </xxf:control-values>
+                </xxf:action>
+            </xxf:event-response>
+        </output>
+    </test>
+
+    <test description="xxforms:evaluate-avt() doesn't cause 'invalid slot for variable' error in Saxon" name="oxf:pipeline">
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl"/>
+        <input name="document">
+            <xhtml:html xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms">
+                <xhtml:head>
+                    <xforms:model id="model">
+                        <xforms:instance id="instance">
+                            <instance xmlns="">
+                                <record code="c">C</record>
+                            </instance>
+                        </xforms:instance>
+                    </xforms:model>
+                </xhtml:head>
+                <xhtml:body>
+                    <xforms:output id="output" ref="xxforms:evaluate-avt('{record[@code = ''c'']}')"/>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances>
+                            <instance id="instance" model-id="model">
+                                <instance>
+                                    <record code="c">C</record>
+                                </instance>
+                            </instance>
+                        </instances>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values>
+                        <xxf:control id="output">C</xxf:control>
+                    </xxf:control-values>
+                </xxf:action>
+            </xxf:event-response>
+        </output>
+    </test>
+
+    <test description="Simple xxforms:lang() on controls and actions" name="oxf:pipeline">
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl"/>
+        <input name="document">
+            <xhtml:html xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms">
+                <xhtml:head>
+                    <xforms:model id="model">
+                        <xforms:instance id="instance">
+                            <langs>
+                                <lang/>
+                                <lang/>
+                            </langs>
+                        </xforms:instance>
+                    </xforms:model>
+                </xhtml:head>
+                <xhtml:body>
+                    <xforms:group xml:lang="it">
+                        <xforms:output id="output1" value="xxforms:lang()"/>
+                        <xforms:output id="output2" value="xxforms:lang()" xml:lang="zh"/>
+
+                        <xforms:setvalue ev:event="xforms-enabled" ref="lang[1]" value="xxforms:lang()"/>
+                        <xforms:setvalue ev:event="xforms-enabled" ref="lang[2]" value="xxforms:lang()" xml:lang="fr"/>
+                    </xforms:group>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances>
+                            <instance id="instance" model-id="model">
+                                <langs>
+                                    <lang>it</lang>
+                                    <lang>fr</lang>
+                                </langs>
+                            </instance>
+                        </instances>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values>
+                        <xxf:control id="output1">it</xxf:control>
+                        <xxf:control id="output2">zh</xxf:control>
+                    </xxf:control-values>
+                </xxf:action>
+            </xxf:event-response>
+        </output>
+    </test>
+
+    <test description="xxforms:lang() with top-level AVT xml:lang" name="oxf:pipeline">
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl"/>
+        <input name="document">
+            <xhtml:html xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+                        xml:lang="{instance()}">
+                <xhtml:head>
+                    <xforms:model id="model">
+                        <xforms:instance id="instance">
+                            <lang/>
+                        </xforms:instance>
+                    </xforms:model>
+                </xhtml:head>
+                <xhtml:body>
+                    <xforms:group>
+                        <xforms:output id="output1" value="xxforms:lang()"/>
+                        <xforms:output id="output2" value="xxforms:lang()" xml:lang="zh"/>
+
+                        <xforms:setvalue ev:event="xforms-enabled" ref="instance()" value="xxforms:lang()" xml:lang="it"/>
+                    </xforms:group>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances>
+                            <instance id="instance" model-id="model">
+                                <lang>it</lang>
+                            </instance>
+                        </instances>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values>
+                        <xxf:attribute id="xf-2" for="xf-1" name="xml:lang">it</xxf:attribute>
+                        <xxf:control id="output1">it</xxf:control>
+                        <xxf:control id="output2">zh</xxf:control>
+                    </xxf:control-values>
+                </xxf:action>
+            </xxf:event-response>
+        </output>
+    </test>
+
+    <test description="xxforms:lang() and XBL" name="oxf:pipeline">
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl"/>
+        <input name="document">
+            <xhtml:html xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+                        xmlns:fr="http://orbeon.org/oxf/xml/form-runner" xmlns:xxbl="http://orbeon.org/oxf/xml/xbl"
+                        xml:lang="{instance()}">
+                <xhtml:head>
+                    <xforms:model id="model">
+                        <xforms:instance id="instance">
+                            <lang>it</lang>
+                        </xforms:instance>
+                    </xforms:model>
+                    <xbl:xbl>
+                        <xbl:binding id="fr-foo" element="fr|foo">
+                            <xbl:template>
+                                <xforms:group>
+                                    <!-- TODO: The variable value is evaluated when bindings are evaluated, so this won't work as expected -->
+                                    <!--<xxforms:variable id="lang" name="lang" select="xxforms:lang()"/>-->
+                                    <!--<xforms:output id="output1" value="$lang"/>-->
+
+                                    <xforms:output id="output1" value="xxforms:lang()"/>
+                                    <xforms:output id="output2" value="xxforms:lang()" xml:lang="zh"/>
+                                </xforms:group>
+                            </xbl:template>
+                        </xbl:binding>
+                    </xbl:xbl>
+                </xhtml:head>
+                <xhtml:body>
+                    <fr:foo id="my-foo-1"/>
+                    <fr:foo id="my-foo-2" xml:lang="es"/>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances>
+                            <instance id="instance" model-id="model">
+                                <lang>it</lang>
+                            </instance>
+                        </instances>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values>
+                        <xxf:attribute id="xf-2" for="xf-1" name="xml:lang">it</xxf:attribute>
+                        <xxf:control id="my-foo-1$output1">it</xxf:control>
+                        <xxf:control id="my-foo-1$output2">zh</xxf:control>
+                        <xxf:control id="my-foo-2$output1">es</xxf:control>
+                        <xxf:control id="my-foo-2$output2">zh</xxf:control>
+                    </xxf:control-values>
+                </xxf:action>
+            </xxf:event-response>
+        </output>
+    </test>
+
+    <test description="xxforms:format-message()" name="oxf:pipeline">
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl"/>
+        <input name="document">
+            <xhtml:html xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms">
+                <xhtml:head>
+                    <xforms:model id="model">
+                        <xforms:instance id="instance">
+                            <instance xmlns="">
+                                <file>0</file>
+                                <file>1</file>
+                                <file>1273</file>
+                            </instance>
+                        </xforms:instance>
+                    </xforms:model>
+                </xhtml:head>
+                <xhtml:body>
+                    <xforms:output id="output1"
+                                   value="xxforms:format-message('At {2,time,short} on {2,date,long}, we detected {1,number,integer} spaceships on the planet {0}.',
+                                            ('Mars', 3, xs:dateTime('2010-07-23T19:25:13-07:00')))"/>
+
+                    <xforms:repeat ref="file">
+                        <xforms:output id="output2"
+                                       value="xxforms:format-message('There {0,choice,0#are no files|1#is one file|1&lt;are {0,number,integer} files}.', xs:integer(.))"/> 
+                    </xforms:repeat>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances>
+                            <instance id="instance" model-id="model">
+                                <instance>
+                                    <file>0</file>
+                                    <file>1</file>
+                                    <file>1273</file>
+                                </instance>
+                            </instance>
+                        </instances>
+                        <controls>
+                            <control effective-id="xf-1" index="1"/>
+                        </controls>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values>
+                        <xxf:control id="output1">At 7:25 PM on July 23, 2010, we detected 3 spaceships on the planet Mars.</xxf:control>
+                        <xxf:control id="output2·1">There are no files.</xxf:control>
+                        <xxf:control id="output2·2">There is one file.</xxf:control>
+                        <xxf:control id="output2·3">There are 1,273 files.</xxf:control>
+                    </xxf:control-values>
+                </xxf:action>
+            </xxf:event-response>
+        </output>
+    </test>
+
+    <test description="xxforms:format-message() with top-level static xml:lang" name="oxf:pipeline">
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl"/>
+        <input name="document">
+            <xhtml:html xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+                xml:lang="fr">
+                <xhtml:head>
+                    <xforms:model id="model"/>
+                </xhtml:head>
+                <xhtml:body>
+                    <xforms:output id="output1"
+                                   value="xxforms:format-message('A {2,time,short} le {2,date,long}, nous avons détecté {1,number,integer} vaisseaux spatiaux sur la planète {0}.',
+                                            ('Mars', 3, xs:dateTime('2010-07-23T19:25:13-07:00')))"/>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances/>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values>
+                        <xxf:control id="output1">A 19:25 le 23 juillet 2010, nous avons détecté 3 vaisseaux spatiaux sur la planète Mars.</xxf:control>
+                    </xxf:control-values>
+                </xxf:action>
+            </xxf:event-response>
+        </output>
+    </test>
+
+    <test description="xxforms:format-message() with top-level AVT xml:lang" name="oxf:pipeline">
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl"/>
+        <input name="document">
+            <xhtml:html xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+                xml:lang="{.}">
+                <xhtml:head>
+                    <xforms:model id="model">
+                        <xforms:instance id="instance">
+                            <lang>zh</lang>
+                        </xforms:instance>
+                    </xforms:model>
+                </xhtml:head>
+                <xhtml:body>
+                    <xforms:output id="output1"
+                                   value="xxforms:format-message('{2,time,short} {2,date,long}', ('Mars', 3, xs:dateTime('2010-07-23T19:25:13-07:00')))"/>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances>
+                            <instance id="instance" model-id="model">
+                                <lang>zh</lang>
+                            </instance>
+                        </instances>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values>
+                        <xxf:attribute id="xf-2" for="xf-1" name="xml:lang">zh</xxf:attribute>
+                        <xxf:control id="output1">下午7:25 2010年7月23日</xxf:control>
+                    </xxf:control-values>
+                </xxf:action>
+            </xxf:event-response>
+        </output>
+    </test>
+
+    <test description="xxforms:get-request-path()" name="oxf:pipeline">
+        <input name="config" href="xforms-server/wrap-xforms-state.xpl"/>
+        <input name="document">
+            <xhtml:html xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms">
+                <xhtml:head>
+                    <xforms:model id="model"/>
+                </xhtml:head>
+                <xhtml:body>
+                    <xforms:output id="output1" value="xxforms:get-request-path()"/>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <xxf:event-response xmlns:xxf="http://orbeon.org/oxf/xml/xforms">
+                <xxf:dynamic-state>
+                    <dynamic-state>
+                        <instances/>
+                    </dynamic-state>
+                </xxf:dynamic-state>
+                <xxf:action>
+                    <xxf:control-values>
+                        <xxf:control id="output1">/doc/home-welcome</xxf:control>
+                    </xxf:control-values>
+                </xxf:action>
+            </xxf:event-response>
+        </output>
+    </test>
 
 </group>

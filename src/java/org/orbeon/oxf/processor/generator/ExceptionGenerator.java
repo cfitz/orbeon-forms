@@ -16,14 +16,13 @@ package org.orbeon.oxf.processor.generator;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.common.ValidationException;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
-import org.orbeon.oxf.processor.ProcessorImpl;
-import org.orbeon.oxf.processor.ProcessorInputOutputInfo;
-import org.orbeon.oxf.processor.ProcessorOutput;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
+import org.orbeon.oxf.processor.*;
 import org.orbeon.oxf.util.StringBuilderWriter;
+import org.orbeon.oxf.webapp.ProcessorService;
 import org.orbeon.oxf.xml.ContentHandlerHelper;
 import org.orbeon.oxf.xml.dom4j.ExtendedLocationData;
 import org.orbeon.oxf.xml.dom4j.LocationData;
-import org.xml.sax.ContentHandler;
 
 import java.io.PrintWriter;
 import java.util.Iterator;
@@ -43,17 +42,18 @@ public class ExceptionGenerator extends ProcessorImpl {
         addOutputInfo(new ProcessorInputOutputInfo(OUTPUT_DATA));
     }
 
+    @Override
     public ProcessorOutput createOutput(String name) {
-        ProcessorOutput output = new ProcessorOutputImpl(getClass(), name) {
-            public void readImpl(PipelineContext context, ContentHandler contentHandler) {
+        final ProcessorOutput output = new ProcessorOutputImpl(ExceptionGenerator.this, name) {
+            public void readImpl(PipelineContext context, XMLReceiver xmlReceiver) {
                 // Get top throwable
-                Throwable throwable = (Throwable) context.getAttribute(PipelineContext.THROWABLE);
+                Throwable throwable = (Throwable) context.getAttribute(ProcessorService.THROWABLE);
                 // Throwable is mandatory
                 if (throwable == null)
                     throw new OXFException("Missing throwable object in ExceptionGenerator");
                 // Write out document
                 try {
-                    final ContentHandlerHelper helper = new ContentHandlerHelper(contentHandler);
+                    final ContentHandlerHelper helper = new ContentHandlerHelper(xmlReceiver);
                     helper.startDocument();
                     helper.startElement(ROOT_ELEMENT_NAME);
 
@@ -61,16 +61,6 @@ public class ExceptionGenerator extends ProcessorImpl {
                         addThrowable(helper, throwable);
                         throwable = OXFException.getNestedException(throwable);
                     }
-
-                    // The code below outputs the first exception only, but not all the OPS stack trace info
-//                    while (true) {
-//                        final Throwable nestedThrowable = OXFException.getNestedException(throwable);
-//                        if (nestedThrowable == null) {
-//                            addThrowable(helper, throwable);
-//                            break;
-//                        }
-//                        throwable = nestedThrowable;
-//                    }
 
                     helper.endElement();
                     helper.endDocument();

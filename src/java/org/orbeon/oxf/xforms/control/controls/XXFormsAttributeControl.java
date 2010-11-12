@@ -20,9 +20,7 @@ import org.orbeon.oxf.pipeline.api.PipelineContext;
 import org.orbeon.oxf.util.PropertyContext;
 import org.orbeon.oxf.xforms.XFormsConstants;
 import org.orbeon.oxf.xforms.XFormsUtils;
-import org.orbeon.oxf.xforms.control.XFormsControl;
-import org.orbeon.oxf.xforms.control.XFormsPseudoControl;
-import org.orbeon.oxf.xforms.control.XFormsValueControl;
+import org.orbeon.oxf.xforms.control.*;
 import org.orbeon.oxf.xforms.xbl.XBLContainer;
 import org.orbeon.oxf.xml.ContentHandlerHelper;
 import org.xml.sax.helpers.AttributesImpl;
@@ -111,7 +109,7 @@ public class XXFormsAttributeControl extends XFormsValueControl implements XForm
         if ("src".equals(nameAttribute)) {
             // TODO: make sure this is on xhtml:img!
             // Return rewritten URL of dummy image URL
-            return XFormsUtils.resolveResourceURL(propertyContext, getControlElement(), XFormsConstants.DUMMY_IMAGE_URI,
+            return XFormsUtils.resolveResourceURL(propertyContext, containingDocument, getControlElement(), XFormsConstants.DUMMY_IMAGE_URI,
                     ExternalContext.Response.REWRITE_MODE_ABSOLUTE_PATH);
         } else {
             return super.getNonRelevantEscapedExternalValue(propertyContext);
@@ -139,30 +137,30 @@ public class XXFormsAttributeControl extends XFormsValueControl implements XForm
 
         assert attributesImpl.getLength() == 0;
 
-        final XXFormsAttributeControl attributeControlInfo2 = this;
+        final XXFormsAttributeControl attributeControl2 = this;
 
         // Whether it is necessary to output information about this control
         boolean doOutputElement = false;
 
         // Control id
-        attributesImpl.addAttribute("", "id", "id", ContentHandlerHelper.CDATA, attributeControlInfo2.getEffectiveId());
+        attributesImpl.addAttribute("", "id", "id", ContentHandlerHelper.CDATA, XFormsUtils.namespaceId(containingDocument, attributeControl2.getEffectiveId()));
 
         // The client does not store an HTML representation of the xxforms:attribute control, so we
         // have to output these attributes.
         {
             // HTML element id
-            final String effectiveFor2 = attributeControlInfo2.getEffectiveForAttribute();
-            doOutputElement |= addOrAppendToAttributeIfNeeded(attributesImpl, "for", effectiveFor2, isNewlyVisibleSubtree, false);
+            final String effectiveFor2 = attributeControl2.getEffectiveForAttribute();
+            doOutputElement |= addOrAppendToAttributeIfNeeded(attributesImpl, "for", XFormsUtils.namespaceId(containingDocument, effectiveFor2), isNewlyVisibleSubtree, false);
         }
 
         {
             // Attribute name
-            final String name2 = attributeControlInfo2.getNameAttribute();
+            final String name2 = attributeControl2.getNameAttribute();
             doOutputElement |= addOrAppendToAttributeIfNeeded(attributesImpl, "name", name2, isNewlyVisibleSubtree, false);
         }
 
         // Output element
-        outputElement(pipelineContext, ch, attributeControlInfo2, doOutputElement, isNewlyVisibleSubtree, attributesImpl, "attribute");
+        outputValueElement(pipelineContext, ch, attributeControl2, doOutputElement, isNewlyVisibleSubtree, attributesImpl, "attribute");
     }
 
     @Override

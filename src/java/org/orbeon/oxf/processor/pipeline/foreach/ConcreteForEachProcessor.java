@@ -1,50 +1,49 @@
+/**
+ * Copyright (C) 2010 Orbeon, Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU Lesser General Public License as published by the Free Software Foundation; either version
+ * 2.1 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Lesser General Public License for more details.
+ *
+ * The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+ */
 package org.orbeon.oxf.processor.pipeline.foreach;
 
+import org.dom4j.*;
+import org.orbeon.oxf.cache.OutputCacheKey;
+import org.orbeon.oxf.common.OXFException;
+import org.orbeon.oxf.common.ValidationException;
+import org.orbeon.oxf.pipeline.api.PipelineContext;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
 import org.orbeon.oxf.processor.*;
 import org.orbeon.oxf.processor.generator.DOMGenerator;
-import org.orbeon.oxf.processor.pipeline.ast.*;
+import org.orbeon.oxf.processor.impl.ProcessorOutputImpl;
 import org.orbeon.oxf.processor.pipeline.PipelineProcessor;
 import org.orbeon.oxf.processor.pipeline.TeeProcessor;
-import org.orbeon.oxf.xml.dom4j.Dom4jUtils;
-import org.orbeon.oxf.xml.EmbeddedDocumentContentHandler;
-import org.orbeon.oxf.common.ValidationException;
-import org.orbeon.oxf.common.OXFException;
-import org.orbeon.oxf.pipeline.api.PipelineContext;
+import org.orbeon.oxf.processor.pipeline.ast.*;
 import org.orbeon.oxf.util.PooledXPathExpression;
 import org.orbeon.oxf.util.XPathCache;
-import org.orbeon.oxf.cache.OutputCacheKey;
-import org.orbeon.oxf.cache.Cacheable;
-import org.orbeon.saxon.trans.XPathException;
+import org.orbeon.oxf.xml.EmbeddedDocumentXMLReceiver;
+import org.orbeon.oxf.xml.NamespaceMapping;
+import org.orbeon.oxf.xml.dom4j.Dom4jUtils;
 import org.orbeon.saxon.dom4j.DocumentWrapper;
-import org.orbeon.saxon.Configuration;
-import org.dom4j.Element;
-import org.dom4j.Node;
-import org.dom4j.Document;
-import org.xml.sax.ContentHandler;
+import org.orbeon.saxon.om.DocumentInfo;
+import org.orbeon.saxon.trans.XPathException;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 
 import java.util.*;
 
-/**
- * Copyright (C) 2007 Orbeon, Inc.
-* <p/>
-* This program is free software; you can redistribute it and/or modify it under the terms of the
-* GNU Lesser General Public License as published by the Free Software Foundation; either version
-* 2.1 of the License, or (at your option) any later version.
-* <p/>
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See the GNU Lesser General Public License for more details.
-* <p/>
-* The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
-*/
 public class ConcreteForEachProcessor extends ProcessorImpl {
 
     private final Processor forEachBlockProcessor;
     private final ProcessorOutput iterationOutput;
     private final String select;
-    private final Map namespaceContext;
+    private final NamespaceMapping namespaceContext;
     private String rootLocalName;
     private String rootQName;
     private String rootNamespaceURI;
@@ -86,7 +85,7 @@ public class ConcreteForEachProcessor extends ProcessorImpl {
 
         // Connect special "$current" input which produces the document selected by the iteration
         final ProcessorInput iterationInput = forEachBlockProcessor.createInput(AbstractForEachProcessor.FOR_EACH_CURRENT_INPUT);
-        final ProcessorOutput currentOutput = new IterationProcessorOutput(AbstractForEachProcessor.class, AbstractForEachProcessor.FOR_EACH_CURRENT_INPUT);
+        final ProcessorOutput currentOutput = new IterationProcessorOutput(AbstractForEachProcessor.FOR_EACH_CURRENT_INPUT);
         currentOutput.setInput(iterationInput);
         iterationInput.setOutput(currentOutput);
 
@@ -94,7 +93,7 @@ public class ConcreteForEachProcessor extends ProcessorImpl {
         iterationOutput = forEachBlockProcessor.createOutput(idOrRef);
 
         select = forEachAST.getSelect();
-        namespaceContext = Dom4jUtils.getNamespaceContextNoDefault((Element) forEachAST.getNode());
+        namespaceContext = new NamespaceMapping(Dom4jUtils.getNamespaceContextNoDefault((Element) forEachAST.getNode()));
         if (forEachAST.getRoot() != null) {
             rootQName = forEachAST.getRoot();
             int columnPosition = rootQName.indexOf(':');
@@ -105,7 +104,7 @@ public class ConcreteForEachProcessor extends ProcessorImpl {
             } else {
                 // Extract prefix, find namespace URI
                 final String prefix = rootQName.substring(0, columnPosition);
-                rootNamespaceURI = (String) namespaceContext.get(prefix);
+                rootNamespaceURI = namespaceContext.mapping.get(prefix);
                 if (rootNamespaceURI == null)
                     throw new ValidationException("Prefix '" + prefix + "' used in root attribute is undefined", forEachAST.getLocationData());
                 rootLocalName = rootQName.substring(columnPosition + 1);
@@ -113,15 +112,16 @@ public class ConcreteForEachProcessor extends ProcessorImpl {
         }
     }
 
+    @Override
     public ProcessorOutput createOutput(final String name) {
-        final ProcessorOutput output = new ProcessorOutputImpl(getClass(), name) {
-            public void readImpl(PipelineContext pipelineContext, ContentHandler contentHandler) {
+        final ProcessorOutput output = new ProcessorOutputImpl(ConcreteForEachProcessor.this, name) {
+            public void readImpl(PipelineContext pipelineContext, XMLReceiver xmlReceiver) {
                 try {
                     final State state = (State) getState(pipelineContext);
 
                     // Open document
-                    contentHandler.startDocument();
-                    contentHandler.startElement(rootNamespaceURI, rootLocalName, rootQName, new AttributesImpl());
+                    xmlReceiver.startDocument();
+                    xmlReceiver.startElement(rootNamespaceURI, rootLocalName, rootQName, new AttributesImpl());
 
                     // Read n times from iterationOutput
                     PooledXPathExpression expression = null;
@@ -141,7 +141,7 @@ public class ConcreteForEachProcessor extends ProcessorImpl {
 
                             // Run iteration
                             forEachBlockProcessor.reset(pipelineContext);
-                            iterationOutput.read(pipelineContext, new EmbeddedDocumentContentHandler(contentHandler));
+                            iterationOutput.read(pipelineContext, new EmbeddedDocumentXMLReceiver(xmlReceiver));
                         }
                     } catch (XPathException e) {
                         throw new OXFException(e);
@@ -156,8 +156,8 @@ public class ConcreteForEachProcessor extends ProcessorImpl {
                     commitInputs(pipelineContext, iterationCount);
 
                     // Close document
-                    contentHandler.endElement(rootNamespaceURI, rootLocalName, rootQName);
-                    contentHandler.endDocument();
+                    xmlReceiver.endElement(rootNamespaceURI, rootLocalName, rootQName);
+                    xmlReceiver.endDocument();
                 } catch (SAXException e) {
                     throw new OXFException(e);
                 }
@@ -173,13 +173,15 @@ public class ConcreteForEachProcessor extends ProcessorImpl {
              * unexpected. Maybe an an API that combines reading the output and reading the
              * key/validity would solve this problem.
              */
-            protected OutputCacheKey getKeyImpl(PipelineContext pipelineContext) {
+            @Override
+            public OutputCacheKey getKeyImpl(PipelineContext pipelineContext) {
                 return null;
             }
 
             /**
-             * For each is not cachable. See comment in getKeyImpl().
+             * For each is not cacheable. See comment in getKeyImpl().
              */
+            @Override
             protected Object getValidityImpl(PipelineContext pipelineContext) {
                 return null;
             }
@@ -190,18 +192,17 @@ public class ConcreteForEachProcessor extends ProcessorImpl {
     }
 
     private void commitInputs(PipelineContext pipelineContext, int iterationCount) {
-        for (Iterator i = getConnectedInputs().entrySet().iterator(); i.hasNext();) {
-            final Map.Entry entry = (Map.Entry) i.next();
+        for (Iterator<Map.Entry<String,List<ProcessorInput>>> i = getConnectedInputs().entrySet().iterator(); i.hasNext();) {
+            final Map.Entry<String,List<ProcessorInput>> entry = i.next();
 
-            final List inputs = (List) entry.getValue();
-            final ProcessorInput input = (ProcessorInput) inputs.get(0);// NOTE: We don't really support multiple inputs with the same name.
+            final List<ProcessorInput> inputs = entry.getValue();
+            final ProcessorInput input = inputs.get(0);// NOTE: We don't really support multiple inputs with the same name.
 
             if (!AbstractForEachProcessor.FOR_EACH_DATA_INPUT.equals(input.getName())) {// ignore $data
                 final ProcessorOutput output = input.getOutput();
                 if (output instanceof TeeProcessor.TeeProcessorOutputImpl) {
                     final TeeProcessor.TeeProcessorOutputImpl teeOutput = (TeeProcessor.TeeProcessorOutputImpl) output;
                     teeOutput.doneReading(pipelineContext);
-//                    System.out.println("xxx telling TeeProcessor that we are done reading after " + iterationCount + " iterations for input " + input.getName());
                 }
             }
         }
@@ -243,11 +244,13 @@ public class ConcreteForEachProcessor extends ProcessorImpl {
     private PooledXPathExpression createExpression(PipelineContext pipelineContext) {
         // Read special "$data" input
         final Document dataInput = readInputAsDOM4J(pipelineContext, getInputByName(AbstractForEachProcessor.FOR_EACH_DATA_INPUT));
+        final DocumentInfo document = new DocumentWrapper(dataInput, null, XPathCache.getGlobalConfiguration());
         return XPathCache.getXPathExpression(pipelineContext,
-                new DocumentWrapper(dataInput, null, new Configuration()),
+                document.getConfiguration(), document,
                 select, namespaceContext, getLocationData());
     }
 
+    @Override
     public void start(PipelineContext pipelineContext) {
         final State state = (State) getState(pipelineContext);
 
@@ -296,8 +299,8 @@ public class ConcreteForEachProcessor extends ProcessorImpl {
         final Set outputIds = new HashSet();
 
         // Init the 2 sets above
-        for (Iterator i = forEachAST.getStatements().iterator(); i.hasNext();) {
-            final ASTStatement astStatement = (ASTStatement) i.next();
+        for (Iterator<ASTStatement> i = forEachAST.getStatements().iterator(); i.hasNext();) {
+            final ASTStatement astStatement = i.next();
             final IdInfo idInfo = astStatement.getIdInfo();
             inputRefs.addAll(idInfo.getInputRefs());
             outputIds.addAll(idInfo.getOutputIds());
@@ -313,19 +316,21 @@ public class ConcreteForEachProcessor extends ProcessorImpl {
      */
     private class ForwardingProcessorOutput extends ProcessorOutputImpl {
         public ForwardingProcessorOutput(String name) {
-            super(ConcreteForEachProcessor.class, name);
+            super(ConcreteForEachProcessor.this, name);
         }
 
-        protected void readImpl(PipelineContext pipelineContext, ContentHandler contentHandler) {
+        protected void readImpl(PipelineContext pipelineContext, XMLReceiver xmlReceiver) {
             // Delegate to the p:for-each input
-            ConcreteForEachProcessor.this.readInputAsSAX(pipelineContext, getName(), contentHandler);
+            ConcreteForEachProcessor.this.readInputAsSAX(pipelineContext, getName(), xmlReceiver);
         }
 
-        protected OutputCacheKey getKeyImpl(PipelineContext pipelineContext) {
+        @Override
+        public OutputCacheKey getKeyImpl(PipelineContext pipelineContext) {
             // NOTE: this means that the execution of the pipeline block is not cacheable. Should improve?
             return null;
         }
 
+        @Override
         protected Object getValidityImpl(PipelineContext pipelineContext) {
             // NOTE: this means that the execution of the pipeline block is not cacheable. Should improve?
             return null;
@@ -337,23 +342,25 @@ public class ConcreteForEachProcessor extends ProcessorImpl {
      */
     private class IterationProcessorOutput extends ProcessorOutputImpl {
 
-        public IterationProcessorOutput(Class clazz, String name) {
-            super(clazz, name);
+        public IterationProcessorOutput(String name) {
+            super(ConcreteForEachProcessor.this, name);
         }
 
-        protected void readImpl(PipelineContext pipelineContext, ContentHandler contentHandler) {
+        protected void readImpl(PipelineContext pipelineContext, XMLReceiver xmlReceiver) {
             final State state = (State) getState(pipelineContext);
-            state.domGenerator.getOutputByName(OUTPUT_DATA).read(pipelineContext, contentHandler);
+            state.domGenerator.getOutputByName(OUTPUT_DATA).read(pipelineContext, xmlReceiver);
         }
 
-        protected OutputCacheKey getKeyImpl(PipelineContext context) {
-            final State state = (State) getState(context);
-            return ((Cacheable) state.domGenerator.getOutputByName(OUTPUT_DATA)).getKey(context);
+        @Override
+        public OutputCacheKey getKeyImpl(PipelineContext pipelineContext) {
+            final State state = (State) getState(pipelineContext);
+            return state.domGenerator.getOutputByName(OUTPUT_DATA).getKey(pipelineContext);
         }
 
-        protected Object getValidityImpl(PipelineContext context) {
-            final State state = (State) getState(context);
-            return ((Cacheable) state.domGenerator.getOutputByName(OUTPUT_DATA)).getValidity(context);
+        @Override
+        protected Object getValidityImpl(PipelineContext pipelineContext) {
+            final State state = (State) getState(pipelineContext);
+            return state.domGenerator.getOutputByName(OUTPUT_DATA).getValidity(pipelineContext);
         }
     }
 
@@ -364,6 +371,7 @@ public class ConcreteForEachProcessor extends ProcessorImpl {
         DOMGenerator domGenerator;
     }
 
+    @Override
     public void reset(PipelineContext pipelineContext) {
         setState(pipelineContext, new State());
     }

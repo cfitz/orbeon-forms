@@ -27,6 +27,7 @@ import org.orbeon.oxf.properties.Properties;
 import org.orbeon.oxf.resources.ResourceManagerWrapper;
 import org.orbeon.oxf.util.LoggerFactory;
 import org.orbeon.oxf.util.NetUtils;
+import org.orbeon.oxf.webapp.ProcessorService;
 import org.orbeon.oxf.xml.XMLConstants;
 import org.orbeon.oxf.xml.dom4j.LocationData;
 
@@ -145,7 +146,7 @@ public class OPS {
 
             // Print version if asked
             if (cmd.hasOption('v')) {
-                System.out.println("Orbeon Forms " + Version.getVersion());
+                System.out.println(Version.getVersionString());
                 // Terminate if there is no other argument and no pipeline URL
                 if (!cmd.hasOption('r') && (otherArgs == null || otherArgs.length == 0))
                     System.exit(0);
@@ -183,7 +184,7 @@ public class OPS {
         } catch (NamingException e) {
             throw new OXFException(e);
         }
-        pipelineContext.setAttribute(PipelineContext.JNDI_CONTEXT, jndiContext);
+        pipelineContext.setAttribute(ProcessorService.JNDI_CONTEXT, jndiContext);
 
         try {
             // 7. Run the pipeline from the processor definition created earlier. An ExternalContext
@@ -202,9 +203,9 @@ public class OPS {
 
     public static void main(String[] args) {
         try {
-            final OPS oxf = new OPS(args);
-            oxf.init();
-            oxf.start();
+            final OPS orbeon = new OPS(args);
+            orbeon.init();
+            orbeon.start();
         } catch (Exception e) {
             System.out.println(e.getMessage());
             OXFException.getRootThrowable(e).printStackTrace();

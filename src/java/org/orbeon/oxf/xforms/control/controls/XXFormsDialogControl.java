@@ -16,9 +16,7 @@ package org.orbeon.oxf.xforms.control.controls;
 import org.dom4j.Element;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
 import org.orbeon.oxf.util.PropertyContext;
-import org.orbeon.oxf.xforms.XFormsConstants;
-import org.orbeon.oxf.xforms.XFormsContextStack;
-import org.orbeon.oxf.xforms.XFormsProperties;
+import org.orbeon.oxf.xforms.*;
 import org.orbeon.oxf.xforms.control.XFormsControl;
 import org.orbeon.oxf.xforms.control.XFormsNoSingleNodeContainerControl;
 import org.orbeon.oxf.xforms.event.XFormsEvent;
@@ -28,17 +26,12 @@ import org.orbeon.oxf.xforms.xbl.XBLContainer;
 import org.orbeon.oxf.xml.ContentHandlerHelper;
 import org.xml.sax.helpers.AttributesImpl;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Represents an extension xxforms:dialog control.
  */
 public class XXFormsDialogControl extends XFormsNoSingleNodeContainerControl {
-
-//    private static final boolean TESTING_DIALOG_OPTIMIZATION = false;
 
     private String level;
     private boolean close;
@@ -69,7 +62,7 @@ public class XXFormsDialogControl extends XFormsNoSingleNodeContainerControl {
     public XXFormsDialogControl(XBLContainer container, XFormsControl parent, Element element, String name, String effectiveId) {
         super(container, parent, element, name, effectiveId);
 
-        // NOTE: attribues logic duplicated in XXFormsDialogHandler
+        // NOTE: attributes logic duplicated in XXFormsDialogHandler
         this.level = element.attributeValue("level");
         if (this.level == null) {
             // Default is "modeless" for "minimal" appearance, "modal" otherwise
@@ -93,15 +86,6 @@ public class XXFormsDialogControl extends XFormsNoSingleNodeContainerControl {
             // Otherwise we are relevant only if we are selected
             return !isXForms11Switch() || isVisible();
         }
-    }
-
-    @Override
-    public void setBindingContext(PropertyContext propertyContext, XFormsContextStack.BindingContext bindingContext, boolean isCreate) {
-        super.setBindingContext(propertyContext, bindingContext, isCreate);
-
-        // TODO
-//        if (TESTING_DIALOG_OPTIMIZATION)
-//            updateContent(propertyContext, isVisible());
     }
 
     @Override
@@ -245,8 +229,8 @@ public class XXFormsDialogControl extends XFormsNoSingleNodeContainerControl {
         // NOTE: don't give up on "this == other" because there can be a difference just in XFormsControlLocal
 
         // NOTE: We only compare on isVisible as we don't support just changing other attributes for now
-        final XXFormsDialogControl dialogControl1 = (XXFormsDialogControl) other;
-        if (dialogControl1.wasVisible() != isVisible())
+        final XXFormsDialogControl otherDialog = (XXFormsDialogControl) other;
+        if (otherDialog.wasVisible() != isVisible())
             return false;
 
         return super.equalsExternal(propertyContext, other);
@@ -256,12 +240,18 @@ public class XXFormsDialogControl extends XFormsNoSingleNodeContainerControl {
     public void outputAjaxDiff(PipelineContext pipelineContext, ContentHandlerHelper ch, XFormsControl other,
                                AttributesImpl attributesImpl, boolean isNewlyVisibleSubtree) {
 
+        // If needed, output basic diffs such as changes in class or LHHA
+        final boolean doOutputElement = addAjaxAttributes(pipelineContext, attributesImpl, isNewlyVisibleSubtree, other);
+        if (doOutputElement) {
+            ch.element("xxf", XFormsConstants.XXFORMS_NAMESPACE_URI, "control", attributesImpl);
+        }
+
         // NOTE: At this point, this uses visible/hidden. But we could also handle this with relevant="true|false".
         final String neighbor = getNeighborControlId();
         ch.element("xxf", XFormsConstants.XXFORMS_NAMESPACE_URI, "div", new String[] {
-                "id", getEffectiveId(),
+                "id", XFormsUtils.namespaceId(containingDocument, getEffectiveId()),
                 "visibility", isVisible() ? "visible" : "hidden",
-                (neighbor != null && isVisible()) ? "neighbor" : null, neighbor,
+                (neighbor != null && isVisible()) ? "neighbor" : null, XFormsUtils.namespaceId(containingDocument, neighbor),
                 isVisible() ? "constrain" : null, Boolean.toString(isConstrainToViewport())
         });
     }

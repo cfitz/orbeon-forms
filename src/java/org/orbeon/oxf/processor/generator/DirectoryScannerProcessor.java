@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the
  * GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -24,7 +24,9 @@ import org.dom4j.Document;
 import org.dom4j.Node;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
 import org.orbeon.oxf.processor.*;
+import org.orbeon.oxf.processor.impl.ProcessorOutputImpl;
 import org.orbeon.oxf.resources.ResourceManagerWrapper;
 import org.orbeon.oxf.resources.URLFactory;
 import org.orbeon.oxf.util.ISODateUtils;
@@ -32,7 +34,6 @@ import org.orbeon.oxf.util.NumberUtils;
 import org.orbeon.oxf.xml.ContentHandlerHelper;
 import org.orbeon.oxf.xml.XPathUtils;
 import org.orbeon.oxf.xml.dom4j.LocationData;
-import org.xml.sax.ContentHandler;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -81,9 +82,10 @@ public class DirectoryScannerProcessor extends ProcessorImpl {
         addOutputInfo(new ProcessorInputOutputInfo(OUTPUT_DATA));
     }
 
+    @Override
     public ProcessorOutput createOutput(String name) {
-        ProcessorOutput output = new ProcessorImpl.ProcessorOutputImpl(getClass(), name) {
-            public void readImpl(PipelineContext context, ContentHandler contentHandler) {
+        ProcessorOutput output = new ProcessorOutputImpl(DirectoryScannerProcessor.this, name) {
+            public void readImpl(PipelineContext context, XMLReceiver xmlReceiver) {
 
                 // Read config
                 final Config config = (Config) readCacheInputAsObject(context, getInputByName(INPUT_CONFIG), new CacheableInputReader() {
@@ -167,7 +169,7 @@ public class DirectoryScannerProcessor extends ProcessorImpl {
                 ds.setCaseSensitive(config.isCaseSensitive());
 
                 // Set the event listener
-                final ContentHandlerHelper helper = new ContentHandlerHelper(contentHandler);
+                final ContentHandlerHelper helper = new ContentHandlerHelper(xmlReceiver);
                 ds.setEventListener(new DirectoryScanner.EventListener() {
 
                     private List<String> pathNames = new ArrayList<String>();

@@ -22,18 +22,21 @@ import org.orbeon.saxon.om.Item;
 import java.util.*;
 
 /**
- * Constants useful for the XForms engine. 
+ * Constants useful for the XForms engine.
  */
 public class XFormsConstants {
 
     public static final List<Item> EMPTY_ITEM_LIST = Collections.emptyList();
-    public static final Map<String, String> EMPTY_NAMESPACE_MAPPING = Collections.emptyMap();
 
     public static final Set<String> ALLOWED_XXFORMS_ELEMENTS = new HashSet<String>();
     public static final Set<String> ALLOWED_EXFORMS_ELEMENTS = new HashSet<String>();
     public static final Set<String> ALLOWED_XBL_ELEMENTS = new HashSet<String>();
     public static final Set<String> LABEL_HINT_HELP_ALERT_ELEMENT = new HashSet<String>();
-        
+
+    public enum LHHA {
+        LABEL, HELP, HINT, ALERT
+    }
+
     static {
         // TODO: Keeping this static list is not ideal
         ALLOWED_XXFORMS_ELEMENTS.add("dialog");
@@ -115,8 +118,6 @@ public class XFormsConstants {
     public static final QName XBL_RESOURCES_QNAME = new QName("resources", XBL_NAMESPACE);
     public static final QName XBL_STYLE_QNAME = new QName("style", XBL_NAMESPACE);
     public static final QName XBL_TEMPLATE_QNAME = new QName("template", XBL_NAMESPACE);
-    public static final QName XBL_ATTR_QNAME = new QName("attr", XBL_NAMESPACE);
-    public static final QName XBL_CONTENT_QNAME = new QName("content", XBL_NAMESPACE);
     public static final QName XBL_HANDLERS_QNAME = new QName("handlers", XBL_NAMESPACE);
     public static final QName XBL_HANDLER_QNAME = new QName("handler", XBL_NAMESPACE);
     public static final QName XBL_IMPLEMENTATION_QNAME = new QName("implementation", XBL_NAMESPACE);
@@ -131,15 +132,16 @@ public class XFormsConstants {
     public static final String XXBL_PREFIX = "xxbl";
     public static final String XXBL_NAMESPACE_URI = "http://orbeon.org/oxf/xml/xbl";
     public static final Namespace XXBL_NAMESPACE = new Namespace(XXBL_PREFIX, XXBL_NAMESPACE_URI);
-    public static final QName XXBL_ATTR_QNAME = new QName("attr", XXBL_NAMESPACE);
     public static final QName XXBL_TRANSFORM_QNAME = new QName("transform", XXBL_NAMESPACE);
     public static final QName XXBL_SCOPE_QNAME = new QName("scope", XXBL_NAMESPACE);
 
     public enum XXBLScope { inner, outer }
     public enum DeploymentType { separate, integrated, plain }
-    
+
     // Variables
     public static final String XXFORMS_VARIABLE_NAME = "variable"; // don't use QName so we can support exforms/xxforms/xforms
+    public static final QName EXFORMS_VARIABLE_QNAME = new QName("variable", EXFORMS_NAMESPACE);
+    public static final QName XXFORMS_VARIABLE_QNAME = new QName("variable", XXFORMS_NAMESPACE);
     public static final QName XXFORMS_SEQUENCE_QNAME = new QName("sequence", XXFORMS_NAMESPACE);
 
     public static final QName XXFORMS_ITERATE_ATTRIBUTE_QNAME = new QName("iterate", XXFORMS_NAMESPACE);
@@ -163,8 +165,8 @@ public class XFormsConstants {
 
     public static final QName APPEARANCE_QNAME = new QName("appearance");
 
-    public static final QName XFORMS_FILENAME_QNAME = new QName("filename", XFORMS_NAMESPACE);
-    public static final QName XFORMS_MEDIATYPE_QNAME = new QName("mediatype", XFORMS_NAMESPACE);
+    public static final QName FILENAME_QNAME = new QName("filename", XFORMS_NAMESPACE);
+    public static final QName MEDIATYPE_QNAME = new QName("mediatype", XFORMS_NAMESPACE);
     public static final QName XXFORMS_SIZE_QNAME = new QName("size", XXFORMS_NAMESPACE);
     public static final QName XXFORMS_MAXLENGTH_QNAME = new QName("maxlength", XXFORMS_NAMESPACE);
     public static final QName XXFORMS_AUTOCOMPLETE_QNAME = new QName("autocomplete", XXFORMS_NAMESPACE);
@@ -185,9 +187,11 @@ public class XFormsConstants {
     public static final QName TYPE_QNAME = new QName("type");
     public static final QName CONSTRAINT_QNAME = new QName("constraint");
     public static final QName XXFORMS_DEFAULT_QNAME = new QName("default", XXFORMS_NAMESPACE);
+    public static final QName XXFORMS_DEFAULTS_QNAME = new QName("defaults", XXFORMS_NAMESPACE);
 
     public static final QName XXFORMS_READONLY_ATTRIBUTE_QNAME = new QName(READONLY_ATTRIBUTE_NAME, XXFORMS_NAMESPACE);
 
+    public static final QName XXFORMS_UUID_QNAME = new QName("uuid", XXFORMS_NAMESPACE);
     public static final QName XXFORMS_STATIC_STATE_QNAME = new QName("static-state", XXFORMS_NAMESPACE);
     public static final QName XXFORMS_DYNAMIC_STATE_QNAME = new QName("dynamic-state", XXFORMS_NAMESPACE);
     public static final QName XXFORMS_INITIAL_DYNAMIC_STATE_QNAME = new QName("initial-dynamic-state", XXFORMS_NAMESPACE);
@@ -207,17 +211,17 @@ public class XFormsConstants {
     public static final QName XXFORMS_EVENTS_QNAME = new QName("events", XXFORMS_NAMESPACE);
     public static final QName XXFORMS_DIVS_QNAME = new QName("divs", XXFORMS_NAMESPACE);
 
-    public static final QName XFORMS_LABEL_QNAME = new QName("label", XFORMS_NAMESPACE);
-    public static final QName XFORMS_HELP_QNAME = new QName("help", XFORMS_NAMESPACE);
-    public static final QName XFORMS_HINT_QNAME = new QName("hint", XFORMS_NAMESPACE);
-    public static final QName XFORMS_ALERT_QNAME = new QName("alert", XFORMS_NAMESPACE);
-    public static final QName XFORMS_VALUE_QNAME = new QName("value", XFORMS_NAMESPACE);
-    public static final QName XFORMS_COPY_QNAME = new QName("copy", XFORMS_NAMESPACE);
-    public static final QName XFORMS_ITEMSET_QNAME = new QName("itemset", XFORMS_NAMESPACE);
-    public static final QName XFORMS_ITEM_QNAME = new QName("item", XFORMS_NAMESPACE);
-    public static final QName XFORMS_CHOICES_QNAME = new QName("choices", XFORMS_NAMESPACE);
+    public static final QName LABEL_QNAME = new QName("label", XFORMS_NAMESPACE);
+    public static final QName HELP_QNAME = new QName("help", XFORMS_NAMESPACE);
+    public static final QName HINT_QNAME = new QName("hint", XFORMS_NAMESPACE);
+    public static final QName ALERT_QNAME = new QName("alert", XFORMS_NAMESPACE);
+    public static final QName VALUE_QNAME = new QName("value", XFORMS_NAMESPACE);
+    public static final QName COPY_QNAME = new QName("copy", XFORMS_NAMESPACE);
+    public static final QName ITEMSET_QNAME = new QName("itemset", XFORMS_NAMESPACE);
+    public static final QName ITEM_QNAME = new QName("item", XFORMS_NAMESPACE);
+    public static final QName CHOICES_QNAME = new QName("choices", XFORMS_NAMESPACE);
     public static final QName XFORMS_OUTPUT_QNAME = new QName("output", XFORMS_NAMESPACE);
-    public static final QName XFORMS_LOAD_QNAME = new QName("load", XFORMS_NAMESPACE);
+    public static final QName LOAD_QNAME = new QName("load", XFORMS_NAMESPACE);
 
     public static final String XFORMS_SUBMIT_REPLACE_ALL = "all";
     public static final String XFORMS_SUBMIT_REPLACE_INSTANCE = "instance";
@@ -266,8 +270,10 @@ public class XFormsConstants {
 
     public static final QName XXFORMS_OFFLINE_QNAME = new QName("offline", XXFORMS_NAMESPACE);
 
+    public static final QName XXFORMS_CALCULATE_QNAME = new QName("calculate", XXFORMS_NAMESPACE);
     public static final QName XXFORMS_USERNAME_QNAME = new QName("username", XXFORMS_NAMESPACE);
     public static final QName XXFORMS_PASSWORD_QNAME = new QName("password", XXFORMS_NAMESPACE);
+    public static final QName XXFORMS_DOMAIN_QNAME = new QName("domain", XXFORMS_NAMESPACE);
     public static final QName XXFORMS_SHARED_QNAME = new QName("shared", XXFORMS_NAMESPACE);
     public static final QName XXFORMS_CACHE_QNAME = new QName("cache", XXFORMS_NAMESPACE);
     public static final QName XXFORMS_TIME_TO_LIVE_QNAME = new QName("ttl", XXFORMS_NAMESPACE);
@@ -300,7 +306,7 @@ public class XFormsConstants {
     public static final String XFORMS_TIME_EXPLODED_QNAME = XMLUtils.buildExplodedQName(XFORMS_NAMESPACE_URI, "time");
     public static final String XFORMS_ANYURI_EXPLODED_QNAME = XMLUtils.buildExplodedQName(XFORMS_NAMESPACE_URI, "anyURI");
     public static final String XFORMS_BASE64BINARY_EXPLODED_QNAME = XMLUtils.buildExplodedQName(XFORMS_NAMESPACE_URI, "base64Binary");
-    
+
     public static final QName XXFORMS_EVENT_MODE_QNAME = new QName("events-mode", XXFORMS_NAMESPACE);
 
     public static final char REPEAT_HIERARCHY_SEPARATOR_1 = 0xB7;

@@ -22,8 +22,11 @@ import org.orbeon.oxf.cache.ObjectCache;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.common.ValidationException;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
 import org.orbeon.oxf.processor.*;
 import org.orbeon.oxf.processor.generator.URLGenerator;
+import org.orbeon.oxf.processor.impl.CacheableTransformerOutputImpl;
+import org.orbeon.oxf.processor.impl.ProcessorOutputImpl;
 import org.orbeon.oxf.processor.transformer.TransformerURIResolver;
 import org.orbeon.oxf.processor.transformer.URIResolverListener;
 import org.orbeon.oxf.properties.PropertySet;
@@ -38,7 +41,7 @@ import org.orbeon.saxon.Configuration;
 import org.orbeon.saxon.Controller;
 import org.orbeon.saxon.FeatureKeys;
 import org.orbeon.saxon.event.ContentHandlerProxyLocator;
-import org.orbeon.saxon.event.Emitter;
+import org.orbeon.saxon.event.MessageEmitter;
 import org.orbeon.saxon.event.SaxonOutputKeys;
 import org.orbeon.saxon.expr.*;
 import org.orbeon.saxon.functions.FunctionLibrary;
@@ -46,9 +49,9 @@ import org.orbeon.saxon.instruct.TerminationException;
 import org.orbeon.saxon.om.Item;
 import org.orbeon.saxon.om.NamePool;
 import org.orbeon.saxon.om.NodeInfo;
-import org.orbeon.saxon.trans.IndependentContext;
+import org.orbeon.saxon.om.StructuredQName;
+import org.orbeon.saxon.sxpath.IndependentContext;
 import org.orbeon.saxon.trans.XPathException;
-import org.orbeon.saxon.value.StringValue;
 import org.xml.sax.*;
 
 import javax.xml.transform.Templates;
@@ -57,6 +60,7 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.sax.SAXResult;
 import javax.xml.transform.sax.SAXSource;
 import javax.xml.transform.sax.TransformerHandler;
+import javax.xml.transform.stream.StreamResult;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.Method;
@@ -87,6 +91,7 @@ public abstract class XSLTTransformer extends ProcessorImpl {
     private static final String INPUT_TRANSFORMER = "transformer";
     // This input determines attributes to set on the TransformerFactory
     private static final String INPUT_ATTRIBUTES = "attributes";
+    public static final String XSLT_STYLESHEET_URI_LISTENER = "xslt-stylesheet-uri-listener"; // used by XSLTTransformer
 
     public XSLTTransformer(String schemaURI) {
         addInputInfo(new ProcessorInputOutputInfo(INPUT_CONFIG, schemaURI));
@@ -96,9 +101,10 @@ public abstract class XSLTTransformer extends ProcessorImpl {
         addOutputInfo(new ProcessorInputOutputInfo(OUTPUT_DATA));
     }
 
+    @Override
     public ProcessorOutput createOutput(String name) {
-        ProcessorOutput output = new ProcessorImpl.CacheableTransformerOutputImpl(getClass(), name) {
-            public void readImpl(PipelineContext pipelineContext, ContentHandler contentHandler) {
+        final ProcessorOutput output = new CacheableTransformerOutputImpl(XSLTTransformer.this, name) {
+            public void readImpl(PipelineContext pipelineContext, XMLReceiver xmlReceiver) {
 
                 // Get URI references from cache
                 final KeyValidity configKeyValidity = getInputKeyValidity(pipelineContext, INPUT_CONFIG);
@@ -154,10 +160,10 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                 }
 
                 // At this point, we have a templatesInfo, so run the transformation
-                runTransformer(pipelineContext, contentHandler, templatesInfo, attributes, isDumbOutputLocation, isSmartOutputLocation);
+                runTransformer(pipelineContext, xmlReceiver, templatesInfo, attributes, isDumbOutputLocation, isSmartOutputLocation);
             }
 
-            private void runTransformer(PipelineContext pipelineContext, final ContentHandler contentHandler, TemplatesInfo templatesInfo,
+            private void runTransformer(PipelineContext pipelineContext, final XMLReceiver xmlReceiver, TemplatesInfo templatesInfo,
                                         Map<String, Boolean> attributes, final boolean dumbOutputLocation, final boolean smartOutputLocation) {
 
                 StringBuilderWriter saxonStringBuilderWriter = null;
@@ -180,7 +186,7 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                     final LocationData processorLocationData = getLocationData();
 
                     // Output filter to fix-up SAX stream and handle location data if needed
-                    final SAXResult saxResult = new SAXResult(new SimpleForwardingContentHandler(contentHandler) {
+                    final XMLReceiver outputReceiver = new SimpleForwardingXMLReceiver(xmlReceiver) {
 
                         private Locator inputLocator;
                         private OutputLocator outputLocator;
@@ -217,6 +223,7 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                         // uses the Copy() instruction. It may be that the source is then
                         // incorrect, but we haven't traced this further. It may also simply be a
                         // bug in Saxon.
+                        @Override
                         public void startPrefixMapping(String s, String s1) throws SAXException {
                             if ("xmlns".equals(s)) {
                                 // TODO: This may be an old Saxon bug which doesn't occur anymore. Try to see if it occurs again.
@@ -226,6 +233,7 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                             super.startPrefixMapping(s, s1);
                         }
 
+                        @Override
                         public void setDocumentLocator(final Locator locator) {
                             this.inputLocator = locator;
                             if (smartOutputLocation) {
@@ -239,6 +247,7 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                             }
                         }
 
+                        @Override
                         public void startDocument() throws SAXException {
                             // Try to set fallback Locator
                             if (((outputLocator != null && outputLocator.getSystemId() == null) || (inputLocator != null && inputLocator.getSystemId() == null))
@@ -249,8 +258,9 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                             super.startDocument();
                         }
 
+                        @Override
                         public void endDocument() throws SAXException {
-                            if (getContentHandler() == null) {
+                            if (endDocumentCalled()) {
                                 // Hack to test if Saxon outputs more than one endDocument() event
                                 logger.warn("XSLT transformer attempted to call endDocument() more than once.");
                                 return;
@@ -258,6 +268,7 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                             super.endDocument();
                         }
 
+                        @Override
                         public void startElement(String uri, String localname, String qName, Attributes attributes) throws SAXException {
                             if (outputLocator != null) {
                                 final LocationData locationData = findSourceElementLocationData(uri, localname);
@@ -270,7 +281,7 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                             }
                         }
 
-
+                        @Override
                         public void endElement(String uri, String localname, String qName) throws SAXException {
                             if (outputLocator != null) {
                                 // Here we do a funny thing: since Saxon does not provide location data on endElement(), we use that of startElement()
@@ -284,6 +295,7 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                             }
                         }
 
+                        @Override
                         public void characters(char[] chars, int start, int length) throws SAXException {
                             if (outputLocator != null) {
                                 final LocationData locationData = findSourceCharacterLocationData();
@@ -333,7 +345,11 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                             }
                             return null;
                         }
-                    });
+                    };
+
+                    // Create result, also setting LexicalHandler to handle comments
+                    final SAXResult saxResult = new SAXResult(outputReceiver);
+                    saxResult.setLexicalHandler(outputReceiver);
 
                     if (processorLocationData != null) {
                         final String processorSystemId = processorLocationData.getSystemID();
@@ -345,18 +361,17 @@ public abstract class XSLTTransformer extends ProcessorImpl {
 
                     // Execute transformation
                     try {
-                        if (XSLTTransformer.this.getConnectedInputs().size() > 3) {
-                            // When other inputs are connected, they can be read
-                            // with the doc() function in XSLT. Reading those
-                            // documents might happen before the whole input
-                            // document is read, which is not compatible with
-                            // our processing model. So in this case, we first
-                            // read the data in a SAX store.
+                        if (XSLTTransformer.this.getConnectedInputs().size() > 4) {
+                            // The default inputs are data, config, transformer, and attributes. When other inputs
+                            // (i.e. more than 4) are connected, they can be read with the doc() function in XSLT.
+                            // Reading those documents might happen before the whole input document is read, which
+                            // is not compatible with our processing model. So in this case, we first read the
+                            // data in a SAX store.
                             final SAXStore dataSaxStore = new SAXStore();
                             readInputAsSAX(pipelineContext, INPUT_DATA, dataSaxStore);
-                            dataSaxStore.replay(transformerHandler);
+                            dataSaxStore.replay(new ForwardingXMLReceiver(transformerHandler, transformerHandler));
                         } else {
-                            readInputAsSAX(pipelineContext, INPUT_DATA, transformerHandler);
+                            readInputAsSAX(pipelineContext, INPUT_DATA, new ForwardingXMLReceiver(transformerHandler, transformerHandler));
                         }
                     } finally {
 
@@ -417,23 +432,25 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                 }
             }
 
+            @Override
             protected boolean supportsLocalKeyValidity() {
                 return true;
             }
 
+            @Override
             protected CacheKey getLocalKey(PipelineContext context) {
                 try {
-                    KeyValidity configKeyValidity = getInputKeyValidity(context, INPUT_CONFIG);
+                    final KeyValidity configKeyValidity = getInputKeyValidity(context, INPUT_CONFIG);
                     URIReferences uriReferences = getURIReferences(context, configKeyValidity);
                     if (uriReferences == null || uriReferences.hasDynamicDocumentReferences)
                         return null;
-                    List<CacheKey> keys = new ArrayList<CacheKey>();
+                    final List<CacheKey> keys = new ArrayList<CacheKey>();
                     keys.add(configKeyValidity.key);
-                    List<URIReference> allURIReferences = new ArrayList<URIReference>();
+                    final List<URIReference> allURIReferences = new ArrayList<URIReference>();
                     allURIReferences.addAll(uriReferences.stylesheetReferences);
                     allURIReferences.addAll(uriReferences.documentReferences);
                     for (Iterator<URIReference> i = allURIReferences.iterator(); i.hasNext();) {
-                        URIReference uriReference = i.next();
+                        final URIReference uriReference = i.next();
                         keys.add(new InternalCacheKey(XSLTTransformer.this, "xsltURLReference", URLFactory.createURL(uriReference.context, uriReference.spec).toExternalForm()));
                     }
                     return new InternalCacheKey(XSLTTransformer.this, keys);
@@ -442,20 +459,21 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                 }
             }
 
+            @Override
             protected Object getLocalValidity(PipelineContext context) {
                 try {
-                    KeyValidity configKeyValidity = getInputKeyValidity(context, INPUT_CONFIG);
-                    URIReferences uriReferences = getURIReferences(context, configKeyValidity);
+                    final KeyValidity configKeyValidity = getInputKeyValidity(context, INPUT_CONFIG);
+                    final URIReferences uriReferences = getURIReferences(context, configKeyValidity);
                     if (uriReferences == null || uriReferences.hasDynamicDocumentReferences)
                         return null;
-                    List validities = new ArrayList();
+                    final List validities = new ArrayList();
                     validities.add(configKeyValidity.validity);
-                    List<URIReference> allURIReferences = new ArrayList<URIReference>();
+                    final List<URIReference> allURIReferences = new ArrayList<URIReference>();
                     allURIReferences.addAll(uriReferences.stylesheetReferences);
                     allURIReferences.addAll(uriReferences.documentReferences);
                     for (Iterator<URIReference> i = allURIReferences.iterator(); i.hasNext();) {
-                        URIReference uriReference = i.next();
-                        Processor urlGenerator = new URLGenerator(URLFactory.createURL(uriReference.context, uriReference.spec));
+                        final URIReference uriReference = i.next();
+                        final Processor urlGenerator = new URLGenerator(URLFactory.createURL(uriReference.context, uriReference.spec));
                         validities.add(((ProcessorOutputImpl) urlGenerator.createOutput(OUTPUT_DATA)).getValidity(context));
                     }
                     return validities;
@@ -475,15 +493,15 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                     if (configKeyValidity == null)
                         return null;
 
-                    List<CacheKey> keys = new ArrayList<CacheKey>();
-                    List<Object> validities = new ArrayList<Object>();
+                    final List<CacheKey> keys = new ArrayList<CacheKey>();
+                    final List<Object> validities = new ArrayList<Object>();
                     keys.add(configKeyValidity.key);
                     validities.add(configKeyValidity.validity);
                     for (Iterator<URIReference> i = uriReferences.stylesheetReferences.iterator(); i.hasNext();) {
-                        URIReference uriReference = i.next();
-                        URL url = URLFactory.createURL(uriReference.context, uriReference.spec);
+                        final URIReference uriReference = i.next();
+                        final URL url = URLFactory.createURL(uriReference.context, uriReference.spec);
                         keys.add(new InternalCacheKey(XSLTTransformer.this, "xsltURLReference", url.toExternalForm()));
-                        Processor urlGenerator = new URLGenerator(url);
+                        final Processor urlGenerator = new URLGenerator(url);
                         validities.add(((ProcessorOutputImpl) urlGenerator.createOutput(OUTPUT_DATA)).getValidity(context));//FIXME: can we do better? See URL generator.
                     }
 
@@ -503,30 +521,31 @@ public abstract class XSLTTransformer extends ProcessorImpl {
              */
             private TemplatesInfo createTransformer(PipelineContext pipelineContext, String transformerClass, Map<String, Boolean> attributes) {
                 StringErrorListener errorListener = new StringErrorListener(logger);
-                final StylesheetForwardingContentHandler topStylesheetContentHandler = new StylesheetForwardingContentHandler();
+                final StylesheetForwardingXMLReceiver topStylesheetXMLReceiver = new StylesheetForwardingXMLReceiver();
                 try {
                     // Create transformer
                     final TemplatesInfo templatesInfo = new TemplatesInfo();
-                    final List<StylesheetForwardingContentHandler> xsltContentHandlers = new ArrayList<StylesheetForwardingContentHandler>();
+                    final List<StylesheetForwardingXMLReceiver> xsltXMLReceivers = new ArrayList<StylesheetForwardingXMLReceiver>();
                     {
-                        // Create SAXSource adding our forwarding content handler
+                        // Create SAXSource adding our forwarding receiver
                         final SAXSource stylesheetSAXSource;
                         {
-                            xsltContentHandlers.add(topStylesheetContentHandler);
-                            XMLReader xmlReader = new ProcessorOutputXMLReader(pipelineContext, getInputByName(INPUT_CONFIG).getOutput()) {
+                            xsltXMLReceivers.add(topStylesheetXMLReceiver);
+                            final XMLReader xmlReader = new ProcessorOutputXMLReader(pipelineContext, getInputByName(INPUT_CONFIG).getOutput()) {
+                                @Override
                                 public void setContentHandler(ContentHandler handler) {
-                                    super.setContentHandler(new TeeContentHandler(Arrays.asList(topStylesheetContentHandler, handler)));
+                                    super.setContentHandler(new TeeXMLReceiver(Arrays.asList(topStylesheetXMLReceiver, new SimpleForwardingXMLReceiver(handler))));
                                 }
                             };
                             stylesheetSAXSource = new SAXSource(xmlReader, new InputSource());
                         }
 
                         // Put listener in context that will be called by URI resolved
-                        pipelineContext.setAttribute(PipelineContext.XSLT_STYLESHEET_URI_LISTENER, new URIResolverListener() {
-                            public ContentHandler getContentHandler() {
-                                StylesheetForwardingContentHandler contentHandler = new StylesheetForwardingContentHandler();
-                                xsltContentHandlers.add(contentHandler);
-                                return contentHandler;
+                        pipelineContext.setAttribute(XSLT_STYLESHEET_URI_LISTENER, new URIResolverListener() {
+                            public XMLReceiver getXMLReceiver() {
+                                StylesheetForwardingXMLReceiver xmlReceiver = new StylesheetForwardingXMLReceiver();
+                                xsltXMLReceivers.add(xmlReceiver);
+                                return xmlReceiver;
                             }
                         });
                         final TransformerURIResolver uriResolver
@@ -534,21 +553,20 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                         templatesInfo.templates = TransformerUtils.getTemplates(stylesheetSAXSource, transformerClass, attributes, errorListener, uriResolver);
                         uriResolver.destroy();
                         templatesInfo.transformerClass = transformerClass;
-                        templatesInfo.systemId = topStylesheetContentHandler.getSystemId();
+                        templatesInfo.systemId = topStylesheetXMLReceiver.getSystemId();
                     }
 
                     // Update cache
                     {
                         // Create uriReferences
                         URIReferences uriReferences = new URIReferences();
-                        for (Iterator<StylesheetForwardingContentHandler> i = xsltContentHandlers.iterator(); i.hasNext();) {
-                            StylesheetForwardingContentHandler contentHandler = i.next();
+                        for (final StylesheetForwardingXMLReceiver xsltXMLReceiver : xsltXMLReceivers) {
                             uriReferences.hasDynamicDocumentReferences = uriReferences.hasDynamicDocumentReferences
-                                    || contentHandler.getURIReferences().hasDynamicDocumentReferences;
+                                    || xsltXMLReceiver.getURIReferences().hasDynamicDocumentReferences;
                             uriReferences.stylesheetReferences.addAll
-                                    (contentHandler.getURIReferences().stylesheetReferences);
+                                    (xsltXMLReceiver.getURIReferences().stylesheetReferences);
                             uriReferences.documentReferences.addAll
-                                    (contentHandler.getURIReferences().documentReferences);
+                                    (xsltXMLReceiver.getURIReferences().documentReferences);
                         }
 
                         // Put in cache: configKey -> uriReferences
@@ -569,13 +587,13 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                         // Use error messages information and provide location data of first error
                         final ValidationException validationException = new ValidationException(errorListener.getMessages(), errorListener.getErrors().get(0));
                         // If possible add location of top-level stylesheet
-                        if (topStylesheetContentHandler.getSystemId() != null)
-                            validationException.addLocationData(new ExtendedLocationData(new LocationData(topStylesheetContentHandler.getSystemId(), -1, -1), "creating XSLT transformer"));
+                        if (topStylesheetXMLReceiver.getSystemId() != null)
+                            validationException.addLocationData(new ExtendedLocationData(new LocationData(topStylesheetXMLReceiver.getSystemId(), -1, -1), "creating XSLT transformer"));
                         throw validationException;
                     } else {
                         // No XSLT errors are available
                         final LocationData transformerExceptionLocationData
-                            = StringErrorListener.getTransformerExceptionLocationData(e, topStylesheetContentHandler.getSystemId());
+                            = StringErrorListener.getTransformerExceptionLocationData(e, topStylesheetXMLReceiver.getSystemId());
                         if (transformerExceptionLocationData.getSystemID() != null)
                             throw ValidationException.wrapException(e, new ExtendedLocationData(transformerExceptionLocationData, "creating XSLT transformer"));
                         else
@@ -599,8 +617,8 @@ public abstract class XSLTTransformer extends ProcessorImpl {
 //                    }
 //                    throw ve;
                 } catch (Exception e) {
-                    if (topStylesheetContentHandler.getSystemId() != null) {
-                        throw ValidationException.wrapException(e, new ExtendedLocationData(topStylesheetContentHandler.getSystemId(), -1, -1, "creating XSLT transformer"));
+                    if (topStylesheetXMLReceiver.getSystemId() != null) {
+                        throw ValidationException.wrapException(e, new ExtendedLocationData(topStylesheetXMLReceiver.getSystemId(), -1, -1, "creating XSLT transformer"));
                     } else {
                         throw new OXFException(e);
                     }
@@ -623,13 +641,9 @@ public abstract class XSLTTransformer extends ProcessorImpl {
             // Built-in Saxon transformer
             saxonStringBuilderWriter = new StringBuilderWriter();
             final Controller saxonController = (Controller) transformerHandler.getTransformer();
-            // NOTE: Saxon 9 returns a Receiver (MessageEmitter -> XMLEmitter -> Emitter -> Receiver)
-            Emitter messageEmitter = saxonController.getMessageEmitter();
-            if (messageEmitter == null) {
-                // NOTE: Saxon 9 makes this method private, use setMessageEmitter() instead
-                messageEmitter = saxonController.makeMessageEmitter();
-            }
-            messageEmitter.setWriter(saxonStringBuilderWriter);
+            final MessageEmitter emitter = new MessageEmitter();
+            emitter.setStreamResult(new StreamResult(saxonStringBuilderWriter));
+            saxonController.setMessageEmitter(emitter);
         } else if (transformerClassName.equals("net.sf.saxon.Controller")) {
             // A Saxon transformer, we don't know which version
             saxonStringBuilderWriter = new StringBuilderWriter();
@@ -662,7 +676,7 @@ public abstract class XSLTTransformer extends ProcessorImpl {
      *
      * @see #getURIReferences()
      */
-    private static class StylesheetForwardingContentHandler extends ForwardingContentHandler {
+    private static class StylesheetForwardingXMLReceiver extends ForwardingXMLReceiver {
 
         /**
          * This is context that will resolve any prefix, function, and variable.
@@ -679,16 +693,15 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                 {
                     // Dummy Function lib that accepts any name
                     setFunctionLibrary(new FunctionLibrary() {
-                        public Expression bind(final int nameCode, String uri, String local, final Expression[] staticArgs)  {
+                        public Expression bind(StructuredQName functionName, Expression[] staticArgs, StaticContext env) throws XPathException {
 
-                            // TODO: Saxon 9.0 expressions should test "instanceof StringValue" to "instanceof StringLiteral"
-                            if ((XMLConstants.XPATH_FUNCTIONS_NAMESPACE_URI.equals(uri) || "".equals(uri))
-                                    && ("doc".equals(local) || "document".equals(local))
+                            if ((XMLConstants.XPATH_FUNCTIONS_NAMESPACE_URI.equals(functionName.getNamespaceURI()) || "".equals(functionName.getNamespaceURI()))
+                                    && ("doc".equals(functionName.getLocalName()) || "document".equals(functionName.getLocalName()))
                                     && (staticArgs != null && staticArgs.length > 0)) {
 
-                                if (staticArgs[0] instanceof StringValue) {
+                                if (staticArgs[0] instanceof StringLiteral) {
                                     // Found doc() or document() function which contains a static string
-                                    final String literalURI = ((StringValue) staticArgs[0]).getStringValue();
+                                    final String literalURI = ((StringLiteral) staticArgs[0]).getStringValue();
 
                                     // We don't need to worry here about reference to the processor inputs
                                     if (!isProcessorInputScheme(literalURI)) {
@@ -705,12 +718,12 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                             }
 
                             // NOTE: We used to return new FunctionCall() here, but MK says EmptySequence.getInstance() will work.
-                            // TODO: Check if this works in Saxon 9.0. It doesn't work in 8.8, so for now we keep return new FunctionCall().
+                            // TODO: Check if this works in Saxon 9.0. It doesn't work in 8.8, so for now we keep return new ContextItemExpression().
 //                            return EmptySequence.getInstance();
                             return new ContextItemExpression();
                         }
 
-                        public boolean isAvailable(int fingerprint, String uri, String local, int arity) {
+                        public boolean isAvailable(StructuredQName functionName, int arity) {
                             return true;
                         }
 
@@ -718,34 +731,34 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                             return this;
                         }
                     });
-
-
                 }
 
-                public boolean isAvailable(int fingerprint, String uri, String local, int arity) {
-                    return true;
-                }
-
+                @Override
                 public String getURIForPrefix(String prefix) {
                     return namespaces.getURI(prefix);
                 }
 
+                @Override
                 public boolean isImportedSchema(String namespace) { return true; }
 
-                // Dummy var decl to allow any name
-                public VariableReference bindVariable(final int fingerprint) {
-                        return new VariableReference(new VariableDeclaration() {
-                            public void registerReference(BindingReference bindingReference) {
-                            }
+                @Override
+                // Dummy var declaration to allow any name
+                public VariableReference bindVariable(StructuredQName qName) throws XPathException {
+                    return new VariableReference();
 
-                            public int getNameCode() {
-                                return fingerprint;
-                            }
-
-                            public String getVariableName() {
-                                return "dummy";
-                            }
-                        });
+//                    return new VariableReference(XPathVariable.make());
+//                    return new VariableReference(new VariableReference(); {
+//                        public void registerReference(BindingReference bindingReference) {
+//                        }
+//
+//                        public int getNameCode() {
+//                            return fingerprint;
+//                        }
+//
+//                        public String getVariableName() {
+//                            return "dummy";
+//                        }
+//                    });
                 }
             };
         }
@@ -755,15 +768,10 @@ public abstract class XSLTTransformer extends ProcessorImpl {
         private String systemId;
         private final NamespaceSupport3 namespaces = new NamespaceSupport3();
 
-        public StylesheetForwardingContentHandler() {
+        public StylesheetForwardingXMLReceiver() {
             super();
             initDummySaxonXPathContext();
         }
-
-//        public StylesheetForwardingContentHandler(ContentHandler contentHandler) {
-//            super(contentHandler);
-//            initDummySaxonXPathContext();
-//        }
 
         public URIReferences getURIReferences() {
             return uriReferences;
@@ -773,17 +781,19 @@ public abstract class XSLTTransformer extends ProcessorImpl {
             return systemId;
         }
 
+        @Override
         public void setDocumentLocator(Locator locator) {
             this.locator = locator;
             super.setDocumentLocator(locator);
         }
 
-
+        @Override
         public void startPrefixMapping(String prefix, String uri) throws SAXException {
             namespaces.startPrefixMapping(prefix, uri);
             super.startPrefixMapping(prefix, uri);
         }
 
+        @Override
         public void startElement(String uri, String localname, String qName, Attributes attributes) throws SAXException {
             namespaces.startElement();
             // Save system id
@@ -833,10 +843,10 @@ public abstract class XSLTTransformer extends ProcessorImpl {
                         if (containsDocString) {
                             // The following will call our FunctionLibrary.bind() method, which we use to test for the
                             // presence of the functions.
-                            ExpressionTool.make(xpathString, dummySaxonXPathContext, 0, -1, 0);
+                            ExpressionTool.make(xpathString, dummySaxonXPathContext, 0, -1, 0, false);
 
                             // NOTE: *If* we wanted to use Saxon to parse the whole Stylesheet:
-                            
+
                             // MK: "In Saxon 9.0 there's a method explain() on PreparedStylesheet that writes an XML
                             // representation of the compiled stylesheet to a user-supplied Receiver as a sequence of
                             // events. You could call this with your own Receiver and just watch for the events
@@ -854,16 +864,18 @@ public abstract class XSLTTransformer extends ProcessorImpl {
             super.startElement(uri, localname, qName, attributes);
         }
 
-
+        @Override
         public void endElement(String uri, String localname, String qName) throws SAXException {
             super.endElement(uri, localname, qName);
             namespaces.endElement();
         }
 
+        @Override
         public void endDocument() throws SAXException {
             super.endDocument();
         }
 
+        @Override
         public void startDocument() throws SAXException {
             super.startDocument();
         }

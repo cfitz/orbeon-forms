@@ -21,15 +21,14 @@ import org.orbeon.oxf.xforms.control.controls.XFormsUploadControl;
 import org.orbeon.oxf.xforms.xbl.XBLContainer;
 import org.orbeon.oxf.xml.ContentHandlerHelper;
 import org.orbeon.oxf.xml.XMLConstants;
-import org.orbeon.oxf.xml.XMLUtils;
-import org.orbeon.saxon.om.FastStringBuffer;
 import org.orbeon.saxon.om.Item;
 import org.orbeon.saxon.om.NodeInfo;
 import org.orbeon.saxon.value.AtomicValue;
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.AttributesImpl;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Control with a single-node binding (possibly optional). Such controls can have MIPs.
@@ -41,9 +40,6 @@ public abstract class XFormsSingleNodeControl extends XFormsControl {
     // Bound item
     private Item boundItem;
 
-    // Whether MIPs have been read from the node
-    private boolean mipsRead;
-
     // Standard MIPs
     private boolean readonly;
     private boolean required;
@@ -52,7 +48,7 @@ public abstract class XFormsSingleNodeControl extends XFormsControl {
     // Previous values for refresh
     private boolean wasReadonly;
     private boolean wasRequired;
-    private boolean wasValid;
+    private boolean wasValid = true;
 
     // Type
     private String type;
@@ -66,30 +62,73 @@ public abstract class XFormsSingleNodeControl extends XFormsControl {
     }
 
     @Override
-    public void markDirty() {
-        super.markDirty();
+    protected void onCreate(PropertyContext propertyContext) {
+        super.onCreate(propertyContext);
 
-        // Keep previous values
-        wasReadonly = readonly;
-        wasRequired = required;
-        wasValid = valid;
+        readBinding();
 
-        // Clear everything
-        mipsRead = false;
-        type = null;
-        customMIPs = null;
-        customMIPsAsString = null;
+        wasReadonly = false;
+        wasRequired = false;
+        wasValid = true;
     }
 
     @Override
-    public void setBindingContext(PropertyContext propertyContext, XFormsContextStack.BindingContext bindingContext, boolean isCreate) {
+    protected void onBindingUpdate(PropertyContext propertyContext, XFormsContextStack.BindingContext oldBinding, XFormsContextStack.BindingContext newBinding) {
+        super.onBindingUpdate(propertyContext, oldBinding, newBinding);
+        readBinding();
+    }
 
-        // Keep binding context
-        super.setBindingContext(propertyContext, bindingContext, isCreate);
-
-        // Set bound item, only considering actual bindings with @bind, @ref or @nodeset
+    private void readBinding() {
+        // Set bound item, only considering actual bindings (with @bind, @ref or @nodeset)
         if (bindingContext.isNewBind())
             this.boundItem = bindingContext.getSingleItem();
+
+        // Get MIPs
+        final Item currentItem = getBoundItem();
+        if (currentItem != null) {
+            if (currentItem instanceof NodeInfo) {
+                // Control is bound to a node - get model item properties
+                final NodeInfo currentNodeInfo = (NodeInfo) currentItem;
+                this.readonly = InstanceData.getInheritedReadonly(currentNodeInfo);
+                this.required = InstanceData.getRequired(currentNodeInfo);
+                this.valid = InstanceData.getValid(currentNodeInfo);
+                this.type = InstanceData.getType(currentNodeInfo);
+
+                // Custom MIPs
+                final Map<String, String> tempCustomMIPs = InstanceData.getAllCustom(currentNodeInfo);
+                if (tempCustomMIPs != null)
+                    this.customMIPs = new HashMap<String, String>(tempCustomMIPs);
+
+                // Handle global read-only setting
+                if (XFormsProperties.isReadonly(containingDocument))
+                    this.readonly = true;
+            } else {
+                // Control is not bound to a node, MIPs get default values
+                setDefaultMIPs();
+            }
+        } else {
+            // Control is not bound to a node because it doesn't have a binding (group, trigger, dialog, etc. without @ref)
+            setDefaultMIPs();
+        }
+    }
+
+    private void setDefaultMIPs() {
+        this.readonly = false;
+        this.required = false;
+        this.valid = true;// by default, a control is not invalid
+        this.type = null;
+        this.customMIPs = null;
+        this.customMIPsAsString = null;
+    }
+
+    @Override
+    public void commitCurrentUIState() {
+        super.commitCurrentUIState();
+
+        isValueChanged();
+        wasRequired();
+        wasReadonly();
+        wasValid();
     }
 
     /**
@@ -98,12 +137,11 @@ public abstract class XFormsSingleNodeControl extends XFormsControl {
      *
      * @return bound item or null
      */
-    public Item getBoundItem() {
+    public final Item getBoundItem() {
         return boundItem;
     }
 
-    public boolean isReadonly() {
-        getMIPsIfNeeded();
+    public final boolean isReadonly() {
         return readonly;
     }
 
@@ -123,21 +161,26 @@ public abstract class XFormsSingleNodeControl extends XFormsControl {
         return true;
     }
 
-    public boolean isRequired() {
-        getMIPsIfNeeded();
+    public final boolean isRequired() {
         return required;
     }
 
-    public boolean wasReadonly() {
-        return wasReadonly;
+    public final boolean wasReadonly() {
+        final boolean result = wasReadonly;
+        wasReadonly = readonly;
+        return result;
     }
 
-    public boolean wasRequired() {
-        return wasRequired;
+    public final boolean wasRequired() {
+        final boolean result = wasRequired;
+        wasRequired = required;
+        return result;
     }
 
-    public boolean wasValid() {
-        return wasValid;
+    public final boolean wasValid() {
+        final boolean result = wasValid;
+        wasValid = valid;
+        return result;
     }
 
     public boolean isValueChanged() {
@@ -145,12 +188,10 @@ public abstract class XFormsSingleNodeControl extends XFormsControl {
     }
 
     public String getType() {
-        getMIPsIfNeeded();
         return type;
     }
 
     public Map<String, String> getCustomMIPs() {
-        getMIPsIfNeeded();
         return customMIPs;
     }
 
@@ -160,18 +201,17 @@ public abstract class XFormsSingleNodeControl extends XFormsControl {
      * @return  classes, or null if no custom MIPs
      */
     public String getCustomMIPsClasses() {
-        final Map customMIPs = getCustomMIPs();
+        final Map<String, String> customMIPs = getCustomMIPs();
         if (customMIPs != null) {
             // There are custom MIPs
             if (customMIPsAsString == null) {
                 // Must compute now
 
-                final FastStringBuffer sb = new FastStringBuffer(20);
+                final StringBuilder sb = new StringBuilder(20);
 
-                for (Object o: customMIPs.entrySet()) {
-                    final Map.Entry entry = (Map.Entry) o;
-                    final String name = (String) entry.getKey();
-                    final String value = (String) entry.getValue();
+                for (final Map.Entry<String, String> entry: customMIPs.entrySet()) {
+                    final String name = entry.getKey();
+                    final String value = entry.getValue();
 
                     if (sb.length() > 0)
                         sb.append(' ');
@@ -212,98 +252,23 @@ public abstract class XFormsSingleNodeControl extends XFormsControl {
         }
     }
 
+    /**
+     * Convenience method to return the local name of the XML Schema type.
+     *
+     * @return the local name of the type, or null if not found
+     */
+    public String getTypeLocalName() {
+        final String type = getType();
+
+        if (type != null) {
+            return type.substring(type.indexOf('}') + 1);
+        } else {
+            return null;
+        }
+    }     
+
     public boolean isValid() {
-        getMIPsIfNeeded();
         return valid;
-    }
-
-    @Override
-    protected void evaluate(PropertyContext propertyContext, boolean isRefresh) {
-        super.evaluate(propertyContext, isRefresh);
-
-        getMIPsIfNeeded();
-
-        if (!isRefresh) {
-            // Sync values
-            wasReadonly = readonly;
-            wasRequired = required;
-            wasValid = valid;
-        }
-    }
-
-    // Experiment with not evaluating labels, etc. if control is not relevant.
-//    @Override
-//    protected void evaluate(PipelineContext pipelineContext) {
-//        getMIPsIfNeeded();
-//        super.evaluate(pipelineContext);
-//    }
-//
-//    @Override
-//    public String getLabel(PipelineContext pipelineContext) {
-//        getMIPsIfNeeded();
-//        // Do not compute if the control is not relevant
-//        return relevant ? super.getLabel(pipelineContext) : null;
-//    }
-//
-//    @Override
-//    public String getHelp(PipelineContext pipelineContext) {
-//        getMIPsIfNeeded();
-//        // Do not compute if the control is not relevant
-//        return relevant ? super.getHelp(pipelineContext) : null;
-//    }
-//
-//    @Override
-//    public String getHint(PipelineContext pipelineContext) {
-//        getMIPsIfNeeded();
-//        // Do not compute if the control is not relevant
-//        return relevant ? super.getHint(pipelineContext) : null;
-//    }
-//
-//    @Override
-//    public String getAlert(PipelineContext pipelineContext) {
-//        getMIPsIfNeeded();
-//        // Do not compute if the control is not relevant
-//        return relevant ? super.getAlert(pipelineContext) : null;
-//    }
-
-    protected void getMIPsIfNeeded() {
-        if (!mipsRead) {
-            final Item currentItem = bindingContext.getSingleItem();
-            if (bindingContext.isNewBind()) {
-                if (currentItem instanceof NodeInfo) {
-                    // Control is bound to a node - get model item properties
-                    final NodeInfo currentNodeInfo = (NodeInfo) currentItem;
-                    this.readonly = InstanceData.getInheritedReadonly(currentNodeInfo);
-                    this.required = InstanceData.getRequired(currentNodeInfo);
-                    this.valid = InstanceData.getValid(currentNodeInfo);
-                    this.type = InstanceData.getType(currentNodeInfo);
-
-                    // Custom MIPs
-                    this.customMIPs = InstanceData.getAllCustom(currentNodeInfo);
-                    if (this.customMIPs != null)
-                        this.customMIPs = new HashMap<String, String>(this.customMIPs);
-
-                    // Handle global read-only setting
-                    if (XFormsProperties.isReadonly(containingDocument))
-                        this.readonly = true;
-                } else {
-                    // Control is not bound to a node, MIPs get default values
-                    this.readonly = false;
-                    this.required = false;
-                    this.valid = true;// by default, a control is not invalid
-                    this.type = null;
-                    this.customMIPs = null;
-                }
-            } else {
-                // Control is not bound to a node because it doesn't have a binding (group, trigger, dialog, etc. without @ref)
-                this.readonly = false;
-                this.required = false;
-                this.valid = true;// by default, a control is not invalid
-                this.type = null;
-                this.customMIPs = null;
-            }
-            mipsRead = true;
-        }
     }
 
     @Override
@@ -343,10 +308,6 @@ public abstract class XFormsSingleNodeControl extends XFormsControl {
             return true;
 
         final XFormsSingleNodeControl otherSingleNodeControl = (XFormsSingleNodeControl) other;
-
-        // Make sure the MIPs are up to date before comparing them
-        getMIPsIfNeeded();
-        otherSingleNodeControl.getMIPsIfNeeded();
 
         // Standard MIPs
         if (readonly != otherSingleNodeControl.readonly)
@@ -394,133 +355,28 @@ public abstract class XFormsSingleNodeControl extends XFormsControl {
         }
     }
 
-    public static final boolean DEFAULT_RELEVANCE_FOR_NEW_ITERATION = true;
-
     @Override
     public void outputAjaxDiff(PipelineContext pipelineContext, ContentHandlerHelper ch, XFormsControl other,
                                AttributesImpl attributesImpl, boolean isNewlyVisibleSubtree) {
 
         assert attributesImpl.getLength() == 0;
 
-        final XFormsSingleNodeControl xformsSingleNodeControl1 = (XFormsSingleNodeControl) other;
-        final XFormsSingleNodeControl xformsSingleNodeControl2 = this;
+        final XFormsSingleNodeControl control1 = (XFormsSingleNodeControl) other;
+        final XFormsSingleNodeControl control2 = this;
 
-        // Control id
-        attributesImpl.addAttribute("", "id", "id", ContentHandlerHelper.CDATA, xformsSingleNodeControl2.getEffectiveId());
-
-        // Whether it is necessary to output information about this control
-        boolean doOutputElement = false;
-
-        // Model item properties
-        if (isNewlyVisibleSubtree && xformsSingleNodeControl2.isReadonly()
-                || xformsSingleNodeControl1 != null && xformsSingleNodeControl1.isReadonly() != xformsSingleNodeControl2.isReadonly()) {
-            attributesImpl.addAttribute("", XFormsConstants.READONLY_ATTRIBUTE_NAME,
-                    XFormsConstants.READONLY_ATTRIBUTE_NAME,
-                    ContentHandlerHelper.CDATA, Boolean.toString(xformsSingleNodeControl2.isReadonly()));
-            doOutputElement = true;
-        }
-        if (isNewlyVisibleSubtree && xformsSingleNodeControl2.isRequired()
-                || xformsSingleNodeControl1 != null && xformsSingleNodeControl1.isRequired() != xformsSingleNodeControl2.isRequired()) {
-            attributesImpl.addAttribute("", XFormsConstants.REQUIRED_ATTRIBUTE_NAME,
-                    XFormsConstants.REQUIRED_ATTRIBUTE_NAME,
-                    ContentHandlerHelper.CDATA, Boolean.toString(xformsSingleNodeControl2.isRequired()));
-            doOutputElement = true;
-        }
-
-        // Default for relevance
-        if (isNewlyVisibleSubtree && xformsSingleNodeControl2.isRelevant() != DEFAULT_RELEVANCE_FOR_NEW_ITERATION
-                //|| XFormsSingleNodeControl.isRelevant(xformsSingleNodeControl1) != XFormsSingleNodeControl.isRelevant(xformsSingleNodeControl2)) {
-                || xformsSingleNodeControl1 != null && xformsSingleNodeControl1.isRelevant() != xformsSingleNodeControl2.isRelevant()) {//TODO: not sure why the above alternative fails tests. Which is more correct?
-            attributesImpl.addAttribute("", XFormsConstants.RELEVANT_ATTRIBUTE_NAME,
-                    XFormsConstants.RELEVANT_ATTRIBUTE_NAME,
-                    ContentHandlerHelper.CDATA, Boolean.toString(xformsSingleNodeControl2.isRelevant()));
-            doOutputElement = true;
-        }
-        if (isNewlyVisibleSubtree && !xformsSingleNodeControl2.isValid()
-                || xformsSingleNodeControl1 != null && xformsSingleNodeControl1.isValid() != xformsSingleNodeControl2.isValid()) {
-            attributesImpl.addAttribute("", XFormsConstants.VALID_ATTRIBUTE_NAME,
-                    XFormsConstants.VALID_ATTRIBUTE_NAME,
-                    ContentHandlerHelper.CDATA, Boolean.toString(xformsSingleNodeControl2.isValid()));
-            doOutputElement = true;
-        }
-
-        // Custom MIPs
-        doOutputElement = diffCustomMIPs(attributesImpl, xformsSingleNodeControl1, xformsSingleNodeControl2, isNewlyVisibleSubtree, doOutputElement);
-        doOutputElement = diffClassAVT(attributesImpl, xformsSingleNodeControl1, xformsSingleNodeControl2, isNewlyVisibleSubtree, doOutputElement);
-
-        // Type attribute
-        {
-
-            final String typeValue1 = isNewlyVisibleSubtree ? null : xformsSingleNodeControl1.getType();
-            final String typeValue2 = xformsSingleNodeControl2.getType();
-
-            if (isNewlyVisibleSubtree || !XFormsUtils.compareStrings(typeValue1, typeValue2)) {
-                final String attributeValue = typeValue2 != null ? typeValue2 : "";
-                // NOTE: No type is considered equivalent to xs:string or xforms:string
-                // TODO: should have more generic code in XForms engine to equate "no type" and "xs:string"
-                doOutputElement |= addOrAppendToAttributeIfNeeded(attributesImpl, "type", attributeValue, isNewlyVisibleSubtree,
-                        attributeValue.equals("") || XMLConstants.XS_STRING_EXPLODED_QNAME.equals(attributeValue) || XFormsConstants.XFORMS_STRING_EXPLODED_QNAME.equals(attributeValue));
-            }
-        }
-
-        // Label, help, hint, alert, etc.
-        {
-            final String labelValue1 = isNewlyVisibleSubtree ? null : xformsSingleNodeControl1.getLabel(pipelineContext);
-            final String labelValue2 = xformsSingleNodeControl2.getLabel(pipelineContext);
-
-            if (!XFormsUtils.compareStrings(labelValue1, labelValue2)) {
-                final String escapedLabelValue2 = xformsSingleNodeControl2.getEscapedLabel(pipelineContext);
-                final String attributeValue = escapedLabelValue2 != null ? escapedLabelValue2 : "";
-                doOutputElement |= addOrAppendToAttributeIfNeeded(attributesImpl, "label", attributeValue, isNewlyVisibleSubtree, attributeValue.equals(""));
-            }
-        }
-
-        {
-            final String helpValue1 = isNewlyVisibleSubtree ? null : xformsSingleNodeControl1.getHelp(pipelineContext);
-            final String helpValue2 = xformsSingleNodeControl2.getHelp(pipelineContext);
-
-            if (!XFormsUtils.compareStrings(helpValue1, helpValue2)) {
-                final String escapedHelpValue2 = xformsSingleNodeControl2.getEscapedHelp(pipelineContext);
-                final String attributeValue = escapedHelpValue2 != null ? escapedHelpValue2 : "";
-                doOutputElement |= addOrAppendToAttributeIfNeeded(attributesImpl, "help", attributeValue, isNewlyVisibleSubtree, attributeValue.equals(""));
-            }
-        }
-
-        {
-            final String hintValue1 = isNewlyVisibleSubtree ? null : xformsSingleNodeControl1.getHint(pipelineContext);
-            final String hintValue2 = xformsSingleNodeControl2.getHint(pipelineContext);
-
-            if (!XFormsUtils.compareStrings(hintValue1, hintValue2)) {
-                final String escapedHintValue2 = xformsSingleNodeControl2.getEscapedHint(pipelineContext);
-                final String attributeValue = escapedHintValue2 != null ? escapedHintValue2 : "";
-                doOutputElement |= addOrAppendToAttributeIfNeeded(attributesImpl, "hint", attributeValue, isNewlyVisibleSubtree, attributeValue.equals(""));
-            }
-        }
-
-        {
-            final String alertValue1 = isNewlyVisibleSubtree ? null : xformsSingleNodeControl1.getAlert(pipelineContext);
-            final String alertValue2 = xformsSingleNodeControl2.getAlert(pipelineContext);
-
-            if (!XFormsUtils.compareStrings(alertValue1, alertValue2)) {
-                final String escapedAlertValue2 = xformsSingleNodeControl2.getEscapedAlert(pipelineContext);
-                final String attributeValue = escapedAlertValue2 != null ? escapedAlertValue2 : "";
-                doOutputElement |= addOrAppendToAttributeIfNeeded(attributesImpl, "alert", attributeValue, isNewlyVisibleSubtree, attributeValue.equals(""));
-            }
-        }
-
-        // Output control-specific attributes
-        doOutputElement |= xformsSingleNodeControl2.addCustomAttributesDiffs(pipelineContext, xformsSingleNodeControl1, attributesImpl, isNewlyVisibleSubtree);
+        // Add attributes
+        final boolean doOutputElement = addAjaxAttributes(pipelineContext, attributesImpl, isNewlyVisibleSubtree, other);
 
         // Get current value if possible for this control
         // NOTE: We issue the new value in all cases because we don't have yet a mechanism to tell the
         // client not to update the value, unlike with attributes which can be omitted
-        if (xformsSingleNodeControl2 instanceof XFormsValueControl && !(xformsSingleNodeControl2 instanceof XFormsUploadControl)) {
+        if (control2 instanceof XFormsValueControl && !(control2 instanceof XFormsUploadControl)) {
 
             // TODO: Output value only when changed
 
             // Output element
-            final XFormsValueControl xformsValueControl = (XFormsValueControl) xformsSingleNodeControl2;
-            outputElement(pipelineContext, ch, xformsValueControl, doOutputElement, isNewlyVisibleSubtree, attributesImpl, "control");
+            final XFormsValueControl xformsValueControl = (XFormsValueControl) control2;
+            outputValueElement(pipelineContext, ch, xformsValueControl, doOutputElement, isNewlyVisibleSubtree, attributesImpl, "control");
         } else {
             // No value, just output element with no content (but there may be attributes)
             if (doOutputElement)
@@ -529,11 +385,82 @@ public abstract class XFormsSingleNodeControl extends XFormsControl {
 
         // Output extension attributes in no namespace
         // TODO: If only some attributes changed, then we also output xxf:control above, which is unnecessary
-        xformsSingleNodeControl2.addStandardAttributesDiffs(xformsSingleNodeControl1, ch, isNewlyVisibleSubtree);
+        control2.addAjaxStandardAttributes(control1, ch, isNewlyVisibleSubtree);
     }
 
-    protected void outputElement(PipelineContext pipelineContext, ContentHandlerHelper ch, XFormsValueControl xformsValueControl,
-                                 boolean doOutputElement, boolean isNewlyVisibleSubtree, Attributes attributesImpl, String elementName) {
+    @Override
+    protected boolean addAjaxAttributes(PipelineContext pipelineContext, AttributesImpl attributesImpl, boolean isNewlyVisibleSubtree, XFormsControl other) {
+
+        final XFormsSingleNodeControl control1 = (XFormsSingleNodeControl) other;
+        final XFormsSingleNodeControl control2 = this;
+
+        // Call base class for the standard stuff
+        boolean added = super.addAjaxAttributes(pipelineContext, attributesImpl, isNewlyVisibleSubtree, other);
+
+        // MIPs
+        added |= addAjaxMIPs(attributesImpl, isNewlyVisibleSubtree, control1, control2);
+
+        return added;
+    }
+
+    private boolean addAjaxMIPs(AttributesImpl attributesImpl, boolean isNewlyVisibleSubtree,
+                                XFormsSingleNodeControl control1, XFormsSingleNodeControl control2) {
+
+        boolean added = false;
+        if (isNewlyVisibleSubtree && control2.isReadonly()
+                || control1 != null && control1.isReadonly() != control2.isReadonly()) {
+            attributesImpl.addAttribute("", XFormsConstants.READONLY_ATTRIBUTE_NAME,
+                    XFormsConstants.READONLY_ATTRIBUTE_NAME,
+                    ContentHandlerHelper.CDATA, Boolean.toString(control2.isReadonly()));
+            added = true;
+        }
+        if (isNewlyVisibleSubtree && control2.isRequired()
+                || control1 != null && control1.isRequired() != control2.isRequired()) {
+            attributesImpl.addAttribute("", XFormsConstants.REQUIRED_ATTRIBUTE_NAME,
+                    XFormsConstants.REQUIRED_ATTRIBUTE_NAME,
+                    ContentHandlerHelper.CDATA, Boolean.toString(control2.isRequired()));
+            added = true;
+        }
+
+        // NOTE: We used to have a configurable default for the relevance. Not sure why this was needed. Here consider the default is true.
+        if (isNewlyVisibleSubtree && !control2.isRelevant()
+                //|| XFormsSingleNodeControl.isRelevant(xformsSingleNodeControl1) != XFormsSingleNodeControl.isRelevant(xformsSingleNodeControl2)) {
+                || control1 != null && control1.isRelevant() != control2.isRelevant()) {//TODO: not sure why the above alternative fails tests. Which is more correct?
+            attributesImpl.addAttribute("", XFormsConstants.RELEVANT_ATTRIBUTE_NAME,
+                    XFormsConstants.RELEVANT_ATTRIBUTE_NAME,
+                    ContentHandlerHelper.CDATA, Boolean.toString(control2.isRelevant()));
+            added = true;
+        }
+        if (isNewlyVisibleSubtree && !control2.isValid()
+                || control1 != null && control1.isValid() != control2.isValid()) {
+            attributesImpl.addAttribute("", XFormsConstants.VALID_ATTRIBUTE_NAME,
+                    XFormsConstants.VALID_ATTRIBUTE_NAME,
+                    ContentHandlerHelper.CDATA, Boolean.toString(control2.isValid()));
+            added = true;
+        }
+
+        // Type attribute
+        {
+            final String typeValue1 = isNewlyVisibleSubtree ? null : control1.getType();
+            final String typeValue2 = control2.getType();
+
+            if (isNewlyVisibleSubtree || !XFormsUtils.compareStrings(typeValue1, typeValue2)) {
+                final String attributeValue = typeValue2 != null ? typeValue2 : "";
+                // NOTE: No type is considered equivalent to xs:string or xforms:string
+                // TODO: should have more generic code in XForms engine to equate "no type" and "xs:string"
+                added |= addOrAppendToAttributeIfNeeded(attributesImpl, "type", attributeValue, isNewlyVisibleSubtree,
+                        attributeValue.equals("") || XMLConstants.XS_STRING_EXPLODED_QNAME.equals(attributeValue) || XFormsConstants.XFORMS_STRING_EXPLODED_QNAME.equals(attributeValue));
+            }
+        }
+
+        // Custom MIPs
+        added |= addAjaxCustomMIPs(attributesImpl, isNewlyVisibleSubtree, control1, control2);
+
+        return added;
+    }
+
+    protected void outputValueElement(PipelineContext pipelineContext, ContentHandlerHelper ch, XFormsValueControl xformsValueControl,
+                                      boolean doOutputElement, boolean isNewlyVisibleSubtree, Attributes attributesImpl, String elementName) {
         // Create element with text value
         final String value;
         if (xformsValueControl.isRelevant()) {
@@ -552,27 +479,21 @@ public abstract class XFormsSingleNodeControl extends XFormsControl {
         }
     }
 
-    protected static boolean addOrAppendToAttributeIfNeeded(AttributesImpl attributesImpl, String name, String value, boolean isNewRepeatIteration, boolean isDefaultValue) {
-        if (isNewRepeatIteration && isDefaultValue) {
-            return false;
-        } else {
-            XMLUtils.addOrAppendToAttribute(attributesImpl, name, value);
-            return true;
-        }
-    }
-
     // public for unit tests
-    public static boolean diffCustomMIPs(AttributesImpl attributesImpl, XFormsSingleNodeControl xformsSingleNodeControl1,
-                                         XFormsSingleNodeControl xformsSingleNodeControl2, boolean newlyVisibleSubtree, boolean doOutputElement) {
-        final Map<String, String> customMIPs1 = (xformsSingleNodeControl1 == null) ? null : xformsSingleNodeControl1.getCustomMIPs();
-        final Map<String, String> customMIPs2 = xformsSingleNodeControl2.getCustomMIPs();
+    public static boolean addAjaxCustomMIPs(AttributesImpl attributesImpl, boolean newlyVisibleSubtree,
+                                            XFormsSingleNodeControl control1, XFormsSingleNodeControl control2) {
+
+        boolean added = false;
+
+        final Map<String, String> customMIPs1 = (control1 == null) ? null : control1.getCustomMIPs();
+        final Map<String, String> customMIPs2 = control2.getCustomMIPs();
 
         if (newlyVisibleSubtree || !XFormsSingleNodeControl.compareCustomMIPs(customMIPs1, customMIPs2)) {
             // Custom MIPs changed
 
             final String attributeValue;
             if (customMIPs1 == null) {
-                attributeValue = xformsSingleNodeControl2.getCustomMIPsClasses();
+                attributeValue = control2.getCustomMIPsClasses();
             } else {
                 final StringBuilder sb = new StringBuilder(100);
 
@@ -622,73 +543,8 @@ public abstract class XFormsSingleNodeControl extends XFormsControl {
             }
             // This attribute is a space-separate list of class names prefixed with either '-' or '+'
             if (attributeValue != null)
-                doOutputElement |= addOrAppendToAttributeIfNeeded(attributesImpl, "class", attributeValue, newlyVisibleSubtree, attributeValue.equals(""));
+                added |= addOrAppendToAttributeIfNeeded(attributesImpl, "class", attributeValue, newlyVisibleSubtree, attributeValue.equals(""));
         }
-        return doOutputElement;
-    }
-
-    // public for unit tests
-    public static boolean diffClassAVT(AttributesImpl attributesImpl, XFormsControl control1, XFormsControl control2,
-                                       boolean newlyVisibleSubtree, boolean doOutputElement) {
-
-        final String class1 = (control1 == null) ? null : control1.getExtensionAttributeValue(XFormsConstants.CLASS_QNAME);
-        final String class2 = control2.getExtensionAttributeValue(XFormsConstants.CLASS_QNAME);
-
-        if (newlyVisibleSubtree || !XFormsUtils.compareStrings(class1, class2)) {
-            // Custom MIPs changed
-
-            final String attributeValue;
-            if (class1 == null) {
-                attributeValue = class2;
-            } else {
-                final StringBuilder sb = new StringBuilder(100);
-
-                final Set<String> classes1 = tokenize(class1);
-                final Set<String> classes2 = tokenize(class2);
-
-                // Classes to remove
-                for (final String currentClass: classes1) {
-                    if (!classes2.contains(currentClass)) {
-
-                        if (sb.length() > 0)
-                            sb.append(' ');
-
-                        sb.append('-');
-                        sb.append(currentClass);
-                    }
-                }
-
-                // Classes to add
-                for (final String currentClass: classes2) {
-                    if (!classes1.contains(currentClass)) {
-
-                        if (sb.length() > 0)
-                            sb.append(' ');
-
-                        sb.append('+');
-                        sb.append(currentClass);
-                    }
-                }
-
-                attributeValue = sb.toString();
-            }
-            // This attribute is a space-separate list of class names prefixed with either '-' or '+'
-            if (attributeValue != null)
-                doOutputElement |= addOrAppendToAttributeIfNeeded(attributesImpl, "class", attributeValue, newlyVisibleSubtree, attributeValue.equals(""));
-        }
-        return doOutputElement;
-    }
-
-    private static Set<String> tokenize(String value) {
-        final Set<String> result;
-        if (value != null) {
-            result = new LinkedHashSet<String>();
-            for (final StringTokenizer st = new StringTokenizer(value); st.hasMoreTokens();) {
-                result.add(st.nextToken());
-            }
-        } else {
-            result = Collections.emptySet();
-        }
-        return result;
+        return added;
     }
 }

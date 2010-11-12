@@ -19,15 +19,11 @@ import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.common.ValidationException;
 import org.orbeon.oxf.pipeline.api.ExternalContext;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
-import org.orbeon.oxf.util.IndentedLogger;
-import org.orbeon.oxf.util.NetUtils;
-import org.orbeon.oxf.util.PropertyContext;
+import org.orbeon.oxf.util.*;
 import org.orbeon.oxf.xforms.*;
 import org.orbeon.oxf.xforms.action.actions.XFormsSetvalueAction;
-import org.orbeon.oxf.xforms.control.ExternalCopyable;
-import org.orbeon.oxf.xforms.control.XFormsControl;
-import org.orbeon.oxf.xforms.control.XFormsSingleNodeControl;
-import org.orbeon.oxf.xforms.control.XFormsValueControl;
+import org.orbeon.oxf.xforms.analysis.XPathDependencies;
+import org.orbeon.oxf.xforms.control.*;
 import org.orbeon.oxf.xforms.event.XFormsEvents;
 import org.orbeon.oxf.xforms.event.events.XFormsDeselectEvent;
 import org.orbeon.oxf.xforms.xbl.XBLContainer;
@@ -59,8 +55,8 @@ public class XFormsUploadControl extends XFormsValueControl {
     }
 
     @Override
-    protected void evaluate(PropertyContext propertyContext, boolean isRefresh) {
-        super.evaluate(propertyContext, isRefresh);
+    protected void evaluateImpl(PropertyContext propertyContext) {
+        super.evaluateImpl(propertyContext);
 
         getState(propertyContext);
         getFileMediatype(propertyContext);
@@ -69,8 +65,8 @@ public class XFormsUploadControl extends XFormsValueControl {
     }
 
     @Override
-    public void markDirty() {
-        super.markDirty();
+    protected void markDirtyImpl(XPathDependencies xpathDependencies) {
+        super.markDirtyImpl(xpathDependencies);
         fileInfo.markDirty();
     }
 
@@ -91,71 +87,96 @@ public class XFormsUploadControl extends XFormsValueControl {
      *   </xxforms:files>
      *
      * @param propertyContext       current context
-     * @param containingDocument    containing document
-     * @param filesElement          xxforms:files element
-     * @param forControl            control to handle, null for all controls specified
+     * @param containingDocument    document
+     * @param filesElement          <xxforms:files> element
      * @param handleTemporaryFiles  whether to set listeners for file deletion
      */
-    public static void handleFileElement(PropertyContext propertyContext, XFormsContainingDocument containingDocument, Element filesElement, XFormsUploadControl forControl, boolean handleTemporaryFiles) {
-        for (Object o: filesElement.elements()) {
-            final Element parameterElement = (Element) o;
-            final String name = parameterElement.element("name").getTextTrim();
+    public static void handleUploadedFiles(PropertyContext propertyContext, XFormsContainingDocument containingDocument, Element filesElement, boolean handleTemporaryFiles) {
+        if (filesElement != null) {
+            for (final Element parameterElement: Dom4jUtils.elements(filesElement)) {
 
-            final XFormsUploadControl uploadControl = (XFormsUploadControl) containingDocument.getObjectByEffectiveId(name);
+                final XFormsUploadControl uploadControl; {
+                    final String controlEffectiveId = parameterElement.element("name").getTextTrim();
+                    uploadControl = (XFormsUploadControl) containingDocument.getObjectByEffectiveId(controlEffectiveId);
 
-            // In case of xforms:repeat, the name of the template will not match an existing control
-            // In addition, only set value on forControl control if specified
-            if (uploadControl == null || forControl != null && forControl != uploadControl)
-                continue;
+                    // In case of xforms:repeat, the name of the template will not match an existing control
+                    // In addition, only set value on forControl control if specified
+                    if (uploadControl == null)
+                        continue;
+                }
 
-            final Element valueElement = parameterElement.element("value");
-            final String value = valueElement.getTextTrim();
+                final Element valueElement = parameterElement.element("value");
+                final String value = valueElement.getTextTrim();
 
-            final String filename;
-            {
-                final Element filenameElement = parameterElement.element("filename");
-                filename = (filenameElement != null) ? filenameElement.getTextTrim() : "";
-            }
-            final String mediatype;
-            {
-                final Element mediatypeElement = parameterElement.element("content-type");
-                mediatype = (mediatypeElement != null) ? mediatypeElement.getTextTrim() : "";
-            }
-            final String size = parameterElement.element("content-length").getTextTrim();
+                final String filename;
+                {
+                    final Element filenameElement = parameterElement.element("filename");
+                    filename = (filenameElement != null) ? filenameElement.getTextTrim() : "";
+                }
+                final String mediatype;
+                {
+                    final Element mediatypeElement = parameterElement.element("content-type");
+                    mediatype = (mediatypeElement != null) ? mediatypeElement.getTextTrim() : "";
+                }
+                final String size = parameterElement.element("content-length").getTextTrim();
 
-            if (size.equals("0") && filename.equals("")) {
-                // No file was selected in the UI
-            } else {
-                // A file was selected in the UI (note that the file may be empty)
-                // TODO: should pass true?
-                final String paramValueType = Dom4jUtils.qNameToExplodedQName(Dom4jUtils.extractAttributeValueQName(valueElement, XMLConstants.XSI_TYPE_QNAME, false));
+                if (size.equals("0") && filename.equals("")) {
+                    // No file was selected in the UI
+                } else {
+                    // A file was selected in the UI (note that the file may be empty)
+                    // TODO: should pass true?
+                    final String paramValueType = Dom4jUtils.qNameToExplodedQName(Dom4jUtils.extractAttributeValueQName(valueElement, XMLConstants.XSI_TYPE_QNAME, false));
 
-                // Set value of uploaded file into the instance (will be xs:anyURI or xs:base64Binary)
-                uploadControl.setExternalValue(propertyContext, value, paramValueType, handleTemporaryFiles);
+                    // Set value of uploaded file into the instance (will be xs:anyURI or xs:base64Binary)
+                    uploadControl.setExternalValue(propertyContext, value, paramValueType, handleTemporaryFiles);
 
-                // Handle filename, mediatype and size if necessary
-                uploadControl.setFilename(propertyContext, filename);
-                uploadControl.setMediatype(propertyContext, mediatype);
-                uploadControl.setSize(propertyContext, size);
+                    // Handle filename, mediatype and size if necessary
+                    uploadControl.setFilename(propertyContext, filename);
+                    uploadControl.setMediatype(propertyContext, mediatype);
+                    uploadControl.setSize(propertyContext, size);
+                }
             }
         }
     }
 
-    @Override
-    public void storeExternalValue(PropertyContext propertyContext, String value, String type, Element filesElement) {
-        if (XFormsProperties.isNoscript(containingDocument) && filesElement != null) {
-            // Must handle file elements
-            XFormsUploadControl.handleFileElement(propertyContext, containingDocument, filesElement, this, true);// seems reasonable to set handleTemporaryFiles = true
-        } else {
-            // Set value and handle temporary files
-            setExternalValue(propertyContext, value, type, true);
+    /**
+     * Check if an <xxforms:files> element actually contains file uploads to process.
+     *
+     * @param filesElement  <xxforms:files> element
+     * @return              true iif file uploads to process
+     */
+    public static boolean hasUploadedFiles(Element filesElement) {
+        if (filesElement != null) {
+            for (final Element parameterElement: Dom4jUtils.elements(filesElement)) {
+                final String filename;
+                {
+                    final Element filenameElement = parameterElement.element("filename");
+                    filename = (filenameElement != null) ? filenameElement.getTextTrim() : "";
+                }
+                final String size = parameterElement.element("content-length").getTextTrim();
 
-            // If the value is being cleared, also clear the metadata
-            if (value.equals("")) {
-                setFilename(propertyContext, "");
-                setMediatype(propertyContext, "");
-                setSize(propertyContext, "");
+                if (size.equals("0") && filename.equals("")) {
+                    // No file was selected in the UI
+                } else {
+                    // A file was selected in the UI (note that the file may be empty)
+                    return true;
+                }
             }
+        }
+        return false;
+    }
+
+    @Override
+    public void storeExternalValue(PropertyContext propertyContext, String value, String type) {
+
+        // Set value and handle temporary files
+        setExternalValue(propertyContext, value, type, true);
+
+        // If the value is being cleared, also clear the metadata
+        if (value.equals("")) {
+            setFilename(propertyContext, "");
+            setMediatype(propertyContext, "");
+            setSize(propertyContext, "");
         }
     }
 
@@ -233,7 +254,7 @@ public class XFormsUploadControl extends XFormsValueControl {
             }
 
             // Call the super method
-            super.storeExternalValue(propertyContext, newValue, type, null);
+            super.storeExternalValue(propertyContext, newValue, type);
 
             // When a value is set, make sure associated file information is cleared, because even though the control might
             // not be re-evaluated, a submission might attempt to access file name, etc. information for bound upload
@@ -296,16 +317,16 @@ public class XFormsUploadControl extends XFormsValueControl {
     }
 
     @Override
-    public boolean addCustomAttributesDiffs(PipelineContext pipelineContext, XFormsSingleNodeControl other, AttributesImpl attributesImpl, boolean isNewRepeatIteration) {
+    protected boolean addAjaxCustomAttributes(PipelineContext pipelineContext, AttributesImpl attributesImpl, boolean isNewRepeatIteration, XFormsControl other) {
 
-        final XFormsUploadControl uploadControlInfo1 = (XFormsUploadControl) other;
-        final XFormsUploadControl uploadControlInfo2 = this;
+        final XFormsUploadControl uploadControl1 = (XFormsUploadControl) other;
+        final XFormsUploadControl uploadControl2 = this;
 
         boolean added = false;
         {
             // State
-            final String stateValue1 = (uploadControlInfo1 == null) ? null : uploadControlInfo1.getState(pipelineContext);
-            final String stateValue2 = uploadControlInfo2.getState(pipelineContext);
+            final String stateValue1 = (uploadControl1 == null) ? null : uploadControl1.getState(pipelineContext);
+            final String stateValue2 = uploadControl2.getState(pipelineContext);
 
             if (!XFormsUtils.compareStrings(stateValue1, stateValue2)) {
                 final String attributeValue = stateValue2 != null ? stateValue2 : "";
@@ -314,8 +335,8 @@ public class XFormsUploadControl extends XFormsValueControl {
         }
         {
             // Mediatype
-            final String mediatypeValue1 = (uploadControlInfo1 == null) ? null : uploadControlInfo1.getFileMediatype(pipelineContext);
-            final String mediatypeValue2 = uploadControlInfo2.getFileMediatype(pipelineContext);
+            final String mediatypeValue1 = (uploadControl1 == null) ? null : uploadControl1.getFileMediatype(pipelineContext);
+            final String mediatypeValue2 = uploadControl2.getFileMediatype(pipelineContext);
 
             if (!XFormsUtils.compareStrings(mediatypeValue1, mediatypeValue2)) {
                 final String attributeValue = mediatypeValue2 != null ? mediatypeValue2 : "";
@@ -324,8 +345,8 @@ public class XFormsUploadControl extends XFormsValueControl {
         }
         {
             // Filename
-            final String filenameValue1 = (uploadControlInfo1 == null) ? null : uploadControlInfo1.getFileName(pipelineContext);
-            final String filenameValue2 = uploadControlInfo2.getFileName(pipelineContext);
+            final String filenameValue1 = (uploadControl1 == null) ? null : uploadControl1.getFileName(pipelineContext);
+            final String filenameValue2 = uploadControl2.getFileName(pipelineContext);
 
             if (!XFormsUtils.compareStrings(filenameValue1, filenameValue2)) {
                 final String attributeValue = filenameValue2 != null ? filenameValue2 : "";
@@ -334,8 +355,8 @@ public class XFormsUploadControl extends XFormsValueControl {
         }
         {
             // Size
-            final String sizeValue1 = (uploadControlInfo1 == null) ? null : uploadControlInfo1.getFileSize(pipelineContext);
-            final String sizeValue2 = uploadControlInfo2.getFileSize(pipelineContext);
+            final String sizeValue1 = (uploadControl1 == null) ? null : uploadControl1.getFileSize(pipelineContext);
+            final String sizeValue2 = uploadControl2.getFileSize(pipelineContext);
 
             if (!XFormsUtils.compareStrings(sizeValue1, sizeValue2)) {
                 final String attributeValue = sizeValue2 != null ? sizeValue2 : "";
@@ -393,8 +414,8 @@ class FileInfo implements ExternalCopyable {
         this.control = control;
         this.contextStack =  contextStack;
 
-        mediatypeElement = element.element(XFormsConstants.XFORMS_MEDIATYPE_QNAME);
-        filenameElement = element.element(XFormsConstants.XFORMS_FILENAME_QNAME);
+        mediatypeElement = element.element(XFormsConstants.MEDIATYPE_QNAME);
+        filenameElement = element.element(XFormsConstants.FILENAME_QNAME);
         sizeElement = element.element(XFormsConstants.XXFORMS_SIZE_QNAME);
     }
 
@@ -474,7 +495,7 @@ class FileInfo implements ExternalCopyable {
         final Item currentSingleItem = contextStack.getCurrentSingleItem();
         if (currentSingleItem instanceof NodeInfo) {
             XFormsSetvalueAction.doSetValue(propertyContext, control.getXBLContainer().getContainingDocument(), control.getIndentedLogger(),
-                    control, (NodeInfo) currentSingleItem, value, null, false);
+                    control, (NodeInfo) currentSingleItem, value, null, "fileinfo", false);
             contextStack.popBinding();
         }
     }

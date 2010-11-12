@@ -15,17 +15,18 @@ package org.orbeon.oxf.xforms.itemset;
 
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.common.ValidationException;
+import org.orbeon.oxf.pipeline.api.TransformerXMLReceiver;
 import org.orbeon.oxf.util.PropertyContext;
 import org.orbeon.oxf.xforms.XFormsUtils;
 import org.orbeon.oxf.xml.ContentHandlerHelper;
 import org.orbeon.oxf.xml.TransformerUtils;
 import org.orbeon.oxf.xml.dom4j.LocationData;
+import org.orbeon.saxon.Configuration;
 import org.orbeon.saxon.om.DocumentInfo;
 import org.orbeon.saxon.tinytree.TinyBuilder;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
-import javax.xml.transform.sax.TransformerHandler;
 import java.util.*;
 
 /**
@@ -173,12 +174,12 @@ public class Itemset implements ItemContainer {
      * @param isMultiple    whether multiple selection is allowed (to determine selected item)
      * @return              XML document
      */
-    public DocumentInfo getXMLTreeInfo(final PropertyContext context, final String controlValue, final boolean isMultiple, LocationData locationData) {
+    public DocumentInfo getXMLTreeInfo(Configuration configuration, final String controlValue, final boolean isMultiple, LocationData locationData) {
         // Produce a JSON fragment with hierarchical information
 
         final TinyBuilder treeBuilder = new TinyBuilder();
 
-        final TransformerHandler identity = TransformerUtils.getIdentityTransformerHandler();
+        final TransformerXMLReceiver identity = TransformerUtils.getIdentityTransformerHandler(configuration);
         identity.setResult(treeBuilder);
         final ContentHandlerHelper ch = new ContentHandlerHelper(identity);
 

@@ -1,15 +1,15 @@
 /**
- *  Copyright (C) 2005 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify it under the terms of the
- *  GNU Lesser General Public License as published by the Free Software Foundation; either version
- *  2.1 of the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU Lesser General Public License as published by the Free Software Foundation; either version
+ * 2.1 of the License, or (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *  See the GNU Lesser General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Lesser General Public License for more details.
  *
- *  The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+ * The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
  */
 package org.orbeon.oxf.processor.transformer;
 
@@ -18,22 +18,23 @@ import org.dom4j.Document;
 import org.dom4j.io.DocumentSource;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
 import org.orbeon.oxf.processor.*;
 import org.orbeon.oxf.processor.generator.URLGenerator;
+import org.orbeon.oxf.processor.impl.ProcessorOutputImpl;
 import org.orbeon.oxf.processor.transformer.xslt.StringErrorListener;
 import org.orbeon.oxf.processor.transformer.xslt.XSLTTransformer;
-import org.orbeon.oxf.properties.PropertyStore;
 import org.orbeon.oxf.properties.PropertySet;
+import org.orbeon.oxf.properties.PropertyStore;
 import org.orbeon.oxf.xml.XMLConstants;
 import org.orbeon.oxf.xml.dom4j.Dom4jUtils;
 import org.orbeon.saxon.Configuration;
 import org.orbeon.saxon.query.DynamicQueryContext;
 import org.orbeon.saxon.query.StaticQueryContext;
 import org.orbeon.saxon.query.XQueryExpression;
-import org.xml.sax.ContentHandler;
 
-import javax.xml.transform.sax.SAXResult;
 import javax.xml.transform.URIResolver;
+import javax.xml.transform.sax.SAXResult;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -62,18 +63,20 @@ public class SaxonXQueryProcessor extends ProcessorImpl {
         addOutputInfo(new ProcessorInputOutputInfo(OUTPUT_DATA));
     }
 
+    @Override
     public ProcessorOutput createOutput(String name) {
-        ProcessorOutput output = new ProcessorImpl.ProcessorOutputImpl(getClass(), name) {
-            public void readImpl(final PipelineContext pipelineContext, ContentHandler contentHandler) {
+        final ProcessorOutput output = new ProcessorOutputImpl(SaxonXQueryProcessor.this, name) {
+            public void readImpl(final PipelineContext pipelineContext, XMLReceiver xmlReceiver) {
                 try {
                     final Document dataDocument = readInputAsDOM4J(pipelineContext, INPUT_DATA);
 
                     // Create XQuery configuration (depends on attributes input)
                     final URIResolver uriResolver = new TransformerURIResolver(SaxonXQueryProcessor.this, pipelineContext, INPUT_DATA, URLGenerator.DEFAULT_HANDLE_XINCLUDE);
                     // TODO: once caching is in place, make sure cached object does not contain a reference to the URIResolver
-                    final Configuration config = new Configuration();
+                    // NOTE: Don't use global configuration, which is immutable
+                    final Configuration configuration = new Configuration();
                     {
-                        config.setErrorListener(new StringErrorListener(logger));
+                        configuration.setErrorListener(new StringErrorListener(logger));
 
                         // 2007-07-05 MK says: "fetching of query modules is done by the ModuleURIResolver in the
                         // static context, fetching of doc() is done by the URIResolver in the dynamic context; the
@@ -81,12 +84,12 @@ public class SaxonXQueryProcessor extends ProcessorImpl {
 //                        config.setURIResolver(uriResolver);
 
                         // Read attributes
-                        Map attributes = null;
+                        Map<String, Object> attributes = null;
                         {
                             // Read attributes input only if connected
                             if (getConnectedInputs().get(INPUT_ATTRIBUTES) != null) {
                                 // Read input as an attribute Map and cache it
-                                attributes = (Map) readCacheInputAsObject(pipelineContext, getInputByName(INPUT_ATTRIBUTES), new CacheableInputReader() {
+                                attributes = (Map<String, Object>) readCacheInputAsObject(pipelineContext, getInputByName(INPUT_ATTRIBUTES), new CacheableInputReader() {
                                     public Object read(PipelineContext context, ProcessorInput input) {
                                         final Document preferencesDocument = readInputAsDOM4J(context, input);
                                         final PropertyStore propertyStore = new PropertyStore(preferencesDocument);
@@ -98,17 +101,17 @@ public class SaxonXQueryProcessor extends ProcessorImpl {
                         }
                         // Set configuration attributes if any
                         if (attributes != null) {
-                            for (Iterator i = attributes.keySet().iterator(); i.hasNext();) {
-                                String key = (String) i.next();
-                                Object value = attributes.get(key);
+                            for (Map.Entry<String, Object> entry: attributes.entrySet()) {
+                                final String key = entry.getKey();
+                                final Object value = entry.getValue();
 
-                                config.setConfigurationProperty(key, value);
+                                configuration.setConfigurationProperty(key, value);
                             }
                         }
                     }
 
                     // Create static context
-                    final StaticQueryContext staticContext = new StaticQueryContext(config);
+                    final StaticQueryContext staticContext = new StaticQueryContext(configuration);
 
                     // Create XQuery expression (depends on config input and static context)
                     // TODO: caching of query must also depend on attributes input
@@ -152,11 +155,14 @@ public class SaxonXQueryProcessor extends ProcessorImpl {
                     });
 
                     // Create dynamic context and run query
-                    DynamicQueryContext dynamicContext =  new DynamicQueryContext(config);
+                    final DynamicQueryContext dynamicContext =  new DynamicQueryContext(configuration);
                     dynamicContext.setContextItem(staticContext.buildDocument(new DocumentSource(dataDocument)));
                     dynamicContext.setURIResolver(uriResolver);
                     // TODO: use xqueryExpression.getStaticContext() when Saxon is upgraded
-                    xqueryExpression.run(dynamicContext, new SAXResult(contentHandler), new java.util.Properties());
+                    final SAXResult saxResult = new SAXResult(xmlReceiver);
+                    saxResult.setLexicalHandler(xmlReceiver);
+
+                    xqueryExpression.run(dynamicContext, saxResult, new java.util.Properties());
 
                 } catch (Exception e) {
                     throw new OXFException(e);

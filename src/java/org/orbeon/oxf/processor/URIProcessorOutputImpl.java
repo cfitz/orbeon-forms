@@ -18,6 +18,7 @@ import org.orbeon.oxf.cache.*;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.pipeline.api.ExternalContext;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
+import org.orbeon.oxf.processor.impl.ProcessorOutputImpl;
 import org.orbeon.oxf.resources.ResourceManagerWrapper;
 import org.orbeon.oxf.resources.URLFactory;
 import org.orbeon.oxf.resources.handler.OXFHandler;
@@ -38,7 +39,7 @@ import java.util.Map;
  *
  * Usage: an URIReferences object must be cached as an object associated with the config input.
  */
-public abstract class URIProcessorOutputImpl extends ProcessorImpl.ProcessorOutputImpl {
+public abstract class URIProcessorOutputImpl extends ProcessorOutputImpl {
 
     public static Logger logger = LoggerFactory.createLogger(URIProcessorOutputImpl.class);
 
@@ -47,7 +48,7 @@ public abstract class URIProcessorOutputImpl extends ProcessorImpl.ProcessorOutp
     private URIReferences localConfigURIReferences = null; // TODO: NIY
 
     public URIProcessorOutputImpl(ProcessorImpl processorImpl, String name, String configInputName) {
-        super(processorImpl.getClass(), name);
+        super(processorImpl, name);
         this.processorImpl = processorImpl;
         this.configInputName = configInputName;
     }
@@ -57,7 +58,7 @@ public abstract class URIProcessorOutputImpl extends ProcessorImpl.ProcessorOutp
 //        }
 
     @Override
-    protected OutputCacheKey getKeyImpl(PipelineContext pipelineContext) {
+    public OutputCacheKey getKeyImpl(PipelineContext pipelineContext) {
         final URIReferences uriReferences = getCachedURIReferences(pipelineContext);
 //            log("uriReferences: " + uriReferences);
         if (uriReferences == null)
@@ -205,7 +206,7 @@ public abstract class URIProcessorOutputImpl extends ProcessorImpl.ProcessorOutp
 
                     final URIReferencesState state = (URIReferencesState) processorImpl.getState(pipelineContext);
                     final String urlString = url.toExternalForm();
-                    readURLToStateIfNeeded(pipelineContext, url, state, uriReference.username, uriReference.password, uriReference.headersToForward);
+                    readURLToStateIfNeeded(pipelineContext, url, state, uriReference.username, uriReference.password, uriReference.domain, uriReference.headersToForward);
                     return state.getLastModified(urlString, uriReference.username, uriReference.password);
 
                 } else  {
@@ -238,6 +239,11 @@ public abstract class URIProcessorOutputImpl extends ProcessorImpl.ProcessorOutp
 
         // Make sure the config input is cacheable
         final ProcessorImpl.KeyValidity keyValidity = processorImpl.getInputKeyValidity(pipelineContext, configInputName);
+
+        if (keyValidity == null && pipelineContext.getTraceForUpdate() != null) {
+            processorImpl.getInputKeyValidity(pipelineContext, configInputName);
+        }
+
         if (keyValidity == null)
             return null;
 
@@ -253,11 +259,13 @@ public abstract class URIProcessorOutputImpl extends ProcessorImpl.ProcessorOutp
     }
 
     public static class URIReference {
-        public URIReference(String context, String spec, String username, String password, String headersToForward) {
+        public URIReference(String context, String spec, String username, String password,
+        					String domain, String headersToForward) {
             this.context = context;
             this.spec = spec;
             this.username = username;
             this.password = password;
+            this.domain = domain;
             this.headersToForward = headersToForward;
         }
 
@@ -265,6 +273,7 @@ public abstract class URIProcessorOutputImpl extends ProcessorImpl.ProcessorOutp
         public String spec;
         public String username;
         public String password;
+        public String domain;
         public String headersToForward;
 
         @Override
@@ -323,15 +332,17 @@ public abstract class URIProcessorOutputImpl extends ProcessorImpl.ProcessorOutp
          * @param spec              URL spec
          * @param username          optional username
          * @param password          optional password
+         * @param domain			optional domain
          * @param headersToForward  headers to forward
          */
-        public void addReference(String context, String spec, String username, String password, String headersToForward) {
+        public void addReference(String context, String spec, String username, String password,
+        							String domain, String headersToForward) {
             if (references == null)
                 references = new ArrayList<URIReference>();
 
 //            logger.info("URIProcessorOutputImpl: adding reference: context = " + context + ", spec = " + spec);
 
-            references.add(new URIReference(context, spec, username, password, headersToForward));
+            references.add(new URIReference(context, spec, username, password, domain, headersToForward));
         }
 
         /**
@@ -375,9 +386,11 @@ public abstract class URIProcessorOutputImpl extends ProcessorImpl.ProcessorOutp
      * @param state             state to read to
      * @param username          optional username
      * @param password          optional password
+     * @param domain          	optional domain
      * @param headersToForward  headers to forward
      */
-    public void readURLToStateIfNeeded(PipelineContext pipelineContext, URL url, URIReferencesState state, String username, String password, String headersToForward) {
+    public void readURLToStateIfNeeded(PipelineContext pipelineContext, URL url, URIReferencesState state, String username, String password,
+    									String domain, String headersToForward) {
 
         final String urlString = url.toExternalForm();
 
@@ -400,16 +413,18 @@ public abstract class URIProcessorOutputImpl extends ProcessorImpl.ProcessorOutp
                 // Open connection
                 final ConnectionResult connectionResult
                     = new Connection().open(externalContext, new IndentedLogger(logger, ""), false, Connection.Method.GET.name(),
-                        submissionURL, username, password, null, null, null, headersToForward);
+                        submissionURL, username, password, domain, null, null, null, headersToForward);
 
                 // Throw if connection failed (this is caught by the caller)
                 if (connectionResult.statusCode != 200)
                     throw new OXFException("Got invalid return code while loading URI: " + urlString + ", " + connectionResult.statusCode);
 
                 // Read connection into SAXStore
-                final boolean handleXInclude = false;
+                final boolean handleXInclude = false; // don't handle XInclude
+                final boolean handleLexical = true;   // handle comments and other lexical information
+                
                 documentSAXStore = new SAXStore();
-                XMLUtils.inputStreamToSAX(connectionResult.getResponseInputStream(), connectionResult.resourceURI, documentSAXStore, false, handleXInclude);
+                XMLUtils.inputStreamToSAX(connectionResult.getResponseInputStream(), connectionResult.resourceURI, documentSAXStore, false, handleXInclude, handleLexical);
 
                 // Obtain last modified
                 lastModifiedLong = connectionResult.getLastModified();

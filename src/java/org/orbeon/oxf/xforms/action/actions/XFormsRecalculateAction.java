@@ -16,9 +16,7 @@ package org.orbeon.oxf.xforms.action.actions;
 import org.dom4j.Element;
 import org.orbeon.oxf.common.ValidationException;
 import org.orbeon.oxf.util.PropertyContext;
-import org.orbeon.oxf.xforms.XFormsContainingDocument;
-import org.orbeon.oxf.xforms.XFormsModel;
-import org.orbeon.oxf.xforms.XFormsUtils;
+import org.orbeon.oxf.xforms.*;
 import org.orbeon.oxf.xforms.action.XFormsAction;
 import org.orbeon.oxf.xforms.action.XFormsActionInterpreter;
 import org.orbeon.oxf.xforms.event.XFormsEvent;
@@ -40,14 +38,20 @@ public class XFormsRecalculateAction extends XFormsAction {
         final XBLContainer container = actionInterpreter.getXBLContainer();
         final XFormsContainingDocument containingDocument = actionInterpreter.getContainingDocument();
 
-        final String modelId = XFormsUtils.namespaceId(containingDocument, actionElement.attributeValue("model"));
+        final String modelId = actionElement.attributeValue("model");
         final XFormsModel model = actionInterpreter.resolveModel(propertyContext, actionElement, modelId);
 
         if (model == null)
             throw new ValidationException("Invalid model id: " + modelId, (LocationData) actionElement.getData());
 
+        // @xxforms:defaults
+        final boolean applyInitialValues; {
+            final String applyInitialValuesString = actionInterpreter.resolveAVT(propertyContext, actionElement, XFormsConstants.XXFORMS_DEFAULTS_QNAME);
+            applyInitialValues = Boolean.parseBoolean(applyInitialValuesString);
+        }
+
         // Because of inter-model dependencies, we consider for now that the action must force the operation
         model.getDeferredActionContext().recalculate = true;
-        container.dispatchEvent(propertyContext, new XFormsRecalculateEvent(containingDocument, model));
+        container.dispatchEvent(propertyContext, new XFormsRecalculateEvent(containingDocument, model, applyInitialValues));
     }
 }

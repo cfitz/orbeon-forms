@@ -13,12 +13,12 @@
  */
 package org.orbeon.oxf.xforms.processor.handlers;
 
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
 import org.orbeon.oxf.xforms.XFormsUtils;
 import org.orbeon.oxf.xforms.control.XFormsControl;
 import org.orbeon.oxf.xforms.control.controls.XFormsOutputControl;
 import org.orbeon.oxf.xml.XMLConstants;
 import org.xml.sax.Attributes;
-import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 
@@ -32,7 +32,7 @@ public class XFormsOutputHTMLHandler extends XFormsOutputHandler {
 
         final XFormsOutputControl outputControl = (XFormsOutputControl) control;
         final boolean isConcreteControl = outputControl != null;
-        final ContentHandler contentHandler = handlerContext.getController().getOutput();
+        final XMLReceiver xmlReceiver = handlerContext.getController().getOutput();
         final String xhtmlPrefix = handlerContext.findXHTMLPrefix();
 
         final AttributesImpl containerAttributes = getContainerAttributes(uri, localname, attributes, effectiveId, outputControl);
@@ -40,15 +40,15 @@ public class XFormsOutputHTMLHandler extends XFormsOutputHandler {
         // Handle accessibility attributes on <div>
         handleAccessibilityAttributes(attributes, containerAttributes);
 
-        contentHandler.startElement(XMLConstants.XHTML_NAMESPACE_URI, getContainingElementName(), getContainingElementQName(), containerAttributes);
+        xmlReceiver.startElement(XMLConstants.XHTML_NAMESPACE_URI, getContainingElementName(), getContainingElementQName(), containerAttributes);
         {
             if (isConcreteControl) {
                 final String mediatypeValue = attributes.getValue("mediatype");
                 final String htmlValue = XFormsOutputControl.getExternalValue(pipelineContext, outputControl, mediatypeValue);
-                XFormsUtils.streamHTMLFragment(contentHandler, htmlValue, outputControl.getLocationData(), xhtmlPrefix);
+                XFormsUtils.streamHTMLFragment(xmlReceiver, htmlValue, outputControl.getLocationData(), xhtmlPrefix);
             }
         }
-        contentHandler.endElement(XMLConstants.XHTML_NAMESPACE_URI, getContainingElementName(), getContainingElementQName());
+        xmlReceiver.endElement(XMLConstants.XHTML_NAMESPACE_URI, getContainingElementName(), getContainingElementQName());
     }
 
     @Override

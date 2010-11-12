@@ -21,8 +21,7 @@ import org.dom4j.*;
 import org.dom4j.io.DocumentSource;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.common.ValidationException;
-import org.orbeon.oxf.pipeline.api.ExternalContext;
-import org.orbeon.oxf.pipeline.api.PipelineContext;
+import org.orbeon.oxf.pipeline.api.*;
 import org.orbeon.oxf.processor.DebugProcessor;
 import org.orbeon.oxf.resources.URLFactory;
 import org.orbeon.oxf.util.*;
@@ -34,61 +33,30 @@ import org.orbeon.oxf.xforms.xbl.XBLBindings;
 import org.orbeon.oxf.xforms.xbl.XBLContainer;
 import org.orbeon.oxf.xml.*;
 import org.orbeon.oxf.xml.XMLUtils;
-import org.orbeon.oxf.xml.dom4j.Dom4jUtils;
-import org.orbeon.oxf.xml.dom4j.LocationData;
-import org.orbeon.oxf.xml.dom4j.LocationDocumentResult;
-import org.orbeon.oxf.xml.dom4j.LocationDocumentSource;
+import org.orbeon.oxf.xml.dom4j.*;
+import org.orbeon.saxon.Configuration;
 import org.orbeon.saxon.dom4j.NodeWrapper;
 import org.orbeon.saxon.functions.FunctionLibrary;
 import org.orbeon.saxon.om.*;
-import org.orbeon.saxon.tinytree.TinyBuilder;
 import org.orbeon.saxon.value.*;
 import org.orbeon.saxon.value.StringValue;
 import org.w3c.tidy.Tidy;
-import org.xml.sax.ContentHandler;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
+import org.xml.sax.*;
 
-import javax.xml.transform.Result;
-import javax.xml.transform.Source;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
+import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.sax.SAXResult;
 import javax.xml.transform.sax.TransformerHandler;
 import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.net.*;
 import java.util.*;
-import java.util.zip.CRC32;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.GZIPInputStream;
+import java.util.zip.*;
 
 public class XFormsUtils {
 
     private static final String LOGGING_CATEGORY = "utils";
     private static final Logger logger = LoggerFactory.createLogger(XFormsUtils.class);
     private static final IndentedLogger indentedLogger = XFormsContainingDocument.getIndentedLogger(logger, XFormsServer.getLogger(), LOGGING_CATEGORY);
-
-    public static final NodeInfo DUMMY_CONTEXT;
-    static {
-        try {
-            final TinyBuilder treeBuilder = new TinyBuilder();
-            final TransformerHandler identity = TransformerUtils.getIdentityTransformerHandler();
-            identity.setResult(treeBuilder);
-
-            identity.startDocument();
-            identity.endDocument();
-
-            DUMMY_CONTEXT = treeBuilder.getCurrentRoot();
-        } catch (SAXException e) {
-            throw new OXFException(e);
-        }
-    }
 
     private static final int SRC_CONTENT_BUFFER_SIZE = 1024;
 
@@ -155,16 +123,10 @@ public class XFormsUtils {
 
         // Get SAXStore
         // TODO: This is not optimal since we create a second in-memory representation. Should stream instead.
-        final SAXStore saxStore;
-        try {
-            saxStore = new SAXStore();
-            final SAXResult saxResult = new SAXResult(saxStore);
-            final Transformer identity = TransformerUtils.getIdentityTransformer();
-            final Source source = encodeLocationData ? new LocationDocumentSource(documentToEncode) : new DocumentSource(documentToEncode);
-            identity.transform(source, saxResult);
-        } catch (TransformerException e) {
-            throw new OXFException(e);
-        }
+        final SAXStore saxStore = new SAXStore();
+        // NOTE: We don't encode XML comments and use only the ContentHandler interface
+        final Source source = encodeLocationData ? new LocationDocumentSource(documentToEncode) : new DocumentSource(documentToEncode);
+        TransformerUtils.sourceToSAX(source, saxStore);
 
         // Serialize SAXStore to bytes
         // TODO: This is not optimal since we create a third in-memory representation. Should stream instead.
@@ -338,7 +300,7 @@ public class XFormsUtils {
 //        }
 //    }
 
-    public static void streamHTMLFragment(ContentHandler contentHandler, String value, LocationData locationData, String xhtmlPrefix) {
+    public static void streamHTMLFragment(XMLReceiver xmlReceiver, String value, LocationData locationData, String xhtmlPrefix) {
         
         if (value != null && value.trim().length() > 0) { // don't parse blank values
 
@@ -378,14 +340,8 @@ public class XFormsUtils {
                 final org.w3c.dom.Document htmlDocument = htmlStringToDocument(value, locationData);
 
                 // Stream fragment to the output
-                try {
-                    if (htmlDocument != null) {
-                        final Transformer identity = TransformerUtils.getIdentityTransformer();
-                        identity.transform(new DOMSource(htmlDocument),
-                                new SAXResult(new HTMLBodyContentHandler(contentHandler, xhtmlPrefix)));
-                    }
-                } catch (TransformerException e) {
-                    throw new OXFException(e);
+                if (htmlDocument != null) {
+                    TransformerUtils.sourceToSAX(new DOMSource(htmlDocument), new HTMLBodyXMLReceiver(xmlReceiver, xhtmlPrefix));
                 }
 //            }
         }
@@ -472,7 +428,7 @@ public class XFormsUtils {
      * @param childElement          element to evaluate (xforms:label, etc.)
      * @param acceptHTML            whether the result may contain HTML
      * @param containsHTML          whether the result actually contains HTML (null allowed)
-     * @return                      string containing the result of the evaluation, null if evaluation failed
+     * @return                      string containing the result of the evaluation, null if evaluation failed (see comments)
      */
     public static String getElementValue(final PropertyContext propertyContext, final XBLContainer container,
                                          final XFormsContextStack contextStack, final String sourceEffectiveId,
@@ -494,8 +450,10 @@ public class XFormsUtils {
                 final String tempResult = XFormsUtils.getBoundItemValue(boundItem);
                 if (tempResult != null) {
                     return (acceptHTML && containsHTML == null) ? XMLUtils.escapeXMLMinimal(tempResult) : tempResult;
-                } else
+                } else {
+                    // There is a single-node binding but it doesn't point to an acceptable item
                     return null;
+                }
             }
         }
 
@@ -518,6 +476,7 @@ public class XFormsUtils {
 
                     return (acceptHTML && containsHTML == null) ? XMLUtils.escapeXMLMinimal(tempResult) : tempResult;
                 } else {
+                    // There is a value attribute but the evaluation context is empty
                     return null;
                 }
             }
@@ -540,6 +499,7 @@ public class XFormsUtils {
                     final XFormsModel currentModel = currentBindingContext.model;
                     // NOTE: xforms-link-error is no longer in XForms 1.1 starting 2009-03-10
                     currentModel.getXBLContainer(null).dispatchEvent(propertyContext, new XFormsLinkErrorEvent(container.getContainingDocument(), currentModel, srcAttributeValue, childElement, e));
+                    // Exception when dereferencing the linking attribute
                     return null;
                 }
             }
@@ -612,7 +572,7 @@ public class XFormsUtils {
         } else if (object instanceof Boolean) {
             valueRepresentation = BooleanValue.get((Boolean) object);
         } else if (object instanceof Integer) {
-            valueRepresentation = new IntegerValue((Integer) object);
+            valueRepresentation = new Int64Value((Integer) object);
         } else if (object instanceof Float) {
             valueRepresentation = new FloatValue((Float) object);
         } else if (object instanceof Double) {
@@ -751,7 +711,7 @@ public class XFormsUtils {
 
         // Deserialize SAXStore to dom4j document
         // TODO: This is not optimal
-        final TransformerHandler identity = TransformerUtils.getIdentityTransformerHandler();
+        final TransformerXMLReceiver identity = TransformerUtils.getIdentityTransformerHandler();
         final LocationDocumentResult result = new LocationDocumentResult();
         identity.setResult(result);
         try {
@@ -821,7 +781,7 @@ public class XFormsUtils {
     public static String retrieveSrcValue(String src) throws IOException {
 
         // Handle HHRI
-        src = encodeHRRI(src, true);
+        src = NetUtils.encodeHRRI(src, true);
 
         final URL url = URLFactory.createURL(src);
 
@@ -884,14 +844,15 @@ public class XFormsUtils {
     /**
      * Resolve a render URL including xml:base resolution.
      *
-     * @param isPortletLoad         whether this is called within a portlet
      * @param propertyContext       current context
+     * @param containingDocument    current document
+     * @param isPortletLoad         whether this is called within a portlet
      * @param currentElement        element used for xml:base resolution
      * @param url                   URL to resolve
      * @return                      resolved URL
      */
-    public static String resolveRenderURL(boolean isPortletLoad, PropertyContext propertyContext, Element currentElement, String url) {
-        final URI resolvedURI = resolveXMLBase(currentElement, url);
+    public static String resolveRenderURL(PropertyContext propertyContext, XFormsContainingDocument containingDocument, boolean isPortletLoad, Element currentElement, String url) {
+        final URI resolvedURI = resolveXMLBase(containingDocument, currentElement, url);
         final String resolvedURIString = resolvedURI.toString();
 
         final String externalURL;
@@ -922,14 +883,15 @@ public class XFormsUtils {
      * Resolve a resource URL including xml:base resolution.
      *
      * @param propertyContext       current context
+     * @param containingDocument    current document
      * @param element               element used to start resolution (if null, no resolution takes place)
      * @param url                   URL to resolve
      * @param rewriteMode           rewrite mode (see ExternalContext.Response)
      * @return                      resolved URL
      */
-    public static String resolveResourceURL(PropertyContext propertyContext, Element element, String url, int rewriteMode) {
+    public static String resolveResourceURL(PropertyContext propertyContext, XFormsContainingDocument containingDocument, Element element, String url, int rewriteMode) {
 
-        final URI resolvedURI = resolveXMLBase(element, url);
+        final URI resolvedURI = resolveXMLBase(containingDocument, element, url);
 
         return XFormsUtils.getExternalContext(propertyContext).getResponse().rewriteResourceURL(resolvedURI.toString(), rewriteMode);
     }
@@ -938,14 +900,15 @@ public class XFormsUtils {
      * Resolve a resource URL including xml:base resolution.
      *
      * @param propertyContext       current PropertyContext
+     * @param containingDocument    current document
      * @param element               element used to start resolution (if null, no resolution takes place)
      * @param url                   URL to resolve
      * @param rewriteMode           rewrite mode (see ExternalContext.Response)
      * @return                      resolved URL
      */
-    public static String resolveServiceURL(PropertyContext propertyContext, Element element, String url, int rewriteMode) {
+    public static String resolveServiceURL(PropertyContext propertyContext, XFormsContainingDocument containingDocument, Element element, String url, int rewriteMode) {
 
-        final URI resolvedURI = resolveXMLBase(element, url);
+        final URI resolvedURI = resolveXMLBase(containingDocument, element, url);
 
         return XFormsUtils.getExternalContext(propertyContext).rewriteServiceURL(resolvedURI.toString(), rewriteMode == ExternalContext.Response.REWRITE_MODE_ABSOLUTE);
     }
@@ -963,13 +926,13 @@ public class XFormsUtils {
     public static String getEscapedURLAttributeIfNeeded(PipelineContext pipelineContext, XFormsContainingDocument containingDocument, Element element, String attributeName, String attributeValue) {
         final String rewrittenValue;
         if ("src".equals(attributeName)) {
-            rewrittenValue = resolveResourceURL(pipelineContext, element, attributeValue, ExternalContext.Response.REWRITE_MODE_ABSOLUTE_PATH_OR_RELATIVE);
+            rewrittenValue = resolveResourceURL(pipelineContext, containingDocument, element, attributeValue, ExternalContext.Response.REWRITE_MODE_ABSOLUTE_PATH_OR_RELATIVE);
         } else if ("href".equals(attributeName)) {
 
             // TODO: href may be an action URL or a render URL. Should pass element name and reuse code from AbstractRewrite.
 
             final boolean isPortletLoad = "portlet".equals(containingDocument.getContainerType());
-            rewrittenValue = resolveRenderURL(isPortletLoad, pipelineContext, element, attributeValue);
+            rewrittenValue = resolveRenderURL(pipelineContext, containingDocument, isPortletLoad, element, attributeValue);
         } else {
             rewrittenValue = attributeValue;
         }
@@ -985,19 +948,19 @@ public class XFormsUtils {
      * @param variableToValueMap variables
      * @param functionLibrary    XPath function library to use
      * @param functionContext    context object to pass to the XForms function
-     * @param prefixToURIMap     namespace mappings
+     * @param namespaceMapping   namespace mappings
      * @param locationData       LocationData for error reporting
      * @param attributeValue     attribute value
      * @return                   resolved attribute value
      */
     public static String resolveAttributeValueTemplates(PropertyContext propertyContext, List<Item> contextItems, int contextPosition, Map<String, ValueRepresentation> variableToValueMap,
                                                         FunctionLibrary functionLibrary, XPathCache.FunctionContext functionContext,
-                                                        Map<String, String> prefixToURIMap, LocationData locationData, String attributeValue) {
+                                                        NamespaceMapping namespaceMapping, LocationData locationData, String attributeValue) {
 
         if (attributeValue == null)
             return null;
 
-        return XPathCache.evaluateAsAvt(propertyContext, contextItems, contextPosition, attributeValue, prefixToURIMap,
+        return XPathCache.evaluateAsAvt(propertyContext, contextItems, contextPosition, attributeValue, namespaceMapping,
                 variableToValueMap, functionLibrary, functionContext, null, locationData);
     }
 
@@ -1018,51 +981,21 @@ public class XFormsUtils {
         return XPathCache.evaluateAsAvt(propertyContext, xpathContext, contextNode, attributeValue);
     }
 
-    /**
-     * Encode a Human Readable Resource Identifier to a URI. Leading and trailing spaces are removed first.
-     *
-     * @param uriString    URI to encode
-     * @param processSpace whether to process the space character or leave it unchanged
-     * @return             encoded URI, or null if uriString was null
-     */
-    public static String encodeHRRI(String uriString, boolean processSpace) {
-
-        if (uriString == null)
-            return null;
-
-        // Note that the XML Schema spec says "Spaces are, in principle, allowed in the ·lexical space· of anyURI,
-        // however, their use is highly discouraged (unless they are encoded by %20).".
-
-        // We assume that we never want leading or trailing spaces. You can use %20 if you really want this.
-        uriString = uriString.trim();
-
-        // We try below to follow the "Human Readable Resource Identifiers" RFC, in draft as of 2007-06-06.
-        // * the control characters #x0 to #x1F and #x7F to #x9F
-        // * space #x20
-        // * the delimiters "<" #x3C, ">" #x3E, and """ #x22
-        // * the unwise characters "{" #x7B, "}" #x7D, "|" #x7C, "\" #x5C, "^" #x5E, and "`" #x60
-        final FastStringBuffer sb = new FastStringBuffer(uriString.length() * 2);
-        for (int i = 0; i < uriString.length(); i++) {
-            final char currentChar = uriString.charAt(i);
-
-            if (currentChar >= 0
-                    && (currentChar <= 0x1f || (processSpace && currentChar == 0x20) || currentChar == 0x22
-                     || currentChar == 0x3c || currentChar == 0x3e
-                     || currentChar == 0x5c || currentChar == 0x5e || currentChar == 0x60
-                     || (currentChar >= 0x7b && currentChar <= 0x7d)
-                     || (currentChar >= 0x7f && currentChar <= 0x9f))) {
-                sb.append('%');
-                sb.append(NumberUtils.toHexString((byte) currentChar).toUpperCase());
-            } else {
-                sb.append(currentChar);
-            }
-        }
-
-        return sb.toString();
-    }
-
     public static interface InstanceWalker {
         public void walk(NodeInfo nodeInfo);
+    }
+
+    /**
+     * Resolve a URI string against an element, taking into account ancestor xml:base attributes for
+     * the resolution, and using the document's request URL as a base.
+     *
+     * @param containingDocument    current document
+     * @param element   element used to start resolution (if null, no resolution takes place)
+     * @param uri       URI to resolve
+     * @return          resolved URI
+     */
+    public static URI resolveXMLBase(XFormsContainingDocument containingDocument, Element element, String uri) {
+        return resolveXMLBase(element, containingDocument.getRequestPath(), uri);
     }
 
     /**
@@ -1070,33 +1003,38 @@ public class XFormsUtils {
      * the resolution.
      *
      * @param element   element used to start resolution (if null, no resolution takes place)
+     * @param baseURI   optional base URI
      * @param uri       URI to resolve
      * @return          resolved URI
      */
-    public static URI resolveXMLBase(Element element, String uri) {
+    public static URI resolveXMLBase(Element element, String baseURI, String uri) {
         try {
             // Allow for null Element
             if (element == null)
                 return new URI(uri);
 
-            final List<String> xmlBaseElements = new ArrayList<String>();
+            final List<String> xmlBaseValues = new ArrayList<String>();
 
             // Collect xml:base values
             Element currentElement = element;
             do {
                 final String xmlBaseAttribute = currentElement.attributeValue(XMLConstants.XML_BASE_QNAME);
                 if (xmlBaseAttribute != null)
-                    xmlBaseElements.add(xmlBaseAttribute);
+                    xmlBaseValues.add(xmlBaseAttribute);
                 currentElement = currentElement.getParent();
             } while(currentElement != null);
 
+            // Append base if needed
+            if (baseURI != null)
+                xmlBaseValues.add(baseURI);
+
             // Go from root to leaf
-            Collections.reverse(xmlBaseElements);
-            xmlBaseElements.add(uri);
+            Collections.reverse(xmlBaseValues);
+            xmlBaseValues.add(uri);
 
             // Resolve paths from root to leaf
             URI result = null;
-            for (final String currentXMLBase: xmlBaseElements) {
+            for (final String currentXMLBase: xmlBaseValues) {
                 final URI currentXMLBaseURI = new URI(currentXMLBase);
                 result = (result == null) ? currentXMLBaseURI : result.resolve(currentXMLBaseURI);
             }
@@ -1104,30 +1042,6 @@ public class XFormsUtils {
         } catch (URISyntaxException e) {
             throw new ValidationException("Error while resolving URI: " + uri, e, (element != null) ? (LocationData) element.getData() : null);
         }
-    }
-
-    /**
-     * Return an element's xml:base value, checking ancestors as well.
-     *
-     * @param element   element to check
-     * @return          xml:base value or null if not found
-     */
-    public static String resolveXMLang(Element element) {
-        // Allow for null Element
-        if (element == null)
-            return null;
-
-        // Collect xml:base values
-        Element currentElement = element;
-        do {
-            final String xmlBaseAttribute = currentElement.attributeValue(XMLConstants.XML_LANG_QNAME);
-            if (xmlBaseAttribute != null)
-                return xmlBaseAttribute;
-            currentElement = currentElement.getParent();
-        } while(currentElement != null);
-
-        // Not found
-        return null;
     }
 
     /**
@@ -1168,7 +1082,7 @@ public class XFormsUtils {
      * @param id                    id to prefix
      * @return                      prefixed id or null
      */
-    public static String namespaceId(XFormsContainingDocument containingDocument, String id) {
+    public static String namespaceId(XFormsContainingDocument containingDocument, CharSequence id) {
         if (id == null)
             return null;
         else
@@ -1365,17 +1279,17 @@ public class XFormsUtils {
     /**
      * Return whether the given string contains a well-formed XPath 2.0 expression.
      *
-     * @param xpathString   string to check
-     * @param namespaceMap  in-scope namespaces
-     * @return              true iif the given string contains well-formed XPath 2.0
+     * @param xpathString       string to check
+     * @param namespaceMapping  in-scope namespaces
+     * @return                  true iif the given string contains well-formed XPath 2.0
      */
-    public static boolean isXPath2Expression(String xpathString, Map<String, String> namespaceMap) {
+    public static boolean isXPath2Expression(Configuration configuration, String xpathString, NamespaceMapping namespaceMapping) {
         // Empty string is never well-formed XPath
         if (xpathString.trim().length() == 0)
             return false;
 
         try {
-            XPathCache.checkXPathExpression(xpathString, namespaceMap, XFormsContainingDocument.getFunctionLibrary());
+            XPathCache.checkXPathExpression(configuration, xpathString, namespaceMapping, XFormsContainingDocument.getFunctionLibrary());
         } catch (Exception e) {
             // Ideally we would like the parser to not throw as this is time-consuming, but not sure ho.w to achieve that
             return false;
@@ -1456,8 +1370,8 @@ public class XFormsUtils {
                 };
                 contextStack.pushBinding(pipelineContext, element, sourceEffectiveId, outputControl.getChildElementScope(element));
                 {
-                    outputControl.setBindingContext(pipelineContext, contextStack.getCurrentBindingContext(), true);
-                    outputControl.evaluateIfNeeded(pipelineContext, false);
+                    outputControl.setBindingContext(pipelineContext, contextStack.getCurrentBindingContext());
+                    outputControl.evaluate(pipelineContext);
                 }
                 contextStack.popBinding();
 
@@ -1502,15 +1416,15 @@ public class XFormsUtils {
                         final String currentAttributeValue = currentAttribute.getValue();
 
                         final String resolvedValue;
-                        if (hostLanguageAVTs && currentAttributeValue.indexOf('{') != -1) {
+                        if (hostLanguageAVTs && maybeAVT(currentAttributeValue)) {
                             // This is an AVT, use attribute control to produce the output
                             final XXFormsAttributeControl attributeControl
                                     = new XXFormsAttributeControl(container, element, currentAttributeName, currentAttributeValue);
 
                             contextStack.pushBinding(pipelineContext, element, sourceEffectiveId, attributeControl.getChildElementScope(element));
                             {
-                                attributeControl.setBindingContext(pipelineContext, contextStack.getCurrentBindingContext(), true);
-                                attributeControl.evaluateIfNeeded(pipelineContext, false);
+                                attributeControl.setBindingContext(pipelineContext, contextStack.getCurrentBindingContext());
+                                attributeControl.evaluate(pipelineContext);
                             }
                             contextStack.popBinding();
 
@@ -1551,6 +1465,10 @@ public class XFormsUtils {
 
     public static String escapeJavaScript(String value) {
         return StringUtils.replace(StringUtils.replace(StringUtils.replace(value, "\\", "\\\\"), "\"", "\\\""), "\n", "\\n");
+    }
+
+    public static boolean maybeAVT(String attributeValue) {
+        return attributeValue.indexOf('{') != -1;
     }
 
     /**
@@ -1839,5 +1757,54 @@ public class XFormsUtils {
      */
     public static String getFormId(XFormsContainingDocument containingDocument) {
         return namespaceId(containingDocument, "xforms-form");
+    }
+
+    public static boolean compareItems(Item item1, Item item2) {
+        if (item1 == null && item2 == null) {
+            return true;
+        }
+        if (item1 == null || item2 == null) {
+            return false;
+        }
+
+        if (item1 instanceof StringValue) {
+            // Saxon doesn't allow equals() on StringValue because it requires a collation and equals() might throw
+            if (item2 instanceof StringValue) {
+                final StringValue currentStringValue = (StringValue) item1;
+                if (currentStringValue.codepointEquals((StringValue) item2)) {
+                    return true;
+                }
+            }
+        } else if (item1 instanceof NumericValue) {
+            // Saxon doesn't allow equals() between numeric and non-numeric values
+            if (item2 instanceof NumericValue) {
+                final NumericValue currentNumericValue = (NumericValue) item1;
+                if (currentNumericValue.equals((NumericValue) item2)) {
+                    return true;
+                }
+            }
+        } else if (item1 instanceof AtomicValue) {
+            if (item2 instanceof AtomicValue) {
+                final AtomicValue currentAtomicValue = (AtomicValue) item1;
+                if (currentAtomicValue.equals((AtomicValue) item2)) {
+                    return true;
+                }
+            }
+        } else {
+            if (item1.equals(item2)) {// equals() is the same as isSameNodeInfo() for NodeInfo, and compares the values for values
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Get an element's static id.
+     *
+     * @param element   element to check
+     * @return          static id or null
+     */
+    public static String getElementStaticId(Element element) {
+        return element.attributeValue(XFormsConstants.ID_QNAME);
     }
 }

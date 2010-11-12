@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the
  * GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -13,13 +13,11 @@
  */
 package org.orbeon.oxf.xforms.processor.handlers;
 
-import org.orbeon.oxf.xforms.XFormsStaticState;
 import org.orbeon.oxf.xforms.XFormsUtils;
+import org.orbeon.oxf.xforms.analysis.controls.ControlAnalysis;
 import org.orbeon.oxf.xforms.control.controls.XXFormsAttributeControl;
 import org.orbeon.oxf.xml.XMLUtils;
-import org.xml.sax.Attributes;
-import org.xml.sax.ContentHandler;
-import org.xml.sax.SAXException;
+import org.xml.sax.*;
 
 /**
  * Handle xhtml:* for handling AVTs as well as rewriting @id and @for.
@@ -47,7 +45,7 @@ public class XHTMLElementHandler extends XFormsBaseHandler {
                 final int attributesCount = attributes.getLength();
                 for (int i = 0; i < attributesCount; i++) {
                     final String attributeValue = attributes.getValue(i);
-                    if (attributeValue.indexOf('{') != -1) {
+                    if (XFormsUtils.maybeAVT(attributeValue)) {
                         // This is an AVT most likely
                         found = true;
 
@@ -56,8 +54,8 @@ public class XHTMLElementHandler extends XFormsBaseHandler {
 
                         // Get static id of attribute control associated with this particular attribute
                         final String attributeControlStaticId; {
-                            final XFormsStaticState.ControlInfo controlInfo = containingDocument.getStaticState().getAttributeControl(prefixedId, attributeQName);
-                            attributeControlStaticId = controlInfo.element.attributeValue("id");
+                            final ControlAnalysis controlAnalysis = containingDocument.getStaticState().getAttributeControl(prefixedId, attributeQName);
+                            attributeControlStaticId = controlAnalysis.element.attributeValue("id");
                         }
 
                         // Find concrete control if possible
@@ -84,7 +82,7 @@ public class XHTMLElementHandler extends XFormsBaseHandler {
 
                 if (found) {
                     // Update the value of the id attribute
-                    attributes = XMLUtils.addOrReplaceAttribute(attributes, "", "", "id", effectiveId);
+                    attributes = XMLUtils.addOrReplaceAttribute(attributes, "", "", "id", XFormsUtils.namespaceId(containingDocument, effectiveId));
                 }
             }
 
@@ -92,7 +90,7 @@ public class XHTMLElementHandler extends XFormsBaseHandler {
                 // Id was not replaced as part of AVT processing
 
                 // Update the value of the id attribute
-                attributes = XMLUtils.addOrReplaceAttribute(attributes, "", "", "id", effectiveId);
+                attributes = XMLUtils.addOrReplaceAttribute(attributes, "", "", "id", XFormsUtils.namespaceId(containingDocument, effectiveId));
             }
         }
 

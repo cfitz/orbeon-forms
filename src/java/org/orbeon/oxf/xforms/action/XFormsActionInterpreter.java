@@ -17,25 +17,22 @@ import org.apache.commons.lang.StringUtils;
 import org.dom4j.Element;
 import org.dom4j.QName;
 import org.orbeon.oxf.common.ValidationException;
-import org.orbeon.oxf.util.IndentedLogger;
-import org.orbeon.oxf.util.PropertyContext;
-import org.orbeon.oxf.util.XPathCache;
+import org.orbeon.oxf.util.*;
 import org.orbeon.oxf.xforms.*;
 import org.orbeon.oxf.xforms.control.XFormsControl;
+import org.orbeon.oxf.xforms.control.controls.XXFormsVariableControl;
 import org.orbeon.oxf.xforms.event.XFormsEvent;
 import org.orbeon.oxf.xforms.event.XFormsEventObserver;
 import org.orbeon.oxf.xforms.function.XFormsFunction;
 import org.orbeon.oxf.xforms.xbl.XBLBindings;
 import org.orbeon.oxf.xforms.xbl.XBLContainer;
+import org.orbeon.oxf.xml.NamespaceMapping;
 import org.orbeon.oxf.xml.XMLUtils;
-import org.orbeon.oxf.xml.dom4j.Dom4jUtils;
-import org.orbeon.oxf.xml.dom4j.ExtendedLocationData;
-import org.orbeon.oxf.xml.dom4j.LocationData;
+import org.orbeon.oxf.xml.dom4j.*;
 import org.orbeon.saxon.om.Item;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Execute a top-level XForms action and the included nested actions if any.
@@ -69,8 +66,8 @@ public class XFormsActionInterpreter {
             // Initialize context stack based on container context (based on local models if any)
             container.getContextStack().resetBindingContext(propertyContext);
             actionBlockContextStack = new XFormsContextStack(container, container.getContextStack().getCurrentBindingContext());
-        } else if (eventObserver == containingDocument) {
-            // Observer is the containing document itself
+        } else if (eventObserver == containingDocument || containingDocument.getEffectiveId().equals(ancestorObserverStaticId)) {
+            // Observer or ancestor is the containing document itself
 
             // Since we are at the top-level, the effective id of the action is the same as its static id
             outerActionElementEffectiveId = getActionStaticId(outerActionElement);
@@ -98,11 +95,15 @@ public class XFormsActionInterpreter {
             actionBlockContextStack = new XFormsContextStack(container, xpathContextObserver.getBindingContext(propertyContext, containingDocument));
 
             // Check variables in scope for action handlers within controls
-
-            // NOTE: This is not optimal, as variable values are re-evaluated and may have values different from the ones
-            // used by the controls during refresh. Contemplate handling this differently, e.g. see
-            // http://wiki.orbeon.com/forms/projects/core-xforms-engine-improvements#TOC-Representation-of-outer-action-hand
-            if (xpathContextObserver instanceof XFormsControl) {
+            if (xpathContextObserver instanceof XXFormsVariableControl) {
+                // Special case of a listener within a variable control
+                final XXFormsVariableControl variable = (XXFormsVariableControl) xpathContextObserver;
+                actionBlockContextStack.pushVariable(variable.getControlElement(), variable.getVariableName(), variable.getValue(propertyContext), variable.getResolutionScope());
+            } else if (xpathContextObserver instanceof XFormsControl) {
+                // NOTE: This is not right, as variable values are re-evaluated and may have values different from the ones
+                // used by the controls during refresh. Contemplate handling this differently, e.g. see
+                // http://wiki.orbeon.com/forms/projects/core-xforms-engine-improvements#TOC-Representation-of-outer-action-hand
+                // TODO: here we can scope variables by actually asking the preceding XXFormsVariableControl
                 scopeVariables(propertyContext, container, outerActionElement, ((XFormsControl) xpathContextObserver).getControlElement(), xpathContextObserver.getEffectiveId());
             }
         }
@@ -143,10 +144,10 @@ public class XFormsActionInterpreter {
     /**
      * Return the namespace mappings for the given action element.
      *
-     * @param actionElement Element to get namespace mapping for
-     * @return              Map<String prefix, String uri>
+     * @param actionElement element to get namespace mapping for
+     * @return              mapping
      */
-    public Map<String, String> getNamespaceMappings(Element actionElement) {
+    public NamespaceMapping getNamespaceMappings(Element actionElement) {
         return container.getNamespaceMappings(actionElement);
     }
 
@@ -208,21 +209,23 @@ public class XFormsActionInterpreter {
                 // Gotta iterate
 
                 // We have to restore the context to the in-scope evaluation context, then push @model/@context/@iterate
-                // NOTE: It's not 100% how @context and @xxforms:iterate should interact here
+                // NOTE: It's not 100% how @context and @xxforms:iterate should interact here. Right now @xxforms:iterate overrides @context,
+                // i.e. @context is evaluated first, and @xxforms:iterate sets a new context for each iteration
                 final XFormsContextStack.BindingContext actionBindingContext = actionBlockContextStack.popBinding();
-                final Map<String, String> namespaceContext = container.getNamespaceMappings(actionElement);
+                final NamespaceMapping namespaceMapping = container.getNamespaceMappings(actionElement);
                 {
                     final String contextAttribute = actionElement.attributeValue("context");
                     final String modelAttribute = actionElement.attributeValue("model");
                     // TODO: function context
-                    actionBlockContextStack.pushBinding(propertyContext, null, contextAttribute, iterateIterationAttribute, modelAttribute, null, actionElement, namespaceContext, getSourceEffectiveId(actionElement), actionScope);
+                    actionBlockContextStack.pushBinding(propertyContext, null, contextAttribute, iterateIterationAttribute, modelAttribute, null, actionElement, namespaceMapping, getSourceEffectiveId(actionElement), actionScope);
                 }
                 {
                     final String refAttribute = actionElement.attributeValue("ref");
                     final String nodesetAttribute = actionElement.attributeValue("nodeset");
                     final String bindAttribute = actionElement.attributeValue("bind");
 
-                    final int iterationCount = actionBlockContextStack.getCurrentNodeset().size();
+                    final List<Item> currentNodeset = actionBlockContextStack.getCurrentNodeset();
+                    final int iterationCount = currentNodeset.size();
                     for (int index = 1; index <= iterationCount; index++) {
 
                         // Push iteration
@@ -230,9 +233,9 @@ public class XFormsActionInterpreter {
 
                         // Then we also need to push back binding attributes, excluding @context and @model
                         // TODO: function context
-                        actionBlockContextStack.pushBinding(propertyContext, refAttribute, null, nodesetAttribute, null, bindAttribute, actionElement, namespaceContext, getSourceEffectiveId(actionElement), actionScope);
+                        actionBlockContextStack.pushBinding(propertyContext, refAttribute, null, nodesetAttribute, null, bindAttribute, actionElement, namespaceMapping, getSourceEffectiveId(actionElement), actionScope);
 
-                        final Item overriddenContextNodeInfo = actionBlockContextStack.getCurrentSingleItem();
+                        final Item overriddenContextNodeInfo = currentNodeset.get(index - 1);
                         runSingleIteration(propertyContext, event, eventObserver, actionElement, actionNamespaceURI,
                                 actionName, actionScope, ifConditionAttribute, whileIterationAttribute, true, overriddenContextNodeInfo);
 
@@ -410,19 +413,16 @@ public class XFormsActionInterpreter {
      * @param propertyContext   current context
      * @param actionElement     action element
      * @param attributeValue    raw value to resolve
-     * @param isNamespace       whether to namespace the resulting value
      * @return                  resolved attribute value
      */
-    public String resolveAVTProvideValue(PropertyContext propertyContext, Element actionElement, String attributeValue, boolean isNamespace) {
+    public String resolveAVTProvideValue(PropertyContext propertyContext, Element actionElement, String attributeValue) {
 
         if (attributeValue == null)
             return null;
 
         // Whether this can't be an AVT
-        final boolean maybeAvt = attributeValue.indexOf('{') != -1;
-
         final String resolvedAVTValue;
-        if (maybeAvt) {
+        if (XFormsUtils.maybeAVT(attributeValue)) {
             // We have to go through AVT evaluation
             final XFormsContextStack.BindingContext bindingContext = actionBlockContextStack.getCurrentBindingContext();
 
@@ -431,7 +431,7 @@ public class XFormsActionInterpreter {
             if (bindingContext.getSingleItem() == null)
                 return null;
 
-            final Map<String, String> prefixToURIMap = getNamespaceMappings(actionElement);
+            final NamespaceMapping namespaceMapping = getNamespaceMappings(actionElement);
             final LocationData locationData = (LocationData) actionElement.getData();
 
             // Setup function context
@@ -439,7 +439,7 @@ public class XFormsActionInterpreter {
 
             resolvedAVTValue = XFormsUtils.resolveAttributeValueTemplates(propertyContext, bindingContext.getNodeset(),
                         bindingContext.getPosition(), actionBlockContextStack.getCurrentVariables(), XFormsContainingDocument.getFunctionLibrary(),
-                        functionContext, prefixToURIMap, locationData, attributeValue);
+                        functionContext, namespaceMapping, locationData, attributeValue);
 
             // Restore function context
             actionBlockContextStack.returnFunctionContext();
@@ -448,7 +448,7 @@ public class XFormsActionInterpreter {
             resolvedAVTValue = attributeValue;
         }
 
-        return isNamespace ? XFormsUtils.namespaceId(containingDocument, resolvedAVTValue) : resolvedAVTValue;
+        return resolvedAVTValue;
     }
 
     /**
@@ -457,16 +457,15 @@ public class XFormsActionInterpreter {
      * @param propertyContext   current context
      * @param actionElement     action element
      * @param attributeName     QName of the attribute containing the value
-     * @param isNamespace       whether to namespace the resulting value
      * @return                  resolved attribute value
      */
-    public String resolveAVT(PropertyContext propertyContext, Element actionElement, QName attributeName, boolean isNamespace) {
+    public String resolveAVT(PropertyContext propertyContext, Element actionElement, QName attributeName) {
         // Get raw attribute value
         final String attributeValue = actionElement.attributeValue(attributeName);
         if (attributeValue == null)
             return null;
 
-        return resolveAVTProvideValue(propertyContext, actionElement, attributeValue, isNamespace);
+        return resolveAVTProvideValue(propertyContext, actionElement, attributeValue);
     }
 
     /**
@@ -475,16 +474,15 @@ public class XFormsActionInterpreter {
      * @param propertyContext   current context
      * @param actionElement     action element
      * @param attributeName     name of the attribute containing the value
-     * @param isNamespace       whether to namespace the resulting value
      * @return                  resolved attribute value
      */
-    public String resolveAVT(PropertyContext propertyContext, Element actionElement, String attributeName, boolean isNamespace) {
+    public String resolveAVT(PropertyContext propertyContext, Element actionElement, String attributeName) {
         // Get raw attribute value
         final String attributeValue = actionElement.attributeValue(attributeName);
         if (attributeValue == null)
             return null;
 
-        return resolveAVTProvideValue(propertyContext, actionElement, attributeValue, isNamespace);
+        return resolveAVTProvideValue(propertyContext, actionElement, attributeValue);
     }
 
     /**
@@ -500,7 +498,7 @@ public class XFormsActionInterpreter {
         final XBLContainer resolutionScopeContainer = findResolutionScopeContainer(actionElement);
 
         // Get indexes as space-separated list
-        final String repeatIndexes = resolveAVT(propertyContext, actionElement, XFormsConstants.XXFORMS_REPEAT_INDEXES_QNAME, false);
+        final String repeatIndexes = resolveAVT(propertyContext, actionElement, XFormsConstants.XXFORMS_REPEAT_INDEXES_QNAME);
         if (StringUtils.isBlank(repeatIndexes)) {
             // Most common case: resolve effective id based on source and target
             return resolutionScopeContainer.resolveObjectById(getSourceEffectiveId(actionElement), targetStaticId, null);

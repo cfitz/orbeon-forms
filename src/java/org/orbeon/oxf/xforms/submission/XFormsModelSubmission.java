@@ -17,41 +17,31 @@ import org.apache.commons.httpclient.methods.multipart.MultipartRequestEntity;
 import org.apache.log4j.Logger;
 import org.dom4j.*;
 import org.dom4j.io.DocumentSource;
+import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.common.ValidationException;
+import org.orbeon.oxf.pipeline.api.ExternalContext;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
 import org.orbeon.oxf.util.*;
 import org.orbeon.oxf.xforms.*;
-import org.orbeon.oxf.xforms.control.controls.XFormsUploadControl;
-import org.orbeon.oxf.xforms.event.XFormsEvent;
-import org.orbeon.oxf.xforms.event.XFormsEventObserver;
-import org.orbeon.oxf.xforms.event.XFormsEventTarget;
-import org.orbeon.oxf.xforms.event.XFormsEvents;
-import org.orbeon.oxf.xforms.event.events.XFormsSubmitErrorEvent;
-import org.orbeon.oxf.xforms.event.events.XFormsSubmitSerializeEvent;
-import org.orbeon.oxf.xforms.event.events.XXFormsSubmitEvent;
-import org.orbeon.oxf.xforms.event.events.XXFormsSubmitReplaceEvent;
+import org.orbeon.oxf.xforms.event.*;
+import org.orbeon.oxf.xforms.event.events.*;
 import org.orbeon.oxf.xforms.function.XFormsFunction;
 import org.orbeon.oxf.xforms.xbl.XBLContainer;
-import org.orbeon.oxf.xml.TransformerUtils;
-import org.orbeon.oxf.xml.XMLConstants;
+import org.orbeon.oxf.xml.*;
 import org.orbeon.oxf.xml.XMLUtils;
 import org.orbeon.oxf.xml.dom4j.Dom4jUtils;
 import org.orbeon.oxf.xml.dom4j.LocationData;
 import org.orbeon.saxon.dom4j.NodeWrapper;
 import org.orbeon.saxon.functions.FunctionLibrary;
-import org.orbeon.saxon.om.DocumentInfo;
-import org.orbeon.saxon.om.Item;
-import org.orbeon.saxon.om.NodeInfo;
+import org.orbeon.saxon.om.*;
 
 import javax.xml.transform.Transformer;
 import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.Callable;
 
 /**
  * Represents an XForms model submission instance.
@@ -75,6 +65,7 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
 
     private String avtValidate;
     private String avtRelevant;
+    private String avtXXFormsCalculate;
 
     private String avtSerialization;
     private boolean serialize = true;// computed from @serialization attribute or legacy @serialize attribute
@@ -82,7 +73,7 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
     private String targetref;// this is an XPath expression when used with replace="instance|text" (other meaning possible post-XForms 1.1 for replace="all")
     private String avtMode;
 
-    private String avtVersion;  
+    private String avtVersion;
     private String avtEncoding;
     private String avtMediatype;
     private String avtIndent;
@@ -98,6 +89,7 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
 
     private String avtXXFormsUsername;
     private String avtXXFormsPassword;
+    private String avtXXFormsDomain;
     private String avtXXFormsReadonly;
     private String avtXXFormsShared;
     private String avtXXFormsCache;
@@ -125,7 +117,9 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
         this.submissions = new Submission[] {
             new EchoSubmission(this),
             new ClientGetAllSubmission(this),
-            new OptimizedSubmission(this),
+            new LocalPortletSubmission(this),
+            new FilterPortletSubmission(this),
+            new RequestDispatcherSubmission(this),
             new CacheableSubmission(this),
             new RegularSubmission(this)
         };
@@ -184,6 +178,7 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
             }
             avtValidate = submissionElement.attributeValue("validate");
             avtRelevant = submissionElement.attributeValue("relevant");
+            avtXXFormsCalculate = submissionElement.attributeValue(XFormsConstants.XXFORMS_CALCULATE_QNAME);
 
             avtSerialization = submissionElement.attributeValue("serialization");
             if (avtSerialization != null) {
@@ -214,8 +209,8 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
                 replace = submissionElement.attributeValue("replace");
 
                 if (replace.equals("instance")) {
-                    replaceInstanceId = XFormsUtils.namespaceId(containingDocument, submissionElement.attributeValue("instance"));
-                    xxfReplaceInstanceId = XFormsUtils.namespaceId(containingDocument, submissionElement.attributeValue(XFormsConstants.XXFORMS_INSTANCE_QNAME));
+                    replaceInstanceId = submissionElement.attributeValue("instance");
+                    xxfReplaceInstanceId = submissionElement.attributeValue(XFormsConstants.XXFORMS_INSTANCE_QNAME);
                 }
             }
             if (submissionElement.attributeValue("separator") != null) {
@@ -227,6 +222,7 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
             // Extension attributes
             avtXXFormsUsername = submissionElement.attributeValue(XFormsConstants.XXFORMS_USERNAME_QNAME);
             avtXXFormsPassword = submissionElement.attributeValue(XFormsConstants.XXFORMS_PASSWORD_QNAME);
+            avtXXFormsDomain = submissionElement.attributeValue(XFormsConstants.XXFORMS_DOMAIN_QNAME);
 
             avtXXFormsReadonly = submissionElement.attributeValue(XFormsConstants.XXFORMS_READONLY_ATTRIBUTE_QNAME);
             avtXXFormsShared = submissionElement.attributeValue(XFormsConstants.XXFORMS_SHARED_QNAME);
@@ -327,7 +323,7 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
                 // If a submission requiring a second pass was already set, then we ignore a subsequent submission but
                 // issue a warning
                 {
-                    final XFormsModelSubmission existingSubmission = containingDocument.getClientActiveSubmission();
+                    final XFormsModelSubmission existingSubmission = containingDocument.getClientActiveSubmissionFirstPass();
                     if (p.isDeferredSubmission && existingSubmission != null) {
                         indentedLogger.logWarning("", "another submission requiring a second pass already exists",
                                 "existing submission", existingSubmission.getEffectiveId(),
@@ -342,13 +338,22 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
                 final XFormsModel modelForInstance;
                 if (p.refInstance != null) {
                     modelForInstance = p.refInstance.getModel(containingDocument);
-                    {
+                    if (modelForInstance != null) {
+                        // NOTE: XForms 1.1 says that we should rebuild/recalculate the "model containing this submission".
+                        // Here, we rebuild/recalculate instead the model containing the submission's single-node binding.
+                        // This can be different than the model containing the submission if using e.g. xxforms:instance().
+
                         // NOTE: XForms 1.1 seems to say this should happen regardless of whether we serialize or not. If
                         // the instance is not serialized and if no instance data is otherwise used for the submission,
-                        // this seems however unneeded.
-
-                        // TODO: XForms 1.1 says that we should rebuild/recalculate the "model containing this submission".
-                        modelForInstance.rebuildRecalculateIfNeeded(propertyContext);
+                        // this seems however unneeded so we optimize out.
+                        if (p.resolvedValidate || p.resolvedRelevant || p.resolvedXXFormsCalculate) {
+                            // Rebuild impacts validation, relevance and calculated values (set by recalculate)
+                            modelForInstance.doRebuild(propertyContext);
+                        }
+                        if (p.resolvedRelevant || p.resolvedXXFormsCalculate) {
+                            // Recalculate impacts relevance and calculated values
+                            modelForInstance.doRecalculate(propertyContext, false);
+                        }
                     }
                 } else {
                     // Case where no instance was found
@@ -363,13 +368,13 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
                 // Deferred submission: end of the first pass
                 if (p.isDeferredSubmissionFirstPass) {
 
-                    // Create document to submit here because in case of error, an Ajax response will still be produced
+                    // Create (but abandon) document to submit here because in case of error, an Ajax response will still be produced
                     if (serialize) {
                         createDocumentToSubmit(propertyContext, indentedLogger, p.refNodeInfo, p.refInstance, modelForInstance, p.resolvedValidate, p.resolvedRelevant);
                     }
 
                     // When replace="all", we wait for the submission of an XXFormsSubmissionEvent from the client
-                    containingDocument.setClientActiveSubmission(this);
+                    containingDocument.setActiveSubmissionFirstPass(this);
                     return;
                 }
 
@@ -386,17 +391,6 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
 
                 final Document documentToSubmit;
                 if (serialize) {
-                    // Handle uploaded files if any
-                    final Element filesElement = (event instanceof XXFormsSubmitEvent) ? ((XXFormsSubmitEvent) event).getFilesElement() : null;
-                    if (filesElement != null) {
-                        // Handle all file elements
-
-                        // NOTE: We used to request handling of temp files only if NOT replace="all". Guessing the
-                        // rationale was that user would be navigating to new page anyway. However, this was not a
-                        // correct assumption: the page might load in another window/tab, result in an file being
-                        // downloaded, or simply the file might be used by the next page.
-                        XFormsUploadControl.handleFileElement(propertyContext, containingDocument, filesElement, null, true);
-                    }
 
                     // Check if a submission requires file upload information
                     if (requestedSerialization.startsWith("multipart/")) {
@@ -444,7 +438,7 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
                 /* ***** Submission connection ************************************************************************** */
 
                 // Iterate through submissions and run the first match
-                for (Submission submission: submissions) {
+                for (final Submission submission: submissions) {
                     if (submission.isMatch(propertyContext, p, p2, sp)) {
                         if (indentedLogger.isDebugEnabled())
                             indentedLogger.startHandleOperation("", "connecting", "type", submission.getType());
@@ -463,7 +457,7 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
 
             } catch (Throwable throwable) {
                 /* ***** Handle errors ********************************************************************************** */
-                if (p != null && p.isDeferredSubmissionSecondPassReplaceAll && XFormsProperties.isOptimizeLocalSubmissionForward(containingDocument)) {
+                if (p != null && p.isDeferredSubmissionSecondPassReplaceAll && XFormsProperties.isLocalSubmissionForward(containingDocument)) {
                     // It doesn't serve any purpose here to dispatch an event, so we just propagate the exception
                     throw new XFormsSubmissionException(this, throwable, "Error while processing xforms:submission", "processing submission");
                 } else {
@@ -538,6 +532,44 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
             }
         }
         return submitDoneRunnable;
+    }
+
+    /**
+     * Run the given submission callable. This must be a callable for a replace="all" submission.
+     *
+     * @param callable          callable run
+     * @param response          response to write to if needed
+     */
+    public static void runDeferredSubmission(Callable<SubmissionResult> callable, ExternalContext.Response response) {
+        // Run submission
+        try {
+            final SubmissionResult result = callable.call();
+            if (result != null) {
+                // Callable did not do all the work, completed it here
+                try {
+                    if (result.getReplacer() != null) {
+                        // Replacer provided, perform replacement
+
+                        // This has to be a replace="all" otherwise we shouldn't get here
+                        assert result.getReplacer() instanceof AllReplacer;
+
+                        // Replace
+                        AllReplacer.replace(result.getConnectionResult(), response);
+
+                    } else if (result.getThrowable() != null) {
+                        // Propagate throwable, which might have come from a separate thread
+                        throw new OXFException(result.getThrowable());
+                    } else {
+                        // Should not happen
+                    }
+                } finally {
+                    result.close();
+                }
+            }
+        } catch (Exception e) {
+            // Something bad happened
+            throw new OXFException(e);
+        }
     }
 
     private void sendSubmitError(PropertyContext propertyContext, Throwable throwable, SubmissionResult submissionResult) {
@@ -659,31 +691,32 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
         Item submissionElementContextItem;
 
         final boolean hasBoundRelevantUploadControl;
-        
+
         final String resolvedMethod;
         final String actualHttpMethod;
         final String resolvedMediatype;
-    
+
         final boolean resolvedValidate;
         final boolean resolvedRelevant;
-        
+        final boolean resolvedXXFormsCalculate;
+
         final boolean isHandlingClientGetAll;
 
         // XPath function library and namespace mappings
         final FunctionLibrary functionLibrary = XFormsContainingDocument.getFunctionLibrary();
-        final Map<String, String> prefixToURIMap = container.getNamespaceMappings(submissionElement);
+        final NamespaceMapping namespaceMapping = container.getNamespaceMappings(submissionElement);
 
         // XPath context
         XPathCache.XPathContext xpathContext;
-        
+
         final boolean isNoscript;
         final boolean isAllowDeferredSubmission;
-    
+
         final boolean isPossibleDeferredSubmission;
         final boolean isDeferredSubmission;
         final boolean isDeferredSubmissionFirstPass;
         final boolean isDeferredSubmissionSecondPass;
-        
+
         final boolean isDeferredSubmissionSecondPassReplaceAll;
 
         public void initializeXPathContext(PropertyContext propertyContext) {
@@ -694,9 +727,9 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
             submissionElementContextItem = bindingContext.getContextItem();
             // NOTE: Current instance may be null if the document submitted is not part of an instance
             refInstance = bindingContext.getInstance();
-            xpathContext = new XPathCache.XPathContext(prefixToURIMap, bindingContext.getInScopeVariables(), functionLibrary, functionContext, null, getLocationData());
+            xpathContext = new XPathCache.XPathContext(namespaceMapping, bindingContext.getInScopeVariables(), functionLibrary, functionContext, null, getLocationData());
         }
-        
+
         public SubmissionParameters(PropertyContext propertyContext, String eventName) {
 
             initializeXPathContext(propertyContext);
@@ -710,7 +743,7 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
                 throw new XFormsSubmissionException(XFormsModelSubmission.this, "xforms:submission: single-node binding must refer to a document node or an element.", "getting submission single-node binding",
                         new XFormsSubmitErrorEvent(containingDocument, propertyContext, XFormsModelSubmission.this, XFormsSubmitErrorEvent.ErrorType.NO_DATA, null));
             }
-    
+
             // Determine if the instance to submit has one or more bound and relevant upload controls
             //
             // o we don't check if we are currently initializing the document because at that point the
@@ -725,41 +758,46 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
             hasBoundRelevantUploadControl = refInstance != null && !containingDocument.isInitializing()
                     && !containingDocument.isGotSubmissionSecondPass() && xxfFormsEnsureUploads && !isReplaceAll
                     && serialize && XFormsSubmissionUtils.hasBoundRelevantUploadControls(containingDocument, refInstance);
-            
+
             {
                 // Resolved method AVT
                 final String resolvedMethodQName = XFormsUtils.resolveAttributeValueTemplates(propertyContext, xpathContext, refNodeInfo , avtMethod);
-                resolvedMethod = Dom4jUtils.qNameToExplodedQName(Dom4jUtils.extractTextValueQName(prefixToURIMap, resolvedMethodQName, true));
-        
+                resolvedMethod = Dom4jUtils.qNameToExplodedQName(Dom4jUtils.extractTextValueQName(namespaceMapping.mapping, resolvedMethodQName, true));
+
                 // Get actual method based on the method attribute
                 actualHttpMethod = getActualHttpMethod(resolvedMethod);
-        
+
                 // Get mediatype
                 resolvedMediatype = XFormsUtils.resolveAttributeValueTemplates(propertyContext, xpathContext, refNodeInfo , avtMediatype);
-        
+
                 // Resolve validate and relevant AVTs
                 final String resolvedValidateString = XFormsUtils.resolveAttributeValueTemplates(propertyContext, xpathContext, refNodeInfo , avtValidate);
-                resolvedValidate = !"false".equals(resolvedValidateString);
-        
+                // "The default value is "false" if the value of serialization is "none" and "true" otherwise"
+                resolvedValidate = serialize && !"false".equals(resolvedValidateString);
+
                 final String resolvedRelevantString = XFormsUtils.resolveAttributeValueTemplates(propertyContext, xpathContext, refNodeInfo , avtRelevant);
-                resolvedRelevant = !"false".equals(resolvedRelevantString);
+                // "The default value is "false" if the value of serialization is "none" and "true" otherwise"
+                resolvedRelevant = serialize && !"false".equals(resolvedRelevantString);
+
+                final String resolvedCalculateString = XFormsUtils.resolveAttributeValueTemplates(propertyContext, xpathContext, refNodeInfo , avtXXFormsCalculate);
+                resolvedXXFormsCalculate = serialize && !"false".equals(resolvedCalculateString);
             }
-        
+
             isHandlingClientGetAll = XFormsProperties.isOptimizeGetAllSubmission(containingDocument) && actualHttpMethod.equals("GET")
                     && isReplaceAll
                     && (resolvedMediatype == null || !resolvedMediatype.startsWith(NetUtils.APPLICATION_SOAP_XML)) // can't let SOAP requests be handled by the browser
                     && avtXXFormsUsername == null // can't optimize if there are authentication credentials
                     && avtXXFormsTarget == null;  // can't optimize if there is a target
-        
+
             // In noscript mode, or in "Ajax portlet" mode, there is no deferred submission process
-            isNoscript = XFormsProperties.isNoscript(containingDocument);
+            isNoscript = containingDocument.getStaticState().isNoscript();
             isAllowDeferredSubmission = !isNoscript && !XFormsProperties.isAjaxPortlet(containingDocument);
-        
+
             isPossibleDeferredSubmission = (isReplaceAll && !isHandlingClientGetAll) || (!isReplaceAll && serialize && hasBoundRelevantUploadControl);
             isDeferredSubmission = isAllowDeferredSubmission && isPossibleDeferredSubmission;
             isDeferredSubmissionFirstPass = isDeferredSubmission && XFormsEvents.XFORMS_SUBMIT.equals(eventName);
             isDeferredSubmissionSecondPass = isDeferredSubmission && !isDeferredSubmissionFirstPass; // here we get XXFORMS_SUBMIT
-            
+
             isDeferredSubmissionSecondPassReplaceAll = isDeferredSubmissionSecondPass && isReplaceAll;
         }
     }
@@ -779,6 +817,7 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
         final Boolean standalone;
         final String username;
         final String password;
+        final String domain;
         final boolean isReadonly;
         final boolean isCache;
         final long timeToLive;
@@ -794,7 +833,9 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
                     throw new XFormsSubmissionException(XFormsModelSubmission.this, "xforms:submission: mandatory resource or action evaluated to an empty sequence for attribute value: " + avtActionOrResource,
                             "resolving resource URI");
                 }
-                actionOrResource = XFormsUtils.encodeHRRI(temp, true);
+                actionOrResource = NetUtils.encodeHRRI(temp, true);
+                // TODO: see if we can resolve xml:base early to detect absolute URLs early as well
+//                actionOrResource = XFormsUtils.resolveXMLBase(containingDocument, getSubmissionElement(), NetUtils.encodeHRRI(temp, true)).toString();
             }
 
             serialization = XFormsUtils.resolveAttributeValueTemplates(propertyContext, p.xpathContext, p.refNodeInfo, avtSerialization);
@@ -818,6 +859,7 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
 
             username = XFormsUtils.resolveAttributeValueTemplates(propertyContext, p.xpathContext, p.refNodeInfo, avtXXFormsUsername);
             password = XFormsUtils.resolveAttributeValueTemplates(propertyContext, p.xpathContext, p.refNodeInfo, avtXXFormsPassword);
+            domain = XFormsUtils.resolveAttributeValueTemplates(propertyContext, p.xpathContext, p.refNodeInfo, avtXXFormsDomain);
             {
                 final String temp = XFormsUtils.resolveAttributeValueTemplates(propertyContext, p.xpathContext, p.refNodeInfo, avtXXFormsReadonly);
                 isReadonly = (temp != null) ? Boolean.valueOf(temp) : false;
@@ -873,6 +915,7 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
             this.standalone = other.standalone;
             this.username = other.username;
             this.password = other.password;
+            this.domain = other.domain;
             this.isCache = other.isCache;
             this.timeToLive = other.timeToLive;
             this.isHandleXInclude = other.isHandleXInclude;
@@ -1035,7 +1078,7 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
                                       XFormsInstance defaultReplaceInstance, Item submissionElementContextItem) {
         final Object destinationObject;
         if (targetref == null) {
-            // There is no explicit @targetref, so the target is implicity the root element of either the instance
+            // There is no explicit @targetref, so the target is implicitly the root element of either the instance
             // pointed to by @ref, or the instance specified by @instance or @xxforms:instance.
             destinationObject = defaultReplaceInstance.getInstanceRootElementInfo();
         } else {
@@ -1109,9 +1152,14 @@ public class XFormsModelSubmission implements XFormsEventTarget, XFormsEventObse
         final Document documentToSubmit;
 
         // Revalidate instance
-        // NOTE: We need to do this here so that bind/@type works correctly. XForms 1.1 seems to say that this
+        // NOTE: We need to do this before pruning so that bind/@type works correctly. XForms 1.1 seems to say that this
         // must be done after pruning, but then it is not clear how XML Schema validation would work then.
-        if (modelForInstance != null)
+        // Also, if validate="false" or if serialization="none", then we do not revalidate. Now whether this optimization
+        // is acceptable depends on whether validate="false" only means "don't check the instance's validity" or also
+        // don't even recalculate. If the latter, then this also means that type annotations won't be updated, which
+        // can impact serializations that use type information, for example multipart. But in that case, here we decide
+        // the optimization is worth it anyway.
+        if (resolvedValidate && modelForInstance != null)
             modelForInstance.doRevalidate(propertyContext);
 
         // Get selected nodes (re-root and prune)

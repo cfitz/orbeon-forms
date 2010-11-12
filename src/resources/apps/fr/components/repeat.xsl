@@ -204,9 +204,9 @@
         </xforms:trigger>
         <xsl:if test="xforms:input">
             <xforms:input ref="{@ref}">
-                <xforms:label>
+             <!--   <xforms:label>
                     <xsl:copy-of select="descendant-or-self::xforms:label"/>
-                </xforms:label>
+                </xforms:label> -->
                 <xsl:apply-templates
                     select="descendant::xforms:label | descendant::xforms:help | descendant::xforms:alert"
                 />
@@ -214,9 +214,9 @@
         </xsl:if>
         <xsl:if test="xforms:textarea">
             <xforms:textarea ref="{@ref}">
-                <xforms:label>
-                    <xsl:copy-of select="descendant-or-self::xforms:label"/>
-                </xforms:label>
+              <!--  <xforms:label>
+                    <xsl:copy-of select="descendant-or-self::xforms:label"/> 
+                </xforms:label> -->
                 <xsl:apply-templates
                     select="descendant::xforms:label | descendant::xforms:help | descendant::xforms:alert | descendant::xforms:alert"
                 />

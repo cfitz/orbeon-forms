@@ -1,32 +1,29 @@
 /**
- *  Copyright (C) 2004 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify it under the terms of the
- *  GNU Lesser General Public License as published by the Free Software Foundation; either version
- *  2.1 of the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU Lesser General Public License as published by the Free Software Foundation; either version
+ * 2.1 of the License, or (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *  See the GNU Lesser General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Lesser General Public License for more details.
  *
- *  The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+ * The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
  */
 package org.orbeon.oxf.processor.pipeline;
 
 import org.apache.log4j.Logger;
-import org.orbeon.oxf.cache.Cacheable;
 import org.orbeon.oxf.cache.OutputCacheKey;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.common.ValidationException;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
-import org.orbeon.oxf.processor.ProcessorImpl;
-import org.orbeon.oxf.processor.ProcessorInput;
-import org.orbeon.oxf.processor.ProcessorInputOutputInfo;
-import org.orbeon.oxf.processor.ProcessorOutput;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
+import org.orbeon.oxf.processor.*;
+import org.orbeon.oxf.processor.impl.ProcessorOutputImpl;
 import org.orbeon.oxf.util.LoggerFactory;
 import org.orbeon.oxf.xml.SAXStore;
 import org.orbeon.oxf.xml.dom4j.LocationData;
-import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
 /**
@@ -34,7 +31,7 @@ import org.xml.sax.SAXException;
  */
 public class TeeProcessor extends ProcessorImpl {
 
-    static private Logger logger = LoggerFactory.createLogger(TeeProcessor.class);
+    private static final Logger logger = LoggerFactory.createLogger(TeeProcessor.class);
     private Exception creationException;
     private Exception resetException;
     private ProcessorKey resetProcessorKey;
@@ -50,6 +47,7 @@ public class TeeProcessor extends ProcessorImpl {
     /**
      * Standard createOutput().
      */
+    @Override
     public ProcessorOutput createOutput(String name) {
         return createOutput(name, false);
     }
@@ -58,21 +56,23 @@ public class TeeProcessor extends ProcessorImpl {
      * Tee-specific createOutput().
      */
     public ProcessorOutput createOutput(String name, boolean isMultipleReads) {
-        final ProcessorOutput output = new TeeProcessorOutputImpl(getClass(), name, isMultipleReads);
+        final ProcessorOutput output = new TeeProcessorOutputImpl(name, isMultipleReads);
         addOutput(name, output);
         return output;
     }
 
-    public class TeeProcessorOutputImpl extends ProcessorImpl.ProcessorOutputImpl {
+    public class TeeProcessorOutputImpl extends ProcessorOutputImpl {
 
         private boolean isMultipleReads;
 
-        private TeeProcessorOutputImpl(Class clazz, String name, boolean isMultipleReads) {
-            super(clazz, name);
+        private TeeProcessorOutputImpl(String name, boolean isMultipleReads) {
+            super(TeeProcessor.this, name);
             this.isMultipleReads = isMultipleReads;
+
         }
 
-        public void readImpl(PipelineContext context, ContentHandler contentHandler) {
+        @Override
+        public void readImpl(PipelineContext context, XMLReceiver xmlReceiver) {
             try {
                 final State state = (State) getState(context);
                 if (state.store == null) {
@@ -85,10 +85,10 @@ public class TeeProcessor extends ProcessorImpl {
 
                     // Create SAXStore and read input through it
                     final ProcessorInput input = getInputByName(INPUT_DATA);
-                    state.store = new SAXStore(contentHandler);
+                    state.store = new SAXStore(xmlReceiver);
                     readInputAsSAX(context, input, state.store);
                 } else {
-                    state.store.replay(contentHandler);
+                    state.store.replay(xmlReceiver);
                 }
 
                 // If this output can be read only once, increase read count
@@ -129,36 +129,39 @@ public class TeeProcessor extends ProcessorImpl {
             }
         }
 
-        public OutputCacheKey getKeyImpl(PipelineContext context) {
+        @Override
+        public OutputCacheKey getKeyImpl(PipelineContext pipelineContext) {
             final State state;
             try {
-                state = (State) getState(context);
+                state = (State) getState(pipelineContext);
             } catch (OXFException e) {
                 if (logger.isDebugEnabled()) {
                     logger.error("creation", creationException);
                     logger.error("reset", resetException);
-                    logger.error("current processor key: " + getProcessorKey(context));
+                    logger.error("current processor key: " + getProcessorKey(pipelineContext));
                     logger.error("reset processor key: " + resetProcessorKey);
                 }
                 throw e;
             }
             if (state.outputCacheKey == null) {
                 final ProcessorOutput output = getInputByName(INPUT_DATA).getOutput();
-                state.outputCacheKey = (output instanceof Cacheable) ? ((Cacheable) output).getKey(context) : null;
+                state.outputCacheKey = output.getKey(pipelineContext);
             }
             return state.outputCacheKey;
         }
 
-        public Object getValidityImpl(PipelineContext context) {
-            final State state = (State) getState(context);
+        @Override
+        public Object getValidityImpl(PipelineContext pipelineContext) {
+            final State state = (State) getState(pipelineContext);
             if (state.validity == null) {
                 final ProcessorOutput output = getInputByName(INPUT_DATA).getOutput();
-                state.validity = (output instanceof Cacheable) ? ((Cacheable) output).getValidity(context) : null;
+                state.validity = output.getValidity(pipelineContext);
             }
             return state.validity;
         }
     }
 
+    @Override
     public void reset(PipelineContext context) {
         if (logger.isDebugEnabled()) {
             resetException = new Exception(Integer.toString(hashCode()));

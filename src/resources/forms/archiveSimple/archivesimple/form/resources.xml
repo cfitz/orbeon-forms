@@ -38,6 +38,7 @@
 <!-- Resources that appear on the form --> 
         <detail>
             <titles>
+                <druid>Druid</druid>
                 <detail-title>Archive Simple</detail-title>
                 <titleInfo>Container Information</titleInfo>
                 <originInfo>Origin Information</originInfo>
@@ -59,6 +60,7 @@
                 <name>Name</name>
                 <nameParts>Person or Organization Name</nameParts>
                 <namePart/>
+                <displayLabel>Display Label</displayLabel>
                 <nametype>Name Type</nametype>
                 <nameauthority>Name Authority</nameauthority>
                 <namerole>Name Role</namerole>
@@ -118,6 +120,8 @@
 
             <!-- Triggers labels -->
             <labels>
+                <identifiertype>Type Of Identifier</identifiertype>
+                <displayLabel>Display Label</displayLabel>
                 <type>Type</type>
                 <yes>Yes</yes>
                 <no>No</no>
@@ -459,6 +463,42 @@
                     </section>
                 </instance>
             </titletype>
+            <displayLabel>
+                <instance>
+                    <section>
+                        <item>
+                            <label>--Select One--</label>
+                        </item>
+                    </section>
+                    <section>
+                        <label>Selection One</label>
+                        <item>
+                            <label>SU DRUID</label>
+                            <value>SU DRUID</value>
+                        </item>
+                        <item>
+                            <label>Item Number</label>
+                            <value>Item Number</value>
+                        </item>
+                        <item>
+                            <label>Stanford University Libraries Barcode</label>
+                            <value>Stanford University Libraries Barcode</value>
+                        </item>
+                        <item>
+                            <label>Stanford University Libraries Catalog Key</label>
+                            <value>Stanford University Libraries Catalog Key</value>
+                        </item>
+                        <item>
+                            <label>Stanford University Libraries Collection ID</label>
+                            <value>Stanford University Libraries Collection ID</value>
+                        </item>
+                        <item>
+                            <label>Stanford University Archives Id</label>
+                            <value>Stanford University Archives Id</value>
+                        </item>
+                    </section>
+                </instance>
+            </displayLabel>
             <nametype>
                 <instance>
                     <section>

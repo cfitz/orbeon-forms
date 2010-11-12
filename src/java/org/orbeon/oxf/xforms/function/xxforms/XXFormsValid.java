@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the
  * GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -16,19 +16,17 @@ package org.orbeon.oxf.xforms.function.xxforms;
 import org.dom4j.Node;
 import org.orbeon.oxf.xforms.XFormsContainingDocument;
 import org.orbeon.oxf.xforms.XFormsModel;
-import org.orbeon.oxf.xforms.function.XFormsFunction;
 import org.orbeon.oxf.xforms.submission.XFormsSubmissionUtils;
 import org.orbeon.saxon.dom4j.NodeWrapper;
-import org.orbeon.saxon.expr.Expression;
-import org.orbeon.saxon.expr.ExpressionTool;
-import org.orbeon.saxon.expr.XPathContext;
+import org.orbeon.saxon.expr.*;
 import org.orbeon.saxon.om.Item;
 import org.orbeon.saxon.om.NodeInfo;
 import org.orbeon.saxon.trans.XPathException;
 import org.orbeon.saxon.value.BooleanValue;
 
-public class XXFormsValid extends XFormsFunction {
+public class XXFormsValid extends XXFormsMIPFunction {
 
+    @Override
     public Item evaluateItem(XPathContext xpathContext) throws XPathException {
 
         final Expression nodesetExpression = (argument.length > 0) ? argument[0] : null;

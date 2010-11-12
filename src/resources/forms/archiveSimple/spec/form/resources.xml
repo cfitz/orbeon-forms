@@ -38,6 +38,7 @@
 <!-- Resources that appear on the form --> 
         <detail>
             <titles>
+                <druid>Druid</druid>
                 <detail-title>Archive Simple</detail-title>
                 <titleInfo>Container Information</titleInfo>
                 <originInfo>Origin Information</originInfo>

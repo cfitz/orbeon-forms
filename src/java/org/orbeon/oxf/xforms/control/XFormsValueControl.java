@@ -20,75 +20,82 @@ import org.orbeon.oxf.util.PropertyContext;
 import org.orbeon.oxf.xforms.XFormsProperties;
 import org.orbeon.oxf.xforms.XFormsUtils;
 import org.orbeon.oxf.xforms.action.actions.XFormsSetvalueAction;
+import org.orbeon.oxf.xforms.analysis.XPathDependencies;
 import org.orbeon.oxf.xforms.event.XFormsEvents;
 import org.orbeon.oxf.xforms.xbl.XBLContainer;
+import org.orbeon.oxf.xml.NamespaceMapping;
 import org.orbeon.oxf.xml.XMLConstants;
 import org.orbeon.saxon.om.Item;
 import org.orbeon.saxon.om.NodeInfo;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Base class for all controls that hold a value.
  */
 public abstract class XFormsValueControl extends XFormsSingleNodeControl {
 
-    private boolean isValueEvaluated;
+    // Value
     private String value;
+
+    // Previous value for refresh
+    private String previousValue;
 
     // External value (evaluated lazily)
     private boolean isExternalValueEvaluated;
     private String externalValue;
-
-    // Previous value for refresh
-    private String previousValue;
 
     protected XFormsValueControl(XBLContainer container, XFormsControl parent, Element element, String name, String effectiveId) {
         super(container, parent, element, name, effectiveId);
     }
 
     @Override
-    protected void evaluate(PropertyContext propertyContext, boolean isRefresh) {
+    protected void onCreate(PropertyContext propertyContext) {
+        super.onCreate(propertyContext);
+
+        value = null;
+        previousValue = null;
+
+        isExternalValueEvaluated = false;
+        externalValue = null;
+
+    }
+
+    @Override
+    protected void evaluateImpl(PropertyContext propertyContext) {
 
         // Evaluate other aspects of the control if necessary
-        super.evaluate(propertyContext, isRefresh);
+        super.evaluateImpl(propertyContext);
 
         // Evaluate control values
         if (isRelevant()) {
             // Control is relevant
-            getValue(propertyContext);
+            if (value == null) {
+                // Only evaluate if the value is not already available
+                evaluateValue(propertyContext);
+            }
         } else {
             // Control is not relevant
-            isValueEvaluated = true;
             isExternalValueEvaluated = true;
             value = null;
         }
 
         // NOTE: We no longer evaluate the external value here, instead we do lazy evaluation. This is good in particular when there
         // are multiple refreshes during an Ajax request, and LHHA values are only needed in the end.
-
-        if (!isRefresh) {
-            // Sync values
-            previousValue = value;
-            // Don't need to set external value because not used in isValueChanged()
-        }
     }
 
     @Override
-    public void markDirty() {
-        super.markDirty();
+    protected void markDirtyImpl(XPathDependencies xpathDependencies) {
+        super.markDirtyImpl(xpathDependencies);
 
-        // Keep previous values
-        previousValue = value;
-        // Don't need to set external value because not used in isValueChanged()
+        // Handle value update
+        if (xpathDependencies.requireValueUpdate(getPrefixedId())) {
 
-        isValueEvaluated = false;
-        isExternalValueEvaluated = false;
-        value = null;
-        externalValue = null;
+            value = null;
+
+            isExternalValueEvaluated = false;
+            externalValue = null;
+        }
     }
 
     protected void evaluateValue(PropertyContext propertyContext) {
@@ -102,7 +109,9 @@ public abstract class XFormsValueControl extends XFormsSingleNodeControl {
 
     @Override
     public boolean isValueChanged() {
-        return !XFormsUtils.compareStrings(previousValue, value);
+        final boolean result = !XFormsUtils.compareStrings(previousValue, value);
+        previousValue = value;
+        return result;
     }
 
     /**
@@ -112,18 +121,25 @@ public abstract class XFormsValueControl extends XFormsSingleNodeControl {
      * @param propertyContext   current context
      * @param value             the new external value
      * @param type
-     * @param filesElement      special filesElement construct for controls that need it
      */
-    public void storeExternalValue(PropertyContext propertyContext, String value, String type, Element filesElement) {
+    public void storeExternalValue(PropertyContext propertyContext, String value, String type) {
         // Set value into the instance
 
         final Item boundItem = getBoundItem();
         if (!(boundItem instanceof NodeInfo)) // this should not happen
             throw new OXFException("Control is no longer bound to a node. Cannot set external value.");
-        XFormsSetvalueAction.doSetValue(propertyContext, containingDocument, getIndentedLogger(), this, (NodeInfo) boundItem, value, type, false);
+        XFormsSetvalueAction.doSetValue(propertyContext, containingDocument, getIndentedLogger(), this, (NodeInfo) boundItem, value, type, "client", false);
 
         // NOTE: We do *not* call evaluate() here, as that will break the difference engine. doSetValue() above marks
         // the controls as dirty, and they will be evaluated when necessary later.
+    }
+
+    protected static final NamespaceMapping FORMAT_NAMESPACE_MAPPING;
+    static {
+        final Map mapping = new HashMap<String, String>();
+        // Assume xs: prefix for default formats
+        mapping.put(XMLConstants.XSD_PREFIX, XMLConstants.XSD_URI);
+        FORMAT_NAMESPACE_MAPPING = new NamespaceMapping(mapping);
     }
 
     protected String getValueUseFormat(PropertyContext propertyContext, String format) {
@@ -131,10 +147,6 @@ public abstract class XFormsValueControl extends XFormsSingleNodeControl {
         final String result;
         if (format == null) {
             // Try default format for known types
-
-            // Assume xs: prefix for default formats
-            final Map<String, String> prefixToURIMap = new HashMap<String, String>();
-            prefixToURIMap.put(XMLConstants.XSD_PREFIX, XMLConstants.XSD_URI);
 
             // Format according to type
             final String typeName = getBuiltinTypeName();
@@ -146,7 +158,7 @@ public abstract class XFormsValueControl extends XFormsSingleNodeControl {
 
             if (format != null) {
                 result = evaluateAsString(propertyContext, getBoundItem(), format,
-                        prefixToURIMap, getContextStack().getCurrentVariables());
+                        FORMAT_NAMESPACE_MAPPING, getContextStack().getCurrentVariables());
             } else {
                 result = null;
             }
@@ -164,10 +176,6 @@ public abstract class XFormsValueControl extends XFormsSingleNodeControl {
      * @param propertyContext   current context
      */
     public final String getValue(PropertyContext propertyContext) {
-        if (!isValueEvaluated) {
-            evaluateValue(propertyContext);
-            isValueEvaluated = true;
-        }
         return value;
     }
 
@@ -177,9 +185,6 @@ public abstract class XFormsValueControl extends XFormsSingleNodeControl {
      * @param propertyContext   current context
      */
     public final String getExternalValue(PropertyContext propertyContext) {
-
-        assert isValueEvaluated : "control value must be evaluated before external value is evaluated";
-
         if (!isExternalValueEvaluated) {
             if (isRelevant()) {
                 evaluateExternalValue(propertyContext);

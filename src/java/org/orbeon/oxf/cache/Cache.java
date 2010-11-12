@@ -18,18 +18,15 @@ import org.orbeon.oxf.util.PropertyContext;
 import java.util.Iterator;
 
 public interface Cache {
-
-    static final int EXPIRATION_NO_CACHE = 0;
-    static final int EXPIRATION_NO_EXPIRATION = -1;
-    static final int EXPIRATION_LAST_MODIFIED = -2;
-
     String getCacheName();
     void add(PropertyContext propertyContext, CacheKey key, Object validity, Object object);
     void remove(PropertyContext propertyContext, CacheKey key);
     int removeAll(PropertyContext propertyContext);
     Object findValid(PropertyContext propertyContext, CacheKey key, Object validity);
+    CacheEntry findAny(PropertyContext propertyContext, CacheKey key);
     Iterator iterateCacheKeys(PropertyContext propertyContext);
     Iterator iterateCacheObjects(PropertyContext propertyContext);
+    int getMaxSize();
     void setMaxSize(PropertyContext propertyContext, int maxSize);
     CacheStatistics getStatistics(PropertyContext propertyContext);
 }

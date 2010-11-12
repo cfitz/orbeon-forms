@@ -103,10 +103,6 @@ Conference<?xml version="1.0" encoding="UTF-8"?>
                     font-style: italic
                 }
 
-                /* ***** Autocomplete ***********************************************************/
-                .autocomplete-container { height: 12em; }
-                .autocomplete-container .yui-ac { width: 100%; }
-
             </xhtml:style>
         </xsl:copy>
     </xsl:template>
@@ -120,7 +116,9 @@ Conference<?xml version="1.0" encoding="UTF-8"?>
     <xsl:template match="xhtml:head/xforms:model">
         <xsl:copy>
             <xsl:copy-of select="@*"/>
+            <!--<xsl:attribute name="xxforms:readonly-appearance">static</xsl:attribute>-->
             <xsl:apply-templates/>
+            <!--<xforms:bind nodeset="xxforms:instance('fr-form-instance')" readonly="true()"/>-->
 
             <!-- Current language -->
             <xforms:instance id="fr-settings-instance">
@@ -307,9 +305,9 @@ Conference<?xml version="1.0" encoding="UTF-8"?>
                 <xhtml:tr>
                     <xsl:for-each select="xhtml:td | fr:td">
                         <xhtml:td class="fr-grid-td">
-                            <div class="fr-grid-content">
+                            <xhtml:div class="fr-grid-content">
                                 <xsl:apply-templates/>
-                            </div>
+                            </xhtml:div>
                         </xhtml:td>
                     </xsl:for-each>
                 </xhtml:tr>

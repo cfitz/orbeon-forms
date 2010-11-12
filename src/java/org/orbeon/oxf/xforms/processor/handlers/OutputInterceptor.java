@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the
  * GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -14,19 +14,15 @@
 package org.orbeon.oxf.xforms.processor.handlers;
 
 import org.apache.commons.lang.StringUtils;
-import org.orbeon.oxf.xml.ContentHandlerHelper;
-import org.orbeon.oxf.xml.ForwardingContentHandler;
-import org.orbeon.oxf.xml.XMLConstants;
-import org.orbeon.oxf.xml.XMLUtils;
-import org.xml.sax.Attributes;
-import org.xml.sax.ContentHandler;
-import org.xml.sax.SAXException;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
+import org.orbeon.oxf.xml.*;
+import org.xml.sax.*;
 import org.xml.sax.helpers.AttributesImpl;
 
 /**
  * Intercept SAX output and annotate resulting elements and/or text with classes and spans.
  */
-public class OutputInterceptor extends ForwardingContentHandler {
+public class OutputInterceptor extends ForwardingXMLReceiver {
 
     private Listener beginDelimiterListener;
 
@@ -42,10 +38,10 @@ public class OutputInterceptor extends ForwardingContentHandler {
 
     private int level;
     private boolean isCharacters;
-    private StringBuffer currentCharacters = new StringBuffer();
+    private StringBuilder currentCharacters = new StringBuilder();
 
     protected AttributesImpl reusableAttributes = new AttributesImpl();
-    public OutputInterceptor(ContentHandler output, String spanQName, Listener beginDelimiterListener) {
+    public OutputInterceptor(XMLReceiver output, String spanQName, Listener beginDelimiterListener) {
         super(output);
         this.spanQName = spanQName;
         this.beginDelimiterListener = beginDelimiterListener;

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the
  * GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -28,13 +28,13 @@ public class XXFormsCase  extends XFormsFunction {
 
     public Item evaluateItem(XPathContext xpathContext) throws XPathException {
 
-        final String switchStaticId = XFormsUtils.namespaceId(getContainingDocument(xpathContext), argument[0].evaluateAsString(xpathContext));
+        final String switchStaticId = argument[0].evaluateAsString(xpathContext).toString();
 
         final Object switchControl = getXBLContainer(xpathContext).resolveObjectByIdInScope(getSourceEffectiveId(xpathContext), switchStaticId, null);
 
-        if (switchControl instanceof XFormsSwitchControl) {
+        if (switchControl instanceof XFormsSwitchControl && ((XFormsSwitchControl) switchControl).isRelevant()) {
             // NOTE: Return the static id, not the effective id
-            return new StringValue(((XFormsSwitchControl) switchControl).getSelectedCase().getId());
+            return StringValue.makeStringValue(XFormsUtils.getStaticIdFromId(((XFormsSwitchControl) switchControl).getSelectedCaseEffectiveId()));
         } else {
             return null;
         }

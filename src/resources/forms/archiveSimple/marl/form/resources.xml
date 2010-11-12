@@ -38,6 +38,7 @@
 <!-- Resources that appear on the form --> 
         <detail>
             <titles>
+                <druid>Druid</druid>
                 <detail-title>Archive Simple</detail-title>
                 <titleInfo>Container Information</titleInfo>
                 <originInfo>Origin Information</originInfo>
@@ -118,7 +119,8 @@
 
             <!-- Triggers labels -->
             <labels>
-                <identifiertype>Identifier Type</identifiertype>
+                <identifiertype>Type Of Identifier</identifiertype>            
+            
                 <displayLabel>Identifier Label</displayLabel>
                 <type>Type</type>
                 <yes>Yes</yes>

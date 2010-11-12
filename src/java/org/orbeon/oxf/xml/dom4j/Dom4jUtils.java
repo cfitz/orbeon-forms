@@ -14,24 +14,16 @@
 package org.orbeon.oxf.xml.dom4j;
 
 import org.dom4j.*;
-import org.dom4j.io.DocumentSource;
-import org.dom4j.io.OutputFormat;
-import org.dom4j.io.SAXReader;
-import org.dom4j.io.XMLWriter;
+import org.dom4j.io.*;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.processor.generator.DOMGenerator;
 import org.orbeon.oxf.resources.URLFactory;
 import org.orbeon.oxf.util.StringBuilderWriter;
-import org.orbeon.oxf.xml.NamespaceCleanupContentHandler;
-import org.orbeon.oxf.xml.XMLConstants;
+import org.orbeon.oxf.xml.*;
 import org.orbeon.oxf.xml.XMLUtils;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
+import org.xml.sax.*;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.io.StringReader;
+import java.io.*;
 import java.net.URL;
 import java.util.*;
 
@@ -51,7 +43,7 @@ public class Dom4jUtils {
 
     static {
         NULL_DOCUMENT = new NonLazyUserDataDocument();
-        final NonLazyUserDataDocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance14();
+        final DocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance();
         Element nullElement = factory.createElement("null");
         nullElement.addAttribute(XMLConstants.XSI_NIL_QNAME, "true");
         NULL_DOCUMENT.setRootElement(nullElement);
@@ -61,7 +53,7 @@ public class Dom4jUtils {
         final XMLReader xmlReader = XMLUtils.newXMLReader(validating, handleXInclude);
 
         final SAXReader saxReader = new SAXReader(xmlReader);
-        final NonLazyUserDataDocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance14();
+        final DocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance();
         saxReader.setDocumentFactory(factory);
         return saxReader;
     }
@@ -268,11 +260,6 @@ public class Dom4jUtils {
         }
     }
 
-    public static String makeSystemId(final Document d) {
-        final Element e = d.getRootElement();
-        return makeSystemId(e);
-    }
-
     public static String makeSystemId(final Element e) {
         final LocationData ld = (LocationData) e.getData();
         final String ldSid = ld == null ? null : ld.getSystemID();
@@ -420,7 +407,7 @@ public class Dom4jUtils {
             return document;
         final LocationSAXWriter writer = new LocationSAXWriter();
         final LocationSAXContentHandler ch = new LocationSAXContentHandler();
-        writer.setContentHandler(new NamespaceCleanupContentHandler(ch, xml11));
+        writer.setContentHandler(new NamespaceCleanupXMLReceiver(ch, xml11));
         try {
             writer.write(document);
         } catch (SAXException e) {
@@ -438,8 +425,12 @@ public class Dom4jUtils {
             final List currentNamespaces = currentNode.declaredNamespaces();
             for (Iterator j = currentNamespaces.iterator(); j.hasNext();) {
                 final Namespace namespace = (Namespace) j.next();
-                if (!namespaces.containsKey(namespace.getPrefix()))
+                if (!namespaces.containsKey(namespace.getPrefix())) {
                     namespaces.put(namespace.getPrefix(), namespace.getURI());
+
+                    // TODO: Intern namespace strings to save memory; should use NamePool later
+//                    namespaces.put(namespace.getPrefix().intern(), namespace.getURI().intern());
+                }
             }
         }
         // It seems that by default this may not be declared. However, it should be: "The prefix xml is by definition
@@ -508,7 +499,7 @@ public class Dom4jUtils {
      * @param unprefixedIsNoNamespace   if true, an unprefixed value is in no namespace; if false, it is in the default namespace
      * @return                          a QName object or null if not found
      */
-    public static QName extractTextValueQName(Map namespaces, String qNameString, boolean unprefixedIsNoNamespace) {
+    public static QName extractTextValueQName(Map<String, String> namespaces, String qNameString, boolean unprefixedIsNoNamespace) {
         if (qNameString == null)
             return null;
         qNameString = qNameString.trim();
@@ -526,7 +517,7 @@ public class Dom4jUtils {
                 namespaceURI = "";
             } else {
 
-                final String nsURI = (String) namespaces.get(prefix);
+                final String nsURI = namespaces.get(prefix);
                 namespaceURI = nsURI == null ? "" : nsURI;
             }
         } else if (colonIndex == 0) {
@@ -534,7 +525,7 @@ public class Dom4jUtils {
         } else {
             prefix = qNameString.substring(0, colonIndex);
             localName = qNameString.substring(colonIndex + 1);
-            namespaceURI = (String) namespaces.get(prefix);
+            namespaceURI = namespaces.get(prefix);
             if (namespaceURI == null) {
                 throw new OXFException("No namespace declaration found for prefix: " + prefix);
             }
@@ -564,32 +555,32 @@ public class Dom4jUtils {
     }
 
     public static XPath createXPath(final String expression) throws InvalidXPathException {
-        final NonLazyUserDataDocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance14();
+        final DocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance();
         return factory.createXPath(expression);
     }
 
     public static Text createText(final String text) {
-        final NonLazyUserDataDocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance14();
+        final DocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance();
         return factory.createText(text);
     }
 
     public static Element createElement(final String name) {
-        final NonLazyUserDataDocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance14();
+        final DocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance();
         return factory.createElement(name);
     }
 
     public static Element createElement(final String qualifiedName, final String namespaceURI) {
-        final NonLazyUserDataDocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance14();
+        final DocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance();
         return factory.createElement(qualifiedName, namespaceURI);
     }
 
     public static Attribute createAttribute(final QName qName, final String value) {
-        final NonLazyUserDataDocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance14();
+        final DocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance();
         return factory.createAttribute(null, qName, value);
     }
 
     public static Namespace createNamespace(final String prefix, final String uri) {
-        final NonLazyUserDataDocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance14();
+        final DocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance();
         return factory.createNamespace(prefix, uri);
     }
 
@@ -608,7 +599,7 @@ public class Dom4jUtils {
      */
     public static Document createDocumentCopyElement(final Element newRoot) {
         final Element copy = newRoot.createCopy();
-        final NonLazyUserDataDocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance14();
+        final DocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance();
         return factory.createDocument(copy);
     }
 
@@ -645,21 +636,21 @@ public class Dom4jUtils {
             }
         }
 
-        copyParentNamespaces(parentElement, document.getRootElement());
+        copyMissingNamespaces(parentElement, document.getRootElement());
 
         return document;
     }
 
-    private static void copyParentNamespaces(Element parentElement, Element rootElement) {
-        final Map<String, String> parentNamespaceContext = Dom4jUtils.getNamespaceContext(parentElement);
-        final Map<String, String> rootElementNamespaceContext = Dom4jUtils.getNamespaceContext(rootElement);
+    public static void copyMissingNamespaces(Element sourceElement, Element destinationElement) {
+        final Map<String, String> parentNamespaceContext = Dom4jUtils.getNamespaceContext(sourceElement);
+        final Map<String, String> rootElementNamespaceContext = Dom4jUtils.getNamespaceContext(destinationElement);
 
         for (final String prefix: parentNamespaceContext.keySet()) {
             // NOTE: Don't use rootElement.getNamespaceForPrefix() because that will return the element prefix's
             // namespace even if there are no namespace nodes
             if (rootElementNamespaceContext.get(prefix) == null) {
                 final String uri = parentNamespaceContext.get(prefix);
-                rootElement.addNamespace(prefix, uri);
+                destinationElement.addNamespace(prefix, uri);
             }
         }
     }
@@ -691,8 +682,8 @@ public class Dom4jUtils {
     }
 
     public static Document createDocument() {
-        final NonLazyUserDataDocumentFactory fctry = NonLazyUserDataDocumentFactory.getInstance14();
-        return fctry.createDocument();
+        final DocumentFactory factory = NonLazyUserDataDocumentFactory.getInstance();
+        return factory.createDocument();
     }
 
     /**
@@ -702,25 +693,19 @@ public class Dom4jUtils {
      * @return              copied element
      */
     public static Element copyElementCopyParentNamespaces(final Element sourceElement) {
-
         final Element newElement = sourceElement.createCopy();
-
-        copyParentNamespaces(sourceElement.getParent(), newElement);
-
-//        final Map sourceElementNamespaceContext = Dom4jUtils.getNamespaceContext(sourceElement);
-//        final Map newElementNamespaceContext = Dom4jUtils.getNamespaceContext(newElement);
-//
-//        for (Iterator k = sourceElementNamespaceContext.keySet().iterator(); k.hasNext();) {
-//            final String prefix = (String) k.next();
-//            // NOTE: Don't use rootElement.getNamespaceForPrefix() because that will return the element prefix's
-//            // namespace even if there are no namespace nodes
-//            if (newElementNamespaceContext.get(prefix) == null) {
-//                final String uri = (String) sourceElementNamespaceContext.get(prefix);
-//                newElement.addNamespace(prefix, uri);
-//            }
-//        }
-
+        copyMissingNamespaces(sourceElement.getParent(), newElement);
         return newElement;
+    }
+
+    public static Element saxToDebugElement(String qName, Attributes attributes) {
+        final Element element = createElement(qName);
+
+        for (int i = 0; i < attributes.getLength(); i++) {
+            element.addAttribute(attributes.getQName(i), attributes.getValue(i));
+        }
+
+        return element;
     }
 
     /**

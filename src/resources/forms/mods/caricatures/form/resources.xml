@@ -119,6 +119,7 @@
 
             <!-- Triggers labels -->
             <labels>
+                <label>Label</label>
                  <displayLabel>Identifier</displayLabel>
                 <type>Type</type>
                 <yes>Yes</yes>

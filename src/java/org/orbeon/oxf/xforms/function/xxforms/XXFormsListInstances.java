@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the
  * GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -13,16 +13,11 @@
  */
 package org.orbeon.oxf.xforms.function.xxforms;
 
-import org.orbeon.oxf.xforms.XFormsContainingDocument;
-import org.orbeon.oxf.xforms.XFormsInstance;
-import org.orbeon.oxf.xforms.XFormsModel;
-import org.orbeon.oxf.xforms.XFormsUtils;
+import org.orbeon.oxf.xforms.*;
 import org.orbeon.oxf.xforms.function.XFormsFunction;
 import org.orbeon.saxon.expr.Expression;
 import org.orbeon.saxon.expr.XPathContext;
-import org.orbeon.saxon.om.EmptyIterator;
-import org.orbeon.saxon.om.ListIterator;
-import org.orbeon.saxon.om.SequenceIterator;
+import org.orbeon.saxon.om.*;
 import org.orbeon.saxon.trans.XPathException;
 import org.orbeon.saxon.value.StringValue;
 
@@ -37,22 +32,20 @@ public class XXFormsListInstances extends XFormsFunction {
 
         // Get model id
         final Expression modelIdExpression = argument[0];
-        final String modelId = XFormsUtils.namespaceId(containingDocument, modelIdExpression.evaluateAsString(xpathContext));
+        final String modelId = modelIdExpression.evaluateAsString(xpathContext).toString();
 
         // TODO: This only returns top-level model. Need function for all models.
-        final XFormsModel model = containingDocument.findModelByStaticId(modelId);
+        final Object object = containingDocument.getObjectByEffectiveId(modelId);
 
-        if (model != null) {
-            final List<XFormsInstance> instances = model.getInstances();
+        if (object instanceof XFormsModel) {
+            final List<XFormsInstance> instances = ((XFormsModel) object).getInstances();
 
             if (instances != null && instances.size() > 0) {
 
                 final List<StringValue> instanceIds = new ArrayList<StringValue>(instances.size());
 
-                for (Object instance: instances) {
-                    final XFormsInstance currentInstance = (XFormsInstance) instance;
-                    // Tricky: we return a de-namespaced id, which seems to be the best thing to do
-                    instanceIds.add(new StringValue(XFormsUtils.deNamespaceId(containingDocument, currentInstance.getEffectiveId())));
+                for (final XFormsInstance instance: instances) {
+                    instanceIds.add(new StringValue(instance.getEffectiveId()));
                 }
 
                 return new ListIterator(instanceIds);

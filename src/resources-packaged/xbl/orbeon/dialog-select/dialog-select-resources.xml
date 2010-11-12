@@ -14,19 +14,23 @@
   -->
 <resources>
     <resource xml:lang="en">
-        <select>Select</select>
+        <select>...</select>
         <title>Selection</title>
         <available>Available</available>
         <selected>Selected</selected>
         <confirm>Confirm</confirm>
         <cancel>Cancel</cancel>
+        <add>Add</add>
+        <remove>Remove</remove>
     </resource>
     <resource xml:lang="fr">
-        <select>Sélectionner</select>
+        <select>...</select>
         <title>Sélection</title>
         <available>Disponible</available>
         <selected>Sélectionné</selected>
         <confirm>Confirmer</confirm>
         <cancel>Annuler</cancel>
+        <add>Ajouter</add>
+        <remove>Supprimer</remove>
     </resource>
 </resources>

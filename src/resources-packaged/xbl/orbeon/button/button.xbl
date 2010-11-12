@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright (C) 2009 Orbeon, Inc.
+  Copyright (C) 2010 Orbeon, Inc.
 
   This program is free software; you can redistribute it and/or modify it under the terms of the
   GNU Lesser General Public License as published by the Free Software Foundation; either version
@@ -41,34 +41,50 @@
                     *zoom: 1;
                     *display: inline;
                     vertical-align: middle;
+                    <!-- The following fixes:
+                         [ #315153 ] IE 6/7: fr:button border is cut when in table with cellpadding="0"
+                         http://forge.ow2.org/tracker/index.php?func=detail&aid=315153&group_id=168&atid=350207
+                         This issue cannot be reproduced on IE8 in IE7 mode.
+                         We only want to override the margin-bottom here, not other margins declared in button.css. -->
+                    *margin-bottom: 1px;
                 }
             </xbl:style>
         </xbl:resources>
         <xbl:template xxbl:transform="oxf:unsafe-xslt">
             <!-- Group has complete single-node binding -->
-            <xforms:group class="yui-button yui-push-button" xbl:attr="model context ref bind" xxbl:scope="outer" xsl:version="2.0">
+            <xforms:group class="yui-button yui-push-button{if (/fr:button/@class) then concat(' ', /fr:button/@class) else ''}"
+                          xbl:attr="model context ref bind" xxbl:scope="outer" xsl:version="2.0">
                 <xhtml:span class="first-child">
                     <!-- Bind trigger so it can handle read-only -->
-                    <xforms:trigger ref="." xbl:attr="xxforms:modal">
+                    <xforms:trigger xbl:attr="xxforms:modal">
+                        <xsl:if test="exists(/fr:button/(@ref, @bind))">
+                            <xsl:attribute name="ref">.</xsl:attribute>
+                        </xsl:if>
                         <xbl:content includes="xforms|label, xforms|help, xforms|hint"/>
 
                         <xxforms:script ev:event="xforms-enabled">
-                            var button = YAHOO.widget.Button.getButton(event.target.parentNode.parentNode.id);
-                            if (button == null) {
-                                button = new YAHOO.widget.Button(event.target.parentNode.parentNode);
-                                <!-- TODO: once we can pass values from XForms to JavaScript we'll be able to get rid of the XSLT used here -->
-                                <xsl:if test="/fr:button/@tabindex">button.set("tabindex", <xsl:value-of select="/fr:button/@tabindex"/>);</xsl:if>
+                            if (event.target) {
+                                var button = YAHOO.widget.Button.getButton(event.target.parentNode.parentNode.id);
+                                if (button == null) {
+                                    button = new YAHOO.widget.Button(event.target.parentNode.parentNode);
+                                    <!-- TODO: once we can pass values from XForms to JavaScript we'll be able to get rid of the XSLT used here -->
+                                    <xsl:if test="/fr:button/@tabindex">button.set("tabindex", <xsl:value-of select="/fr:button/@tabindex"/>);</xsl:if>
+                                }
                             }
                         </xxforms:script>
                         <xxforms:script ev:event="xforms-readonly">
-                            var button = YAHOO.widget.Button.getButton(event.target.parentNode.parentNode.id);
-                            if (button != null)
-                                button.set("disabled", true);
+                            if (event.target) {
+                                var button = YAHOO.widget.Button.getButton(event.target.parentNode.parentNode.id);
+                                if (button != null)
+                                    button.set("disabled", true);
+                            }
                         </xxforms:script>
                         <xxforms:script ev:event="xforms-readwrite">
-                            var button = YAHOO.widget.Button.getButton(event.target.parentNode.parentNode.id);
-                            if (button != null)
-                                button.set("disabled", false);
+                            if (event.target) {
+                                var button = YAHOO.widget.Button.getButton(event.target.parentNode.parentNode.id);
+                                if (button != null)
+                                    button.set("disabled", false);
+                            }
                         </xxforms:script>
                     </xforms:trigger>
                 </xhtml:span>

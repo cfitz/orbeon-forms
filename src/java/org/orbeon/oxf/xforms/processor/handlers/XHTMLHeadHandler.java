@@ -16,6 +16,7 @@ package org.orbeon.oxf.xforms.processor.handlers;
 import org.apache.commons.collections.map.CompositeMap;
 import org.dom4j.Element;
 import org.orbeon.oxf.common.Version;
+import org.orbeon.oxf.pipeline.api.XMLReceiver;
 import org.orbeon.oxf.util.IndentedLogger;
 import org.orbeon.oxf.util.URLRewriterUtils;
 import org.orbeon.oxf.xforms.*;
@@ -26,13 +27,9 @@ import org.orbeon.oxf.xforms.event.XFormsEvents;
 import org.orbeon.oxf.xforms.processor.XFormsFeatures;
 import org.orbeon.oxf.xforms.processor.XFormsResourceServer;
 import org.orbeon.oxf.xforms.state.XFormsStateManager;
-import org.orbeon.oxf.xml.ContentHandlerHelper;
-import org.orbeon.oxf.xml.ElementHandlerController;
-import org.orbeon.oxf.xml.XMLConstants;
+import org.orbeon.oxf.xml.*;
 import org.orbeon.oxf.xml.XMLUtils;
-import org.xml.sax.Attributes;
-import org.xml.sax.ContentHandler;
-import org.xml.sax.SAXException;
+import org.xml.sax.*;
 import org.xml.sax.helpers.AttributesImpl;
 
 import java.io.Serializable;
@@ -51,7 +48,7 @@ public class XHTMLHeadHandler extends XFormsBaseHandler {
 
     public void start(String uri, String localname, String qName, Attributes attributes) throws SAXException {
 
-        final ContentHandler contentHandler = handlerContext.getController().getOutput();
+        final XMLReceiver xmlReceiver = handlerContext.getController().getOutput();
 
         // Register control handlers on controller
         {
@@ -63,9 +60,9 @@ public class XHTMLHeadHandler extends XFormsBaseHandler {
         formattingPrefix = handlerContext.findFormattingPrefixDeclare();
 
         // Open head element
-        contentHandler.startElement(uri, localname, qName, attributes);
+        xmlReceiver.startElement(uri, localname, qName, attributes);
 
-        final ContentHandlerHelper helper = new ContentHandlerHelper(contentHandler);
+        final ContentHandlerHelper helper = new ContentHandlerHelper(xmlReceiver);
         final String xhtmlPrefix = XMLUtils.prefixFromQName(qName); // current prefix for XHTML
 
         // Gather information about appearances of controls which use Script
@@ -157,7 +154,7 @@ public class XHTMLHeadHandler extends XFormsBaseHandler {
                         idsForAppearanceOrMediatypeList = new ArrayList<String>();
                         listForControlNameMap.put(controlAppearanceOrMediatype, idsForAppearanceOrMediatypeList);
                     }
-                    idsForAppearanceOrMediatypeList.add(control.getEffectiveId());
+                    idsForAppearanceOrMediatypeList.add(XFormsUtils.namespaceId(containingDocument, control.getEffectiveId()));
                 }
                 return true;
             }
@@ -289,7 +286,7 @@ public class XHTMLHeadHandler extends XFormsBaseHandler {
                     // FCKeditor path
                     {
                         final XFormsProperties.PropertyDefinition propertyDefinition = XFormsProperties.getPropertyDefinition(XFormsProperties.FCK_EDITOR_BASE_PATH_PROPERTY);
-                        final String fckEditorPath = versionedResources ? "/" + Version.getVersion() + propertyDefinition.getDefaultValue() : (String) propertyDefinition.getDefaultValue();
+                        final String fckEditorPath = versionedResources ? "/" + Version.getVersionNumber() + propertyDefinition.getDefaultValue() : (String) propertyDefinition.getDefaultValue();
                         if (!fckEditorPath.equals(propertyDefinition.getDefaultValue()))
                             dynamicProperties.put(XFormsProperties.FCK_EDITOR_BASE_PATH_PROPERTY, fckEditorPath);
                     }
@@ -307,13 +304,14 @@ public class XHTMLHeadHandler extends XFormsBaseHandler {
                 // Application version
                 {
                     // This is not an XForms property but we want to expose it on the client
+
+                    // Put property only if different from default
                     if (versionedResources != URLRewriterUtils.RESOURCES_VERSIONED_DEFAULT)
                         dynamicProperties.put(URLRewriterUtils.RESOURCES_VERSIONED_PROPERTY, Boolean.toString(versionedResources));
 
                     if (versionedResources) {
                         final String applicationVersion = URLRewriterUtils.getApplicationResourceVersion();
                         if (applicationVersion != null) {
-                            // This is not an XForms property but we want to expose it on the client
                             dynamicProperties.put(URLRewriterUtils.RESOURCES_VERSION_NUMBER_PROPERTY, applicationVersion);
                         }
                     }
@@ -397,7 +395,7 @@ public class XHTMLHeadHandler extends XFormsBaseHandler {
                 // Initial setfocus if present
                 if (focusElementId != null) {
                     sb.append("ORBEON.xforms.Controls.setFocus(\"");
-                    sb.append(focusElementId);
+                    sb.append(XFormsUtils.namespaceId(containingDocument, focusElementId));
                     sb.append("\");");
                 }
 
@@ -407,9 +405,9 @@ public class XHTMLHeadHandler extends XFormsBaseHandler {
                         sb.append("ORBEON.xforms.Server.callUserScript(\"");
                         sb.append(script.getFunctionName());
                         sb.append("\",\"");
-                        sb.append(script.getEvent().getTargetObject().getEffectiveId());
+                        sb.append(XFormsUtils.namespaceId(containingDocument, script.getEvent().getTargetObject().getEffectiveId()));
                         sb.append("\",\"");
-                        sb.append(script.getEventObserver().getEffectiveId());
+                        sb.append(XFormsUtils.namespaceId(containingDocument, script.getEventObserver().getEffectiveId()));
                         sb.append("\");");
                     }
                 }
@@ -439,11 +437,11 @@ public class XHTMLHeadHandler extends XFormsBaseHandler {
                 if (dialogsToOpen.size() > 0) {
                     for (final XXFormsDialogControl dialogControl: dialogsToOpen) {
                         sb.append("ORBEON.xforms.Controls.showDialog(\"");
-                        sb.append(dialogControl.getEffectiveId());
+                        sb.append(XFormsUtils.namespaceId(containingDocument, dialogControl.getEffectiveId()));
                         sb.append("\", ");
                         if (dialogControl.getNeighborControlId() != null) {
                             sb.append('"');
-                            sb.append(dialogControl.getNeighborControlId());
+                            sb.append(XFormsUtils.namespaceId(containingDocument, dialogControl.getNeighborControlId()));
                             sb.append('"');
                         } else {
                             sb.append("null");
@@ -466,20 +464,38 @@ public class XHTMLHeadHandler extends XFormsBaseHandler {
                 "type", "text/javascript"});
 
         // Produce JSON output
+        final boolean hasPaths = true;
         final boolean hasInitControls = javaScriptControlsAppearancesMap.size() > 0;
         final boolean hasKeyListeners = containingDocument.getStaticState().getKeyHandlers().size() > 0;
         final boolean hasServerEvents; {
             final List<XFormsContainingDocument.DelayedEvent> delayedEvents = containingDocument.getDelayedEvents();
             hasServerEvents = delayedEvents != null && delayedEvents.size() > 0;
         }
-        final boolean outputInitData = hasInitControls || hasKeyListeners || hasServerEvents;
+        final boolean outputInitData = hasPaths || hasInitControls || hasKeyListeners || hasServerEvents;
         if (outputInitData) {
             final StringBuilder sb = new StringBuilder("var orbeonInitData = orbeonInitData || {}; orbeonInitData[\"");
             sb.append(XFormsUtils.getFormId(containingDocument));
             sb.append("\"] = {");
 
+            // Output path information
+            if (hasPaths) {
+                sb.append("\"paths\":{");
+
+                sb.append("\"xforms-server\": \"");
+                sb.append(handlerContext.getExternalContext().getResponse().rewriteResourceURL("/xforms-server", false));
+                
+                sb.append("\",\"resources-base\": \"");
+                sb.append(handlerContext.getExternalContext().getResponse().rewriteResourceURL("/", false));
+                sb.append('"');
+
+                sb.append('}');
+            }
+
             // Output controls initialization
             if (hasInitControls) {
+                if (hasPaths)
+                    sb.append(',');
+
                 sb.append("\"controls\":{");
 
                 for (Iterator<Map.Entry<String,Map<String,List<String>>>> i = javaScriptControlsAppearancesMap.entrySet().iterator(); i.hasNext();) {
@@ -523,7 +539,7 @@ public class XHTMLHeadHandler extends XFormsBaseHandler {
 
             // Output key listener information
             if (hasKeyListeners) {
-                if (hasInitControls)
+                if (hasPaths || hasInitControls)
                     sb.append(',');
 
                 sb.append("\"keylisteners\":[");

@@ -38,8 +38,9 @@ ORBEON.xforms.Events.orbeonLoadedEvent.subscribe(function() {
          *              @param li   Active list item
          */
         runOnLis: function(staticDynamic, f) {
-            var autocomplete = YAHOO.util.Dom.get(staticDynamic + "-autocomplete");
-            var lis = autocomplete.getElementsByTagName("li");
+            var autocompleteDiv = YAHOO.util.Dom.get(staticDynamic + "-autocomplete");
+            var autocompleteSuggestions = YAHOO.util.Dom.getElementsByClassName("fr-autocomplete-yui-div", null, autocompleteDiv)[0];
+            var lis = autocompleteSuggestions.getElementsByTagName("li");
             for (liIndex = 0; liIndex < lis.length; liIndex++) {
                 var li = lis[liIndex];
                 if (li.style.display != "none")
@@ -103,20 +104,6 @@ ORBEON.xforms.Events.orbeonLoadedEvent.subscribe(function() {
         },
 
         /**
-         * Test that tabindex attribute is copied on the visible input field.
-         */
-        testHasTabIndex: function() {
-            // On the static autocomplete we have tabindex="1"
-            var staticVisibleInput = YAHOO.util.Dom.get("static-autocomplete").getElementsByTagName("input")[1];
-            YAHOO.util.Assert.areEqual("1", ORBEON.util.Dom.getAttribute(staticVisibleInput, "tabindex"));
-            // On the dynamic autocomplete we don't have a tabindex
-            var dynamicVisibleInput = YAHOO.util.Dom.get("dynamic-autocomplete").getElementsByTagName("input")[1];
-            var noTabindex = ORBEON.util.Dom.getAttribute(dynamicVisibleInput, "tabindex");
-            // IE 6/7 returns 0, while other browsers returns null
-            YAHOO.util.Assert.isTrue(noTabindex == null || noTabindex == 0);
-        },
-
-        /**
          * This test needs to be first, as we test that setting the label to Canada on xforms-ready by dispatching
          * the fr-set-label event, we indeed get the value 'ca' in the node bound to the control.
          */
@@ -130,7 +117,21 @@ ORBEON.xforms.Events.orbeonLoadedEvent.subscribe(function() {
                 });
             });
         },
-        
+
+        /**
+         * Test that tabindex attribute is copied on the visible input field.
+         */
+        testHasTabIndex: function() {
+            // On the static autocomplete we have tabindex="1"
+            var staticVisibleInput = YAHOO.util.Dom.get("static-autocomplete").getElementsByTagName("input")[1];
+            YAHOO.util.Assert.areEqual("1", ORBEON.util.Dom.getAttribute(staticVisibleInput, "tabindex"));
+            // On the dynamic autocomplete we don't have a tabindex
+            var dynamicVisibleInput = YAHOO.util.Dom.get("dynamic-autocomplete").getElementsByTagName("input")[1];
+            var noTabindex = ORBEON.util.Dom.getAttribute(dynamicVisibleInput, "tabindex");
+            // IE 6/7 returns 0, while other browsers returns null
+            YAHOO.util.Assert.isTrue(noTabindex == null || noTabindex == 0);
+        },
+
         /**
          * Test that when we type the full value "Switzerland", the value of the node becomes "sz",
          * because "Switzerland" shows in the list of possible values, so the value should be selected
@@ -146,7 +147,7 @@ ORBEON.xforms.Events.orbeonLoadedEvent.subscribe(function() {
                 });
             });
         },
-        
+
         /**
          * Test that entering a partial match "Sw", we get the expected list of countries in the suggestion list.
          */
@@ -220,7 +221,7 @@ ORBEON.xforms.Events.orbeonLoadedEvent.subscribe(function() {
                 });
             });
         },
-        
+
         testDoubleSpaceInLabel: function() {
             this.runForStaticDynamic(function(staticDynamic, continuation) {
                 ORBEON.util.Test.executeCausingAjaxRequest(this, function() {
@@ -268,7 +269,7 @@ ORBEON.xforms.Events.orbeonLoadedEvent.subscribe(function() {
                 });
             });
         },
-        
+
         /**
          * Test that the left border of the suggestion box is aligned with the left border of the text field.
          */
@@ -289,7 +290,7 @@ ORBEON.xforms.Events.orbeonLoadedEvent.subscribe(function() {
                 });
             });
         },
-        
+
         testSetLabel: function() {
             this.runForStaticDynamic(function(staticDynamic, continuation) {
                 ORBEON.util.Test.executeCausingAjaxRequest(this, function() {
@@ -305,7 +306,8 @@ ORBEON.xforms.Events.orbeonLoadedEvent.subscribe(function() {
                 });
             });
         },
-        testSetfocus: function() {
+
+        testSetFocus: function() {
             var staticAutocompleteInput = YAHOO.util.Dom.getElementsByClassName("yui-ac-input", null, "static-autocomplete")[0];
             var dynamicAutocompleteInput = YAHOO.util.Dom.getElementsByClassName("yui-ac-input", null, "dynamic-autocomplete")[0];
             var staticGotFocus = false;
@@ -325,7 +327,30 @@ ORBEON.xforms.Events.orbeonLoadedEvent.subscribe(function() {
                     YAHOO.util.Assert.isTrue(dynamicGotFocus);
                 });
             });
-        }
+        },
+
+        testValueForStatic: function() {
+            ORBEON.util.Test.executeCausingAjaxRequest(this, function() {
+                YAHOO.util.UserAction.click(YAHOO.util.Dom.get("static-set-to-sz"));
+            }, function() {
+                this.checkSearchValue("static", "Switzerland");
+            });
+        },
+
+        /**
+         * Test that the full itemset dropdown can be used to make a selection in the static case.
+         */
+        testFullItemsetDropdown: function() {
+            var autocompleteDiv = YAHOO.util.Dom.get("static-autocomplete");
+            var select1ButtonDiv = YAHOO.util.Dom.getElementsByClassName("xbl-fr-select1-button", null, autocompleteDiv)[0];
+            var select1ButtonButton = select1ButtonDiv.getElementsByTagName("button")[0];
+            YAHOO.util.UserAction.click(select1ButtonButton);
+            //select1ButtonButton.click();
+            // This test is incomplete as we need to figure out a way to simulate a click action the button
+            // that shows the drop-down.
+        },
+
+        EOO: {}
     }));
 
     if (parent && parent.TestManager) {

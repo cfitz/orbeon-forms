@@ -1,37 +1,30 @@
 /**
- *  Copyright (C) 2004 Orbeon, Inc.
+ * Copyright (C) 2010 Orbeon, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify it under the terms of the
- *  GNU Lesser General Public License as published by the Free Software Foundation; either version
- *  2.1 of the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU Lesser General Public License as published by the Free Software Foundation; either version
+ * 2.1 of the License, or (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *  See the GNU Lesser General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Lesser General Public License for more details.
  *
- *  The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+ * The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
  */
 package org.orbeon.oxf.servlet;
 
+import org.orbeon.oxf.common.OXFException;
+import org.orbeon.oxf.pipeline.InitUtils;
+import org.orbeon.oxf.pipeline.api.*;
+import org.orbeon.oxf.util.AttributesToMap;
 import org.orbeon.oxf.webapp.ProcessorService;
 import org.orbeon.oxf.webapp.WebAppContext;
-import org.orbeon.oxf.pipeline.api.ProcessorDefinition;
-import org.orbeon.oxf.pipeline.api.PipelineContext;
-import org.orbeon.oxf.pipeline.api.ExternalContext;
-import org.orbeon.oxf.pipeline.InitUtils;
-import org.orbeon.oxf.common.OXFException;
-import org.orbeon.oxf.util.AttributesToMap;
 
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.ServletException;
 import javax.servlet.ServletContext;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.StringTokenizer;
-import java.util.Enumeration;
+import javax.servlet.ServletException;
+import javax.servlet.http.*;
 import java.io.IOException;
+import java.util.*;
 
 /**
  * NOTE: This class is available for backward compatibility only.
@@ -55,6 +48,7 @@ public class OrbeonServletDelegate extends HttpServlet {
     // Accepted methods for this servlet
     private Map acceptedMethods = new HashMap();
 
+    @Override
     public void init() throws ServletException {
         try {
             // Make sure the Web app context is initialized
@@ -124,6 +118,7 @@ public class OrbeonServletDelegate extends HttpServlet {
         }
     }
 
+    @Override
     public void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         try {
             // Filter on supported methods
@@ -135,12 +130,13 @@ public class OrbeonServletDelegate extends HttpServlet {
             // Run service
             PipelineContext pipelineContext = new PipelineContext();
             ExternalContext externalContext = new ServletExternalContext(getServletContext(), pipelineContext, webAppContext.getServletInitParametersMap(), request, response);
-            processorService.service(true, externalContext, pipelineContext);
+            processorService.service(externalContext, pipelineContext);
         } catch (Exception e) {
             throw new ServletException(OXFException.getRootThrowable(e));
         }
     }
 
+    @Override
     public void destroy() {
 
         // Run listeners
@@ -181,39 +177,4 @@ public class OrbeonServletDelegate extends HttpServlet {
             });
         }
     }
-
-/*
-    {
-        if (config.waitPageProcessorDefinition != null) {
-                // Create and schedule the task
-                Task task = new Task() {
-                    public String getStatus() {
-                        return null;
-                    }
-
-                    public void run() {
-                        // Scenarios:
-                        // 1. GET -> redirect
-                        // 2. GET -> content (*)
-                        // 3. POST -> redirect (*)
-                        // 4. POST -> content
-
-                        // Check (synchronized on output) whether the response was committed
-
-                        // If it was, return immediately, there is nothing we can do
-
-                        // If it was not, bufferize regular output and run pipeline
-
-                        // When processing instruction is found,
-                    }
-                };
-                task.setSchedule(System.currentTimeMillis() + config.waitPageDelay, 0);
-            }
-    }
-
-    {
-        InitUtils.ProcessorDefinition waitPageProcessorDefinition;
-        long waitPageDelay;
-    }
-*/
 }

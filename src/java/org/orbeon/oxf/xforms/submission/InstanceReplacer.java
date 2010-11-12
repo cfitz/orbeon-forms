@@ -68,7 +68,7 @@ public class InstanceReplacer extends BaseReplacer {
                 // Resulting instance must not be read-only
 
                 // TODO: What about configuring validation? And what default to choose?
-                resultingDocument = TransformerUtils.readDom4j(connectionResult.getResponseInputStream(), connectionResult.resourceURI, isHandleXInclude);
+                resultingDocument = TransformerUtils.readDom4j(connectionResult.getResponseInputStream(), connectionResult.resourceURI, isHandleXInclude, true);
 
                 if (indentedLogger.isDebugEnabled())
                     indentedLogger.logDebug("", "deserializing to mutable instance");
@@ -77,7 +77,8 @@ public class InstanceReplacer extends BaseReplacer {
 
                 // TODO: What about configuring validation? And what default to choose?
                 // NOTE: isApplicationSharedHint is always false when get get here. isApplicationSharedHint="true" is handled above.
-                resultingDocument = TransformerUtils.readTinyTree(connectionResult.getResponseInputStream(), connectionResult.resourceURI, isHandleXInclude);
+                resultingDocument = TransformerUtils.readTinyTree(containingDocument.getStaticState().getXPathConfiguration(),
+                        connectionResult.getResponseInputStream(), connectionResult.resourceURI, isHandleXInclude, true);
 
                 if (indentedLogger.isDebugEnabled())
                     indentedLogger.logDebug("", "deserializing to read-only instance");
@@ -154,8 +155,8 @@ public class InstanceReplacer extends BaseReplacer {
                         detailsLogger.logDebug("", "replacing instance with mutable instance",
                             "instance", updatedInstance.getEffectiveId());
 
-                    newInstance = new XFormsInstance(updatedInstance.getEffectiveModelId(), updatedInstance.getId(),
-                            (Document) resultingDocument, connectionResult.resourceURI, resultingRequestBodyHash, p2.username, p2.password,
+                    newInstance = new XFormsInstance(containingDocument.getStaticState().getXPathConfiguration(), updatedInstance.getEffectiveModelId(), updatedInstance.getId(),
+                            (Document) resultingDocument, connectionResult.resourceURI, resultingRequestBodyHash, p2.username, p2.password, p2.domain,
                             p2.isCache, p2.timeToLive, updatedInstance.getValidation(), p2.isHandleXInclude, XFormsProperties.isExposeXPathTypes(containingDocument));
                 } else {
                     // Resulting instance must be read-only
@@ -165,7 +166,7 @@ public class InstanceReplacer extends BaseReplacer {
                             "instance", updatedInstance.getEffectiveId());
 
                     newInstance = new ReadonlyXFormsInstance(updatedInstance.getEffectiveModelId(), updatedInstance.getId(),
-                            (DocumentInfo) resultingDocument, connectionResult.resourceURI, resultingRequestBodyHash, p2.username, p2.password,
+                            (DocumentInfo) resultingDocument, connectionResult.resourceURI, resultingRequestBodyHash, p2.username, p2.password, p2.domain,
                             p2.isCache, p2.timeToLive, updatedInstance.getValidation(), p2.isHandleXInclude, XFormsProperties.isExposeXPathTypes(containingDocument));
                 }
                 newDocumentRootElement = newInstance.getInstanceRootElementInfo();
@@ -177,12 +178,18 @@ public class InstanceReplacer extends BaseReplacer {
             // performed by the insert action (10.3 The insert Element) and the
             // delete action"
 
+            // NOTE: As of 2009-03-18 decision, XForms 1.1 specifies that deferred event handling flags are set instead of
+            // performing RRRR directly.
+
             if (isDestinationRootElement) {
                 // Optimized insertion for instance root element replacement
 
-                // Handle new instance and associated event markings
+                // Update model instance
                 final XFormsModel replaceModel = newInstance.getModel(containingDocument);
-                replaceModel.handleUpdatedInstance(newInstance);
+                replaceModel.setInstance(newInstance, true);
+
+                // Call this directly, since we are not using insert/delete here
+                replaceModel.markStructuralChange();
 
                 // Dispatch xforms-delete event
                 // NOTE: Do NOT dispatch so we are compatible with the regular root element replacement
@@ -216,14 +223,13 @@ public class InstanceReplacer extends BaseReplacer {
                     XFormsDeleteAction.doDelete(propertyContext, containingDocument, detailsLogger, destinationCollection, 1, true);
                 }
 
-                // Perform model instance update
-                // Handle new instance and associated event markings
+                // Update model instance
                 // NOTE: The inserted node NodeWrapper.index might be out of date at this point because:
                 // * doInsert() dispatches an event which might itself change the instance
                 // * doDelete() does as well
                 // Does this mean that we should check that the node is still where it should be?
                 final XFormsModel updatedModel = updatedInstance.getModel(containingDocument);
-                updatedModel.handleUpdatedInstance(updatedInstance);
+                updatedModel.setInstance(updatedInstance, true);
             }
 
             // Dispatch xforms-submit-done

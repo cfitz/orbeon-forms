@@ -13,7 +13,8 @@
 
   The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
   -->
-<instance xmlns:mods="http://www.loc.gov/mods/v3" type=" ">
+
+<instance xmlns:mods="http://www.loc.gov/mods/v3" point=" " type=" "> 
  <insert name="identifierdruid">
   <mods:identifier type="local" displayLabel="SU DRUID"/>
  </insert>
@@ -63,16 +64,16 @@
 
  <insert name="originInfoDate">
   <keyDate name="copyrightDate" type="single" keyDate="no">
-   <mods:copyrightDate encoding="w3cdtf" keyDate="no" qualifier=""/>
+   <mods:copyrightDate encoding="w3cdtf" keyDate="no" qualifier="" point=""/>
   </keyDate>
   <keyDate name="dateCreated" type="single">
-   <mods:dateCreated encoding="w3cdtf" keyDate="no" qualifier=""/>
+   <mods:dateCreated encoding="w3cdtf" keyDate="no" qualifier="" point=""/>
   </keyDate>
   <keyDate name="dateIssued" type="single">
-   <mods:dateIssued encoding="w3cdtf" keyDate="no" qualifier=""/>
+   <mods:dateIssued encoding="w3cdtf" keyDate="no" qualifier="" point=""/>
   </keyDate>
   <keyDate name="dateOther" type="single">
-   <mods:dateOther encoding="w3cdtf" keyDate="no" qualifier=""/>
+   <mods:dateOther encoding="w3cdtf" keyDate="no" qualifier="" point=""/>
   </keyDate>
   <keyDate name="dateCreated" type="range">
    <mods:dateCreated encoding="w3cdtf" keyDate="no" qualifier="" point="start"/>
