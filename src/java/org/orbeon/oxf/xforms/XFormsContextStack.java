@@ -126,7 +126,7 @@ public class XFormsContextStack {
         // TODO: Check dirty flag to prevent needless re-evaluation
 
         // All variables in the model are in scope for the nested binds and actions.
-        final List<Element> elements = Dom4jUtils.elements(xformsModel.getStaticModel().document.getRootElement(), XFormsConstants.XXFORMS_VARIABLE_NAME);
+        final List<Element> elements = Dom4jUtils.elements(xformsModel.getStaticModel().element(), XFormsConstants.XXFORMS_VARIABLE_NAME);
         final List<BindingContext.VariableInfo> variableInfos
                 = addAndScopeVariables(propertyContext, xformsModel.getXBLContainer(), elements, xformsModel.getEffectiveId());
 
@@ -157,7 +157,7 @@ public class XFormsContextStack {
                 final Variable variable = new Variable(container, this, currentElement);
 
                 // Find variable scope
-                final XBLBindings.Scope newScope = bindings.getResolutionScopeByPrefixedId(container.getFullPrefix() + currentElement.attributeValue("id"));
+                final XBLBindings.Scope newScope = bindings.getResolutionScopeByPrefixedId(container.getFullPrefix() + currentElement.attributeValue(XFormsConstants.ID_QNAME));
 
                 // Push the variable on the context stack. Note that we do as if each variable was a "parent" of the
                 // following controls and variables.
@@ -170,14 +170,9 @@ public class XFormsContextStack {
                 // but because BindingContext caches variables in scope, after a first request for in-scope variables,
                 // further variables values could not be added. The method below temporarily adds more elements on the
                 // stack but it is safer.
-//                final String tempSourceEffectiveId = functionContext.getSourceEffectiveId();
-//                final XFormsModel tempModel = functionContext.getModel();
-//                final XFormsFunction.Context functionContext = getFunctionContext(sourceEffectiveId);
                 getFunctionContext(sourceEffectiveId);
-                pushVariable(currentElement, variable.getVariableName(), variable.getVariableValue(propertyContext, sourceEffectiveId, true, true), newScope);
+                pushVariable(currentElement, variable.getVariableName(), variable.getVariableValue(propertyContext, sourceEffectiveId, true), newScope);
                 returnFunctionContext();
-//                functionContext.setModel(tempModel);
-//                functionContext.setSourceEffectiveId(tempSourceEffectiveId);
 
                 // Add VariableInfo created during above pushVariable(). There must be only one!
                 if (variableInfos == null)
@@ -233,11 +228,12 @@ public class XFormsContextStack {
      * @param scope             XBL scope
      */
     public void pushBinding(PropertyContext propertyContext, Element bindingElement, String sourceEffectiveId, XBLBindings.Scope scope) {
-        final String ref = bindingElement.attributeValue("ref");
-        final String context = bindingElement.attributeValue("context");
-        final String nodeset = bindingElement.attributeValue("nodeset");
-        final String model = bindingElement.attributeValue("model");
-        final String bind = bindingElement.attributeValue("bind");
+        // TODO: move away from element and use static analysis information
+        final String ref = bindingElement.attributeValue(XFormsConstants.REF_QNAME);
+        final String context = bindingElement.attributeValue(XFormsConstants.CONTEXT_QNAME);
+        final String nodeset = bindingElement.attributeValue(XFormsConstants.NODESET_QNAME);
+        final String model = bindingElement.attributeValue(XFormsConstants.MODEL_QNAME);
+        final String bind = bindingElement.attributeValue(XFormsConstants.BIND_QNAME);
 
         final NamespaceMapping bindingElementNamespaceMapping = container.getNamespaceMappings(bindingElement);
         pushBinding(propertyContext, ref, context, nodeset, model, bind, bindingElement, bindingElementNamespaceMapping, sourceEffectiveId, scope);
@@ -530,7 +526,7 @@ public class XFormsContextStack {
                 }
 
                 // Push new context
-                final String bindingElementStaticId = (bindingElement == null) ? null : bindingElement.attributeValue("id");
+                final String bindingElementStaticId = (bindingElement == null) ? null : bindingElement.attributeValue(XFormsConstants.ID_QNAME);
                 contextStack.push(new BindingContext(currentBindingContext, newModel, newNodeset, newPosition, bindingElementStaticId, isNewBind,
                         bindingElement, locationData, hasOverriddenContext, contextItem, newScope));
 
@@ -842,7 +838,6 @@ public class XFormsContextStack {
         public final XBLBindings.Scope scope;
 
         private List<VariableInfo> variables;
-        private Map<String, ValueRepresentation> inScopeVariablesMap; // cached variable map
 
         public BindingContext(BindingContext parent, XFormsModel model, List<Item> nodeSet, int position, String elementId,
                               boolean newBind, Element controlElement, LocationData locationData, boolean hasOverriddenContext,
@@ -934,7 +929,6 @@ public class XFormsContextStack {
 
         public void setVariables(List<VariableInfo> variableInfo) {
             this.variables = variableInfo;
-            this.inScopeVariablesMap = null;
         }
 
         public List<VariableInfo> getVariables() {
@@ -947,43 +941,28 @@ public class XFormsContextStack {
          * @return  map of variable name to value
          */
         public Map<String, ValueRepresentation> getInScopeVariables() {
-            return getInScopeVariables(true);
-        }
-
-        public Map<String, ValueRepresentation> getInScopeVariables(boolean useCache) {
-
-            // TODO: Remove useCache completely or implement better cache!
-            // Force use cache to false, because when not all bindings are updated, variables can get out of date
-            useCache = false;
-
             // TODO: Variables in scope in the view must not include the variables defined in another model, but must include all view variables.
-            if (inScopeVariablesMap == null || !useCache) {
-                final Map<String, ValueRepresentation> tempVariablesMap = new HashMap<String, ValueRepresentation>();
+            final Map<String, ValueRepresentation> tempVariablesMap = new HashMap<String, ValueRepresentation>();
 
-                BindingContext currentBindingContext = this; // start with current BindingContext
-                do {
-                    if (currentBindingContext.scope == scope) { // consider only BindingContext with same scope and skip others
-                        final List<VariableInfo> currentInfo = currentBindingContext.variables;
-                        if (currentInfo != null) {
-                            for (VariableInfo variableInfo: currentInfo) {
-                                final String currentName = variableInfo.variableName;
-                                if (currentName != null && tempVariablesMap.get(currentName) == null) {
-                                    // The binding defines a variable and there is not already a variable with that name
-                                    tempVariablesMap.put(variableInfo.variableName, variableInfo.variableValue);
-                                }
+            BindingContext currentBindingContext = this; // start with current BindingContext
+            do {
+                if (currentBindingContext.scope == scope) { // consider only BindingContext with same scope and skip others
+                    final List<VariableInfo> currentInfo = currentBindingContext.variables;
+                    if (currentInfo != null) {
+                        for (VariableInfo variableInfo: currentInfo) {
+                            final String currentName = variableInfo.variableName;
+                            if (currentName != null && tempVariablesMap.get(currentName) == null) {
+                                // The binding defines a variable and there is not already a variable with that name
+                                tempVariablesMap.put(variableInfo.variableName, variableInfo.variableValue);
                             }
                         }
                     }
+                }
 
-                    currentBindingContext = currentBindingContext.parent;
-                } while (currentBindingContext != null);
+                currentBindingContext = currentBindingContext.parent;
+            } while (currentBindingContext != null);
 
-                if (!useCache)
-                    return tempVariablesMap;
-
-                inScopeVariablesMap = tempVariablesMap;
-            }
-            return inScopeVariablesMap;
+            return tempVariablesMap;
         }
 
         public static class VariableInfo {

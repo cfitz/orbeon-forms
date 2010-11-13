@@ -23,9 +23,8 @@ import org.orbeon.oxf.processor.generator.DOMGenerator;
 import org.orbeon.oxf.resources.ResourceManagerWrapper;
 import org.orbeon.oxf.util.*;
 import org.orbeon.oxf.xforms.*;
-import org.orbeon.oxf.xforms.analysis.XFormsAnnotatorContentHandler;
-import org.orbeon.oxf.xforms.analysis.XFormsExtractorContentHandler;
-import org.orbeon.oxf.xforms.analysis.controls.ContainerAnalysis;
+import org.orbeon.oxf.xforms.analysis.*;
+import org.orbeon.oxf.xforms.analysis.controls.ExternalLHHAAnalysis;
 import org.orbeon.oxf.xforms.control.*;
 import org.orbeon.oxf.xforms.event.XFormsEventHandlerImpl;
 import org.orbeon.oxf.xml.SAXStore;
@@ -58,7 +57,7 @@ public class XBLBindings {
 
     private final boolean logShadowTrees;                   // whether to log shadow trees as they are built
 
-    // Static xbl:xbl information
+    // Static xbl:xbl
     private Map<QName, XFormsControlFactory.Factory> xblComponentsFactories;    // Map<QName bindingQName, Factory> of QNames to component factory
     private Map<QName, Element> xblComponentBindings;       // Map<QName bindingQName, Element bindingElement> of QNames to bindings
     private List<Element> xblScripts;                       // List<Element xblScriptElements>
@@ -66,7 +65,7 @@ public class XBLBindings {
     private Map<QName, List<Element>> xblHandlers;          // Map<QName bindingQName, List<Element handlerElement>>
     private Map<QName, List<Document>> xblImplementations;  // Map<QName bindingQName, List<Document>>
 
-    // Concrete XBL bindings information
+    // Concrete XBL bindings
     private Map<String, Document> xblFullShadowTrees;       // Map<String treePrefixedId, Document> (with full content, e.g. XHTML)
     private Map<String, Document> xblCompactShadowTrees;    // Map<String treePrefixedId, Document> (without full content, only the XForms controls)
     private Map<String, String> xblBindingIds;              // Map<String treePrefixedId, String bindingId>
@@ -196,12 +195,11 @@ public class XBLBindings {
             }
 
             // Get automatically-included XBL documents
-            final List<String> includes = metadata.getBindingsIncludes();
+            final Set<String> includes = metadata.getBindingsIncludes();
             if (includes != null) {
                 for (final String include: includes) {
                     xblDocuments.add(readXBLResource(include));
 //                    System.out.println(Dom4jUtils.domToPrettyString(xblDocuments.get(xblDocuments.size() - 1)));
-
                 }
             }
         }
@@ -224,6 +222,12 @@ public class XBLBindings {
     private Document readXBLResource(String include) {
         final boolean handleXInclude = true; // handle XInclude
         final boolean handleLexical = false; // don't handle comments and other lexical information
+
+        // Update last modified so that dependencies on external XBL files can be handled
+        final long lastModified = ResourceManagerWrapper.instance().lastModified(include, false);
+        metadata.updateBindingsLastModified(lastModified);
+
+        // Read
         return ResourceManagerWrapper.instance().getContentAsDOM4J(include, false, handleXInclude, handleLexical);
     }
 
@@ -264,7 +268,7 @@ public class XBLBindings {
         int xblBindingCount = 0;
         for (Iterator j = xblDocument.getRootElement().elements(XFormsConstants.XBL_BINDING_QNAME).iterator(); j.hasNext(); xblBindingCount++) {
             final Element currentBindingElement = (Element) j.next();
-            final String currentElementAttribute = currentBindingElement.attributeValue("element");
+            final String currentElementAttribute = currentBindingElement.attributeValue(XFormsConstants.ELEMENT_QNAME);
 
             if (currentElementAttribute != null) {
 
@@ -276,7 +280,7 @@ public class XBLBindings {
                 // Create and remember factory for this QName
                 xblComponentsFactories.put(currentQNameMatch,
                     new XFormsControlFactory.Factory() {
-                        public XFormsControl createXFormsControl(XBLContainer container, XFormsControl parent, Element element, String name, String effectiveId) {
+                        public XFormsControl createXFormsControl(XBLContainer container, XFormsControl parent, Element element, String name, String effectiveId, Map<String, Element> state) {
                             return new XFormsComponentControl(container, parent, element, name, effectiveId);
                         }
                     });
@@ -352,8 +356,8 @@ public class XBLBindings {
     public void processElementIfNeeded(PropertyContext propertyContext, IndentedLogger indentedLogger, Element controlElement,
                                        String controlPrefixedId, LocationData locationData,
                                        DocumentWrapper controlsDocumentInfo, Configuration xpathConfiguration, Scope scope,
-                                       ContainerAnalysis parentControlAnalysis,
-                                       StringBuilder repeatHierarchyStringBuffer) {
+                                       ContainerTrait parentControlAnalysis,
+                                       StringBuilder repeatHierarchyStringBuffer, final List<ExternalLHHAAnalysis> externalLHHA) {
 
         if (xblComponentBindings != null) {
             final Element bindingElement = xblComponentBindings.get(controlElement.getQName());
@@ -365,7 +369,7 @@ public class XBLBindings {
 
                 // Check how many automatic XBL includes we have so far
                 final int initialIncludesCount; {
-                    final List<String> includes = metadata.getBindingsIncludes();
+                    final Set<String> includes = metadata.getBindingsIncludes();
                     initialIncludesCount = includes != null ? includes.size() : 0;
                 }
 
@@ -374,12 +378,13 @@ public class XBLBindings {
                 if (fullShadowTreeDocument != null) {
 
                     // Process newly added automatic XBL includes if any
-                    final List<String> includes = metadata.getBindingsIncludes();
+                    final Set<String> includes = metadata.getBindingsIncludes();
                     final int finalIncludesCount = includes != null ? includes.size() : 0;
                     if (finalIncludesCount > initialIncludesCount) {
                         indentedLogger.startHandleOperation("", "adding XBL bindings");
                         int xblBindingCount = 0;
-                        for (final String include: includes.subList(initialIncludesCount, finalIncludesCount)) {
+                        final List<String> includesAsList = new ArrayList<String>(includes);
+                        for (final String include: includesAsList.subList(initialIncludesCount, finalIncludesCount)) {
                             xblBindingCount += extractXBLBindings(readXBLResource(include), staticState);
                         }
                         indentedLogger.endHandleOperation("xbl:xbl count", Integer.toString(finalIncludesCount - initialIncludesCount),
@@ -426,7 +431,9 @@ public class XBLBindings {
                     xblCompactShadowTrees.put(controlPrefixedId, compactShadowTreeDocument);
 
                     // Remember id of binding
-                    xblBindingIds.put(controlPrefixedId, XFormsUtils.getElementStaticId(bindingElement));
+                    final String bindingId = XFormsUtils.getElementStaticId(bindingElement);
+                    assert bindingId != null : "missing id on XBL binding for " + Dom4jUtils.elementToDebugString(bindingElement);
+                    xblBindingIds.put(controlPrefixedId, bindingId);
 
                     // Extract xbl:xbl/xbl:script and xbl:binding/xbl:resources/xbl:style
                     // TODO: should do this here, in order to include only the scripts and resources actually used
@@ -465,7 +472,7 @@ public class XBLBindings {
 
                     // Analyze the component tree
                     staticState.analyzeComponentTree(propertyContext, xpathConfiguration, newInnerScope, compactShadowTreeDocument.getRootElement(),
-                            parentControlAnalysis, repeatHierarchyStringBuffer);
+                            parentControlAnalysis, repeatHierarchyStringBuffer, externalLHHA);
                 }
             }
         }

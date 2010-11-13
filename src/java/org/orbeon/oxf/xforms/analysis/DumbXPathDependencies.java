@@ -13,7 +13,7 @@
  */
 package org.orbeon.oxf.xforms.analysis;
 
-import org.orbeon.oxf.xforms.XFormsConstants;
+import org.orbeon.oxf.xforms.XFormsInstance;
 import org.orbeon.oxf.xforms.XFormsModel;
 import org.orbeon.oxf.xforms.analysis.model.Model;
 import org.orbeon.saxon.om.NodeInfo;
@@ -26,13 +26,21 @@ public class DumbXPathDependencies implements XPathDependencies {
         // NOP
     }
 
-    public void markStructuralChange(XFormsModel model) {
+    public void markStructuralChange(XFormsModel model, XFormsInstance instance) {
         // NOP
     }
 
-//    public void visitInstanceNode(XFormsModel model, NodeInfo nodeInfo) {
-//        // NOP
-//    }
+    public void rebuildDone(Model model) {
+        // NOP
+    }
+
+    public void recalculateDone(Model model) {
+        // NOP
+    }
+
+    public void revalidateDone(Model model) {
+        // NOP
+    }
 
     public void refreshStart() {
         // NOP
@@ -42,32 +50,75 @@ public class DumbXPathDependencies implements XPathDependencies {
         // NOP
     }
 
+    public void afterInitialResponse() {
+        // NOP
+    }
+
+    public void beforeUpdateResponse() {
+        // NOP
+    }
+
+    public void afterUpdateResponse() {
+        // NOP
+    }
+
+    public void notifyComputeLHHA() {
+        // NOP
+    }
+
+    public void notifyOptimizeLHHA() {
+        // NOP
+    }
+
+    public void notifyComputeItemset() {
+        // NOP
+    }
+
+    public void notifyOptimizeItemset() {
+        // NOP
+    }
+
     public boolean requireBindingUpdate(String controlPrefixedId) {
         // Always update
         return true;
     }
-
-//    public boolean requireMIPUpdate(String controlPrefixedId) {
-//        // Always update
-//        return true;
-//    }
 
     public boolean requireValueUpdate(String controlPrefixedId) {
         // Always update
         return true;
     }
 
-    public boolean requireLHHAUpdate(XFormsConstants.LHHA lhha, String controlPrefixedId) {
+    public boolean requireLHHAUpdate(String lhhaName, String controlPrefixedId) {
         // Always update
         return true;
     }
 
-    public boolean requireBindCalculation(Model model, String instancePrefixedId) {
+    public boolean requireItemsetUpdate(String controlPrefixedId) {
         // Always update
         return true;
     }
 
-    public boolean requireBindValidation(Model model, String instancePrefixedId) {
+    public boolean hasAnyCalculationBind(Model model, String instancePrefixedId) {
+        // Always update
+        return true;
+    }
+
+    public boolean hasAnyValidationBind(Model model, String instancePrefixedId) {
+        // Always update
+        return true;
+    }
+
+    public boolean hasAnyCalculationBind(Model model) {
+        // Always update
+        return true;
+    }
+
+    public boolean hasAnyValidationBind(Model model) {
+        // Always update
+        return true;
+    }
+
+    public boolean requireModelMIPUpdate(Model model, String bindId, String mipName) {
         // Always update
         return true;
     }

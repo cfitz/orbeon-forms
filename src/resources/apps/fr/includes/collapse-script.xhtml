@@ -54,7 +54,7 @@
         var currentSectionId = ORBEON.xforms.Document.getValue("fr-current-section-id-input");
         var currentSectionRepeatIndexes = ORBEON.xforms.Document.getValue("fr-current-section-repeat-indexes-input");
 
-        var switchElement = ORBEON.util.Dom.getElementById("switch-" + currentSectionId +
+        var switchElement = ORBEON.util.Dom.get("switch-" + currentSectionId +
                                                            (currentSectionRepeatIndexes == "" ? "" : XFORMS_SEPARATOR_1 + currentSectionRepeatIndexes)) ;
         if (switchElement == null)
             return null;
@@ -65,7 +65,7 @@
         var caseElement = null;
         for (var i = 0; i < possibleElements.length; i++) {
             var currentElement = possibleElements[i];
-            if (!ORBEON.util.Dom.hasClass(currentElement, "xforms-case-begin-end")) {
+            if (!YAHOO.util.Dom.hasClass(currentElement, "xforms-case-begin-end")) {
                 caseElement = currentElement;
                 break;
             }
@@ -73,7 +73,7 @@
         if (caseElement == null)
             return null;
 
-        if (ORBEON.util.Dom.hasClass(caseElement, "xforms-case-begin-end"))
+        if (YAHOO.util.Dom.hasClass(caseElement, "xforms-case-begin-end"))
             return null;
 
         var collapsibleElements = YAHOO.util.Dom.getElementsByClassName("fr-collapsible", null, caseElement);

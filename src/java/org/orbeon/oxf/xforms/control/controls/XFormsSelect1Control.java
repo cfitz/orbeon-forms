@@ -21,7 +21,7 @@ import org.orbeon.oxf.pipeline.api.PipelineContext;
 import org.orbeon.oxf.util.PropertyContext;
 import org.orbeon.oxf.xforms.*;
 import org.orbeon.oxf.xforms.analysis.XPathDependencies;
-import org.orbeon.oxf.xforms.analysis.controls.Select1Analysis;
+import org.orbeon.oxf.xforms.analysis.controls.SelectionControl;
 import org.orbeon.oxf.xforms.control.*;
 import org.orbeon.oxf.xforms.event.XFormsEvent;
 import org.orbeon.oxf.xforms.event.events.XFormsDeselectEvent;
@@ -57,7 +57,28 @@ public class XFormsSelect1Control extends XFormsValueControl {
     private final boolean isNorefresh;
     private final boolean isOpenSelection;
     private final boolean xxformsEncryptItemValues;
-    private Itemset itemset;
+
+    private ControlProperty<Itemset> itemsetProperty = new ControlProperty<Itemset>() {
+        @Override
+        protected void notifyCompute() {
+            containingDocument.getXPathDependencies().notifyComputeItemset();
+        }
+
+        @Override
+        protected void notifyOptimized() {
+            containingDocument.getXPathDependencies().notifyOptimizeItemset();
+        }
+
+        @Override
+        protected Itemset evaluateValue(PropertyContext propertyContext) {
+            return XFormsItemUtils.evaluateItemset(propertyContext, XFormsSelect1Control.this, true);
+        }
+
+        @Override
+        protected boolean requireUpdate() {
+            return containingDocument.getXPathDependencies().requireItemsetUpdate(getPrefixedId());
+        }
+    };
 
     public XFormsSelect1Control(XBLContainer container, XFormsControl parent, Element element, String name, String id) {
         super(container, parent, element, name, id);
@@ -100,8 +121,9 @@ public class XFormsSelect1Control extends XFormsValueControl {
     @Override
     protected void markDirtyImpl(XPathDependencies xpathDependencies) {
         super.markDirtyImpl(xpathDependencies);
-        // Force recalculation of items here
-        itemset = null;
+
+        if (itemsetProperty != null)
+            itemsetProperty.handleMarkDirty();
     }
 
     /**
@@ -146,7 +168,7 @@ public class XFormsSelect1Control extends XFormsValueControl {
      * @param setBinding        whether to set the current binding on the control first
      * @return                  itemset
      */
-    public Itemset getItemset(PropertyContext propertyContext, boolean setBinding) {
+    public Itemset getItemset(PropertyContext propertyContext, final boolean setBinding) {
         try {
             // Non-relevant control does not return an itemset
             final org.orbeon.saxon.om.Item boundItem = getBoundItem();
@@ -166,10 +188,7 @@ public class XFormsSelect1Control extends XFormsValueControl {
                 return constantItemset;
             } else {
                 // Items are stored in the control
-                if (itemset == null) {
-                    itemset = XFormsItemUtils.evaluateItemset(propertyContext, XFormsSelect1Control.this, setBinding);
-                }
-                return itemset;
+                return itemsetProperty.getValue(propertyContext);
             }
         } catch (Exception e) {
             throw ValidationException.wrapException(e, new ExtendedLocationData(getLocationData(), "evaluating itemset", getControlElement()));
@@ -184,8 +203,8 @@ public class XFormsSelect1Control extends XFormsValueControl {
      * @return                      true iif control has a static set of items
      */
     public static boolean isStaticItemset(XFormsContainingDocument containingDocument, String prefixedId) {
-        final Select1Analysis analysis = containingDocument.getStaticState().getSelect1Analysis(prefixedId);
-        return analysis != null && !analysis.hasNonStaticItem;
+        final SelectionControl analysis = containingDocument.getStaticState().getSelect1Analysis(prefixedId);
+        return analysis != null && !analysis.hasNonStaticItem();
     }
 
     /**
@@ -196,8 +215,8 @@ public class XFormsSelect1Control extends XFormsValueControl {
      * @return                      true iif control is a multiple-selection control
      */
     public static boolean isMultiple(XFormsContainingDocument containingDocument, String prefixedId) {
-        final Select1Analysis analysis = containingDocument.getStaticState().getSelect1Analysis(prefixedId);
-        return analysis != null && analysis.isMultiple;
+        final SelectionControl analysis = containingDocument.getStaticState().getSelect1Analysis(prefixedId);
+        return analysis != null && analysis.isMultiple();
     }
 
     public boolean isOpenSelection() {
@@ -307,6 +326,17 @@ public class XFormsSelect1Control extends XFormsValueControl {
     }
 
     @Override
+    public Object getBackCopy(PropertyContext propertyContext) {
+        final XFormsSelect1Control cloned = (XFormsSelect1Control) super.getBackCopy(propertyContext);
+
+        // If we have an itemset, make sure the computed value is used as basis for comparison
+        if (itemsetProperty != null)
+            cloned.itemsetProperty = new ConstantControlProperty<Itemset>(itemsetProperty.getValue(propertyContext));
+
+        return cloned;
+    }
+
+    @Override
     public boolean equalsExternal(PropertyContext propertyContext, XFormsControl other) {
 
         if (other == null || !(other instanceof XFormsSelect1Control))
@@ -325,8 +355,8 @@ public class XFormsSelect1Control extends XFormsValueControl {
     }
 
     private boolean mustSendItemsetUpdate(PropertyContext propertyContext, XFormsSelect1Control otherSelect1Control) {
-        final Select1Analysis analysis = containingDocument.getStaticState().getSelect1Analysis(getPrefixedId());
-        if (analysis != null && !analysis.hasNonStaticItem) {
+        final SelectionControl analysis = containingDocument.getStaticState().getSelect1Analysis(getPrefixedId());
+        if (analysis != null && !analysis.hasNonStaticItem()) {
             // There is no need to send an update:
             //
             // 1. Items are static...

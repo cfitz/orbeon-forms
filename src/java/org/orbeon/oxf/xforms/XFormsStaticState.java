@@ -13,6 +13,7 @@
  */
 package org.orbeon.oxf.xforms;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.dom4j.*;
 import org.dom4j.io.DocumentSource;
@@ -20,6 +21,7 @@ import org.orbeon.oxf.common.*;
 import org.orbeon.oxf.properties.Properties;
 import org.orbeon.oxf.properties.PropertySet;
 import org.orbeon.oxf.resources.ResourceManagerWrapper;
+import org.orbeon.oxf.resources.ResourceNotFoundException;
 import org.orbeon.oxf.util.*;
 import org.orbeon.oxf.xforms.action.XFormsActions;
 import org.orbeon.oxf.xforms.analysis.*;
@@ -92,16 +94,16 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
     private List<XFormsEventHandler> keyHandlers;
 
     // Controls
-    private Map<String, Map<String, ControlAnalysis>> controlTypes;         // Map<String type, Map<String prefixedId, ControlAnalysis>>
-    private Map<String, ControlAnalysis> controlAnalysisMap;                // Map<String controlPrefixedId, ControlAnalysis>: for all controls
+    private Map<String, Map<String, ElementAnalysis>> controlTypes;         // Map<String type, Map<String prefixedId, ElementAnalysis>>
+    private Map<String, ElementAnalysis> controlAnalysisMap;                // Map<String controlPrefixedId, ElementAnalysis>: for all controls
 
     // xforms:repeat
-    // TODO: move repeatChildrenMap to ControlAnalysis
+    // TODO: move repeatChildrenMap to RepeatAnalysis
     private Map<String, List<String>> repeatChildrenMap;                    // Map<String, List> of repeat id to List of children ids
     private String repeatHierarchyString;                                   // contains comma-separated list of space-separated repeat prefixed id and ancestor if any
 
     // XXFormsAttributeControl
-    private Map<String, Map<String, ControlAnalysis>> attributeControls;        // Map<String forPrefixedId, Map<String name, ControlAnalysis info>>
+    private Map<String, Map<String, AttributeControl>> attributeControls;        // Map<String forPrefixedId, Map<String name, AttributeControl control>>
 
     // Commonly used properties (use getter to access them)
     private boolean propertiesRead;
@@ -195,8 +197,9 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
         // Analyze
         analyze(propertyContext);
 
-        // XXX DEBUG
-//        dumpAnalysis(propertyContext);
+        // Debug if needed
+        if (XFormsProperties.getDebugLogXPathAnalysis())
+            dumpAnalysis(propertyContext);
     }
 
     private void extract(PropertyContext propertyContext, Document staticStateDocument, Metadata metadata, String encodedStaticState) {
@@ -271,25 +274,32 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
 
         indentedLogger.startHandleOperation("", "performing static analysis");
 
-        controlTypes = new HashMap<String, Map<String, ControlAnalysis>>();
+        controlTypes = new HashMap<String, Map<String, ElementAnalysis>>();
         eventNames = new HashSet<String>();
         eventHandlersMap = new HashMap<String, List<XFormsEventHandler>>();
         eventHandlerAncestorsMap = new HashMap<String, String>();
         keyHandlers = new ArrayList<XFormsEventHandler>();
-        controlAnalysisMap = new LinkedHashMap<String, ControlAnalysis>();
+        controlAnalysisMap = new LinkedHashMap<String, ElementAnalysis>();
         repeatChildrenMap = new HashMap<String, List<String>>();
 
         // Iterate over main static controls tree
         final StringBuilder repeatHierarchyStringBuffer = new StringBuilder(1024);
         final XBLBindings.Scope rootScope = xblBindings.getTopLevelScope();
-        final ContainerAnalysis rootControlAnalysis = new RootAnalysis(this, rootScope);
+        final ContainerTrait rootControlAnalysis = new RootControl(this);
 
         // Analyze models first
         analyzeModelsXPathForScope(xblBindings.getTopLevelScope());
 
+        // List of external LHHA
+        final List<ExternalLHHAAnalysis> externalLHHA = new ArrayList<ExternalLHHAAnalysis>();
+
         // Then analyze controls
-        analyzeComponentTree(propertyContext, xpathConfiguration, rootScope,
-                controlsDocument.getRootElement(), rootControlAnalysis, repeatHierarchyStringBuffer);
+        analyzeComponentTree(propertyContext, xpathConfiguration, rootScope, controlsDocument.getRootElement(),
+                rootControlAnalysis, repeatHierarchyStringBuffer, externalLHHA);
+
+        // Process deferred external LHHA elements
+        for (final ExternalLHHAAnalysis entry : externalLHHA)
+            entry.attachToControl();
 
         if (xxformsScripts != null && xxformsScripts.size() > 0)
             indentedLogger.logDebug("", "extracted script elements", "count", Integer.toString(xxformsScripts.size()));
@@ -300,7 +310,7 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
         // Iterate over models to extract event handlers and scripts
         for (final Map.Entry<String, Model> currentEntry: modelsByPrefixedId.entrySet()) {
             final String modelPrefixedId = currentEntry.getKey();
-            final Document modelDocument = currentEntry.getValue().document;
+            final Document modelDocument = currentEntry.getValue().element().getDocument();
             final DocumentWrapper modelDocumentInfo = new DocumentWrapper(modelDocument, null, xpathConfiguration);
             // NOTE: Say we don't want to exclude gathering event handlers within nested models, since this is a model
             extractEventHandlers(propertyContext, xpathConfiguration, modelDocumentInfo, XFormsUtils.getEffectiveIdPrefix(modelPrefixedId), false);
@@ -320,7 +330,7 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
 
         xblBindings.freeTransientState();
 
-        for (final ControlAnalysis controlAnalysis: controlAnalysisMap.values()) {
+        for (final ElementAnalysis controlAnalysis: controlAnalysisMap.values()) {
             controlAnalysis.freeTransientState();
         }
 
@@ -436,7 +446,7 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
     private void extractControlsModelsComponents(PropertyContext pipelineContext, Element staticStateElement, List<Element> topLevelModelsElements) {
 
         // Extract static components information
-        // NOTE: Do this here so that xblBindings is available for scope resolution  
+        // NOTE: Do this here so that xblBindings is available for scope resolution
         xblBindings = new XBLBindings(indentedLogger, this, metadata, staticStateElement);
 
         // Get top-level models from static state document
@@ -506,11 +516,13 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
             models = new ArrayList<Model>();
             modelsByScope.put(scope, models);
         }
-        final Model newModel = new Model(this, scope, modelDocument);
+
+        final StaticStateContext staticStateContext = new StaticStateContext(XFormsStaticState.this, null, -1);
+        final Model newModel = new Model(staticStateContext, scope, modelDocument.getRootElement());
         models.add(newModel);
-        modelsByPrefixedId.put(newModel.prefixedId, newModel);
-        for (final Instance instance : newModel.instances.values())
-            modelByInstancePrefixedId.put(instance.prefixedId, newModel);
+        modelsByPrefixedId.put(newModel.prefixedId(), newModel);
+        for (final Instance instance : newModel.instancesMap().values())
+            modelByInstancePrefixedId.put(instance.prefixedId(), newModel);
     }
 
     public Model getModel(String prefixedId) {
@@ -526,7 +538,7 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
         // TODO: Not sure why we actually extract the scripts: we could just keep pointers on them, right? There is
         // probably not a notable performance if any at all, especially since this is needed at page generation time
         // only.
- 
+
         final String xpathExpression = "/descendant-or-self::xxforms:script[not(ancestor::xforms:instance) and exists(@id)]";
 
         final List scripts = XPathCache.evaluate(pipelineContext, documentInfo, xpathExpression,
@@ -576,7 +588,7 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
      * @return                      instances
      */
     public Collection<Instance> getInstances(String modelPrefixedId) {
-        return modelsByPrefixedId.get(modelPrefixedId).instances.values();
+        return modelsByPrefixedId.get(modelPrefixedId).instancesMap().values();
     }
 
     /**
@@ -628,6 +640,18 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
         }
     }
 
+    public Model getModelByScopeAndBind(XBLBindings.Scope scope, String bindStaticId) {
+        final List<Model> models = modelsByScope.get(scope);
+        if (models != null && models.size() > 0) {
+//            final String bindPrefixedId = scope.getPrefixedIdForStaticId(bindStaticId);
+            for (final Model model: models) {
+                if (model.bindsById().get(bindStaticId) != null)
+                    return model;
+            }
+        }
+        return null;
+    }
+
     public final List<Model> getModelsForScope(XBLBindings.Scope scope) {
         final List<Model> models = modelsByScope.get(scope);
         return (models != null) ? models : Collections.<Model>emptyList();
@@ -637,7 +661,7 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
         XBLBindings.Scope currentScope = startScope;
         while (currentScope != null) {
             for (final Model model: getModelsForScope(currentScope)) {
-                if (model.instances.containsKey(instanceStaticId)) {
+                if (model.instancesMap().containsKey(instanceStaticId)) {
                     return currentScope.getPrefixedIdForStaticId(instanceStaticId);
                 }
             }
@@ -661,7 +685,7 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
     public Map<String, Object> getNonDefaultProperties() {
         return nonDefaultProperties;
     }
-    
+
     public Object getProperty(String propertyName) {
         final Object documentProperty = nonDefaultProperties.get(propertyName);
         if (documentProperty != null) {
@@ -717,43 +741,43 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
         return false;
     }
 
-    public Map<String, ControlAnalysis> getRepeatControlAnalysisMap() {
+    public Map<String, ElementAnalysis> getRepeatControlAnalysisMap() {
         return controlTypes.get("repeat");
     }
 
     public Element getControlElement(String prefixedId) {
-        final ControlAnalysis controlAnalysis = controlAnalysisMap.get(prefixedId);
-        return (controlAnalysis == null) ? null : controlAnalysis.element;
+        final ElementAnalysis controlAnalysis = controlAnalysisMap.get(prefixedId);
+        return (controlAnalysis == null) ? null : controlAnalysis.element();
     }
 
     public int getControlPosition(String prefixedId) {
-        final ControlAnalysis controlAnalysis = controlAnalysisMap.get(prefixedId);
-        return (controlAnalysis == null) ? -1 : controlAnalysis.index;
+        final ElementAnalysis controlAnalysis = controlAnalysisMap.get(prefixedId);
+        return (controlAnalysis == null) ? -1 : ((ViewTrait) controlAnalysis).index();
     }
 
     public boolean hasNodeBinding(String prefixedId) {
-        final ControlAnalysis controlAnalysis = controlAnalysisMap.get(prefixedId);
-        return (controlAnalysis != null) && controlAnalysis.hasNodeBinding;
+        final ElementAnalysis controlAnalysis = controlAnalysisMap.get(prefixedId);
+        return (controlAnalysis != null) && controlAnalysis.hasNodeBinding();
     }
 
-    public ControlAnalysis.LHHAAnalysis getLabel(String prefixedId) {
-        final ControlAnalysis controlAnalysis = controlAnalysisMap.get(prefixedId);
-        return (controlAnalysis == null) ? null : controlAnalysis.getLabel();
+    public LHHAAnalysis getLabel(String prefixedId) {
+        final ElementAnalysis controlAnalysis = controlAnalysisMap.get(prefixedId);
+        return (controlAnalysis instanceof LHHATrait) ? ((LHHATrait) controlAnalysis).getLHHA("label") : null;
     }
 
-    public ControlAnalysis.LHHAAnalysis getHelp(String prefixedId) {
-        final ControlAnalysis controlAnalysis = controlAnalysisMap.get(prefixedId);
-        return (controlAnalysis == null) ? null : controlAnalysis.getHelp();
+    public LHHAAnalysis getHelp(String prefixedId) {
+        final ElementAnalysis controlAnalysis = controlAnalysisMap.get(prefixedId);
+        return (controlAnalysis instanceof LHHATrait) ? ((LHHATrait) controlAnalysis).getLHHA("help") : null;
     }
 
-    public ControlAnalysis.LHHAAnalysis getHint(String prefixedId) {
-        final ControlAnalysis controlAnalysis = controlAnalysisMap.get(prefixedId);
-        return (controlAnalysis == null) ? null : controlAnalysis.getHint();
+    public LHHAAnalysis getHint(String prefixedId) {
+        final ElementAnalysis controlAnalysis = controlAnalysisMap.get(prefixedId);
+        return (controlAnalysis instanceof LHHATrait) ? ((LHHATrait) controlAnalysis).getLHHA("hint") : null;
     }
 
-    public ControlAnalysis.LHHAAnalysis getAlert(String prefixedId) {
-        final ControlAnalysis controlAnalysis = controlAnalysisMap.get(prefixedId);
-        return (controlAnalysis == null) ? null : controlAnalysis.getAlert();
+    public LHHAAnalysis getAlert(String prefixedId) {
+        final ElementAnalysis controlAnalysis = controlAnalysisMap.get(prefixedId);
+        return (controlAnalysis instanceof LHHATrait) ? ((LHHATrait) controlAnalysis).getLHHA("alert") : null;
     }
 
     /**
@@ -763,8 +787,8 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
      * @return                      true iif the control is a value control
      */
     public boolean isValueControl(String controlEffectiveId) {
-        final ControlAnalysis controlAnalysis = controlAnalysisMap.get(XFormsUtils.getPrefixedId(controlEffectiveId));
-        return (controlAnalysis != null) && controlAnalysis.canHoldValue;
+        final ElementAnalysis controlAnalysis = controlAnalysisMap.get(XFormsUtils.getPrefixedId(controlEffectiveId));
+        return (controlAnalysis != null) && controlAnalysis.canHoldValue();
     }
 
     /**
@@ -806,8 +830,8 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
         return controlTypes.get(controlName) != null;
     }
 
-    public Select1Analysis getSelect1Analysis(String controlPrefixedId) {
-        return ((Select1Analysis) controlAnalysisMap.get(controlPrefixedId));
+    public SelectionControl getSelect1Analysis(String controlPrefixedId) {
+        return ((SelectionControl) controlAnalysisMap.get(controlPrefixedId));
     }
 
     /**
@@ -820,8 +844,8 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
         return attributeControls != null && attributeControls.get(prefixedForAttribute) != null;
     }
 
-    public ControlAnalysis getAttributeControl(String prefixedForAttribute, String attributeName) {
-        final Map<String, ControlAnalysis> mapForId = attributeControls.get(prefixedForAttribute);
+    public AttributeControl getAttributeControl(String prefixedForAttribute, String attributeName) {
+        final Map<String, AttributeControl> mapForId = attributeControls.get(prefixedForAttribute);
         return (mapForId != null) ? mapForId.get(attributeName) : null;
     }
 
@@ -843,7 +867,7 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
         // in XFormsAnnotatorContentHandler. Maybe it should be done there?
 
         // Top-level handlers within controls are also handled. If they don't have an @ev:observer attribute, they
-        // are assumed to listen to a virtual element around all controls. 
+        // are assumed to listen to a virtual element around all controls.
 
         // NOTE: Placing a listener on say a <div> element won't work at this point. Listeners have to be placed within
         // elements which have a representation in the compact component tree.
@@ -1015,13 +1039,13 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
 
     public void analyzeControlsXPath() {
         if (isXPathAnalysis())
-            for (final ControlAnalysis control : controlAnalysisMap.values())
+            for (final ElementAnalysis control : controlAnalysisMap.values())
                 control.analyzeXPath();
     }
 
     public void analyzeComponentTree(final PropertyContext propertyContext, final Configuration xpathConfiguration,
-                                     final XBLBindings.Scope innerScope, Element startElement, final ContainerAnalysis startControlAnalysis,
-                                     final StringBuilder repeatHierarchyStringBuffer) {
+                                     final XBLBindings.Scope innerScope, Element startElement, final ContainerTrait startControlAnalysis,
+                                     final StringBuilder repeatHierarchyStringBuffer, final List<ExternalLHHAAnalysis> externalLHHA) {
 
         final DocumentWrapper controlsDocumentInfo = new DocumentWrapper(startElement.getDocument(), null, xpathConfiguration);
 
@@ -1030,22 +1054,10 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
         // Extract scripts for this tree of controls
         extractXFormsScripts(propertyContext, controlsDocumentInfo, prefix);
 
-        final Map<String, Element> deferredExternalLHHA = new LinkedHashMap<String, Element>();
-
         // Visit tree
         visitAllControlStatic(startElement, startControlAnalysis, new XFormsStaticState.ControlElementVisitorListener() {
 
-            public void handleLHHA(Element lhhaElement, String controlStaticId) {
-                // LHHA within a grouping control or at top-level
-
-                assert controlStaticId != null;
-
-                if (!processLHHAElement(propertyContext, controlsDocumentInfo, lhhaElement, controlStaticId, prefix)) {
-                    deferredExternalLHHA.put(controlStaticId, lhhaElement);
-                }
-            }
-
-            public ControlAnalysis startVisitControl(Element controlElement, ContainerAnalysis parentControlAnalysis, String controlStaticId, boolean isContainer) {
+            public ElementAnalysis startVisitControl(Element controlElement, ContainerTrait parentContainer, ElementAnalysis previousElementAnalysis, String controlStaticId) {
 
                 // Check for mandatory id
                 if (controlStaticId == null)
@@ -1061,34 +1073,35 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
 
                 // If element is not built-in, check XBL and generate shadow content if needed
                 xblBindings.processElementIfNeeded(propertyContext, indentedLogger, controlElement, controlPrefixedId, locationData,
-                        controlsDocumentInfo, xpathConfiguration, innerScope, parentControlAnalysis, repeatHierarchyStringBuffer);
+                        controlsDocumentInfo, xpathConfiguration, innerScope, parentContainer, repeatHierarchyStringBuffer, externalLHHA);
 
                 // Create and index static control information
-                final ControlAnalysis controlAnalysis; {
+                final ElementAnalysis elementAnalysis; {
                     final XBLBindings.Scope controlScope = xblBindings.getResolutionScopeByPrefixedId(controlPrefixedId);
-                    final int controlIndex = controlAnalysisMap.size() + 1;
-                    final Map<String, SimpleAnalysis> inScopeVariables = parentControlAnalysis.getInScopeViewVariablesForContained();
+                    final StaticStateContext staticStateContext = new StaticStateContext(XFormsStaticState.this, controlsDocumentInfo, controlAnalysisMap.size() + 1);
 
-                    controlAnalysis = ControlAnalysisFactory.create(propertyContext, XFormsStaticState.this, controlsDocumentInfo,
-                            controlScope, controlElement, controlIndex, isContainer, parentControlAnalysis, inScopeVariables);
+                    elementAnalysis = ControlAnalysisFactory.create(staticStateContext, parentContainer, previousElementAnalysis, controlScope, controlElement);
                 }
 
-                controlAnalysisMap.put(controlAnalysis.prefixedId, controlAnalysis);
+                controlAnalysisMap.put(elementAnalysis.prefixedId(), elementAnalysis);
                 {
-                    Map<String, ControlAnalysis> controlsMap = controlTypes.get(controlName);
+                    Map<String, ElementAnalysis> controlsMap = controlTypes.get(controlName);
                     if (controlsMap == null) {
-                        controlsMap = new LinkedHashMap<String, ControlAnalysis>();
+                        controlsMap = new LinkedHashMap<String, ElementAnalysis>();
                         controlTypes.put(controlName, controlsMap);
                     }
 
-                    controlsMap.put(controlAnalysis.prefixedId, controlAnalysis);
+                    controlsMap.put(elementAnalysis.prefixedId(), elementAnalysis);
                 }
 
-                // TODO: move repeat and attribute cases below to RepeatAnalysis and AttributeAnalysis
-                if (controlAnalysis instanceof RepeatAnalysis) {
-                    // Gather xforms:repeat information
+                // Remember external LHHA
+                if (elementAnalysis instanceof LHHAAnalysis)
+                    externalLHHA.add((ExternalLHHAAnalysis) elementAnalysis);
 
-                    final RepeatAnalysis ancestorRepeatAnalysis = controlAnalysis.getAncestorRepeat();
+                // TODO: move repeat and attribute cases below to RepeatAnalysis and AttributeAnalysis
+                if (elementAnalysis instanceof RepeatControl) {
+                    // Gather xforms:repeat information
+                    final ElementAnalysis repeatControl = RepeatControl.getAncestorRepeatOrNull(elementAnalysis);
 
                     // Find repeat parents
                     {
@@ -1096,89 +1109,92 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
                         if (repeatHierarchyStringBuffer.length() > 0)
                             repeatHierarchyStringBuffer.append(',');
 
-                        repeatHierarchyStringBuffer.append(controlAnalysis.prefixedId);
+                        repeatHierarchyStringBuffer.append(elementAnalysis.prefixedId());
 
-                        if (ancestorRepeatAnalysis != null) {
+                        if (repeatControl != null) {
                             // If we have a parent, append it
                             repeatHierarchyStringBuffer.append(' ');
-                            repeatHierarchyStringBuffer.append(ancestorRepeatAnalysis.prefixedId);
+                            repeatHierarchyStringBuffer.append(repeatControl.prefixedId());
                         }
                     }
                     // Find repeat children
                     {
-                        if (ancestorRepeatAnalysis != null) {
+                        if (repeatControl != null) {
                             // If we have a parent, tell the parent that it has a child
-                            final String parentRepeatId = ancestorRepeatAnalysis.prefixedId;
+                            final String parentRepeatId = repeatControl.prefixedId();
                             List<String> parentRepeatList = repeatChildrenMap.get(parentRepeatId);
                             if (parentRepeatList == null) {
                                 parentRepeatList = new ArrayList<String>();
                                 repeatChildrenMap.put(parentRepeatId, parentRepeatList);
                             }
-                            parentRepeatList.add(controlAnalysis.prefixedId);
+                            parentRepeatList.add(elementAnalysis.prefixedId());
                         }
 
                     }
-                } else if ("attribute".equals(controlName)) {
+                } else if (elementAnalysis instanceof AttributeControl) {
                     // Special indexing of xxforms:attribute controls
-                    final String prefixedForAttribute = prefix + controlElement.attributeValue("for");
-                    final String nameAttribute = controlElement.attributeValue("name");
-                    Map<String, ControlAnalysis> mapForId;
+                    final String prefixedForAttribute = prefix + controlElement.attributeValue(XFormsConstants.FOR_QNAME);
+                    final String nameAttribute = controlElement.attributeValue(XFormsConstants.NAME_QNAME);
+                    Map<String, AttributeControl> mapForId;
                     if (attributeControls == null) {
-                        attributeControls = new HashMap<String, Map<String, ControlAnalysis>>();
-                        mapForId = new HashMap<String, ControlAnalysis>();
+                        attributeControls = new HashMap<String, Map<String, AttributeControl>>();
+                        mapForId = new HashMap<String, AttributeControl>();
                         attributeControls.put(prefixedForAttribute, mapForId);
                     } else {
                         mapForId = attributeControls.get(prefixedForAttribute);
                         if (mapForId == null) {
-                            mapForId = new HashMap<String, ControlAnalysis>();
+                            mapForId = new HashMap<String, AttributeControl>();
                             attributeControls.put(prefixedForAttribute, mapForId);
                         }
                     }
-                    mapForId.put(nameAttribute, controlAnalysis);
+                    mapForId.put(nameAttribute, (AttributeControl) elementAnalysis);
                 }
 
-                return controlAnalysis;
-            }
-
-            public void endVisitControl(Element controlElement, ContainerAnalysis containerControlAnalysis, ControlAnalysis newControl, boolean isContainer) {
+                return elementAnalysis;
             }
         });
-
-        // Process deferred external LHHA elements
-        for (final Map.Entry<String, Element> entry: deferredExternalLHHA.entrySet()) {
-            // Process
-            if (!processLHHAElement(propertyContext, controlsDocumentInfo, entry.getValue(), entry.getKey(), prefix)) {
-                // Warn if failed
-                indentedLogger.logWarning("", "could not find control associated with LHHA element", "element",
-                        entry.getValue().getName(), "for", entry.getKey());
-            }
-        }
 
         // Extract event handlers for this tree of controls
         // NOTE: Do this after analysing controls above so that XBL bindings are available for detection of nested event handlers.
         extractEventHandlers(propertyContext, xpathConfiguration, controlsDocumentInfo, prefix, true);
     }
 
-    private boolean processLHHAElement(PropertyContext propertyContext, DocumentWrapper controlsDocumentInfo, Element lhhaElement, String controlStaticId, String prefix) {
-        final String forAttribute = lhhaElement.attributeValue("for");
-        if (forAttribute == null) {
-            // NOP: container control handles this itself
-            return true;
-        } else {
-            // Find prefixed id of control with assumption that it is in the same scope as the LHHA element
-            final XBLBindings.Scope lhhaScope = xblBindings.getResolutionScopeByPrefixedId(prefix + controlStaticId);
-            final String controlPrefixedId = lhhaScope.getPrefixedIdForStaticId(forAttribute);
+    /**
+     * Visit all the control elements without handling repeats or looking at the binding contexts. This is done entirely
+     * statically. Only controls are visited, including grouping controls, leaf controls, and components.
+     */
+    private void visitAllControlStatic(Element startElement, ContainerTrait startContainer, ControlElementVisitorListener controlElementVisitorListener) {
+        handleControlsStatic(controlElementVisitorListener, startElement, startContainer);
+    }
 
-            final ControlAnalysis controlAnalysis = controlAnalysisMap.get(controlPrefixedId);
-            if (controlAnalysis != null) {
-                // Control is already known
-                controlAnalysis.setExternalLHHA(propertyContext, controlsDocumentInfo, lhhaElement);
-                return true;
-            } else {
-                // Control is not already known or doesn't exist at all, try later
-                return false;
+    private void handleControlsStatic(ControlElementVisitorListener controlElementVisitorListener, Element container, ContainerTrait containerTrait) {
+
+        ElementAnalysis currentElementAnalysis = null;
+
+        for (final Element currentElement : Dom4jUtils.elements(container)) {
+
+            final String elementName = currentElement.getName();
+            final String elementStaticId = XFormsUtils.getElementStaticId(currentElement);
+
+            if (XFormsControlFactory.isContainerControl(currentElement.getNamespaceURI(), elementName)) {
+                // Handle XForms grouping controls
+
+                // Visit container
+                currentElementAnalysis = controlElementVisitorListener.startVisitControl(currentElement, containerTrait, currentElementAnalysis, elementStaticId);
+                // Visit children
+                handleControlsStatic(controlElementVisitorListener, currentElement, (ContainerTrait) currentElementAnalysis);
+            } else if (XFormsControlFactory.isCoreControl(currentElement.getNamespaceURI(), elementName)
+                    || xblBindings.isComponent(currentElement.getQName())
+                    || elementName.equals(XFormsConstants.XXFORMS_VARIABLE_NAME)
+                    || (XFormsControlFactory.isLHHA(currentElement.getNamespaceURI(), elementName) && currentElement.attribute(XFormsConstants.FOR_QNAME) != null)) {
+                // Handle core control, component, variable, and external LHHA
+                currentElementAnalysis = controlElementVisitorListener.startVisitControl(currentElement, containerTrait, currentElementAnalysis, elementStaticId);
             }
         }
+    }
+
+    private static interface ControlElementVisitorListener {
+        ElementAnalysis startVisitControl(Element controlElement, ContainerTrait containerControlAnalysis, ElementAnalysis previousElementAnalysis, String controlStaticId);
     }
 
     public static List<Document> extractNestedModels(PropertyContext pipelineContext, DocumentWrapper compactShadowTreeWrapper, boolean detach, LocationData locationData) {
@@ -1201,10 +1217,10 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
 
         return result;
     }
-    
+
     public void appendClasses(StringBuilder sb, String prefixedId) {
-        final String controlClasses = controlAnalysisMap.get(prefixedId).getClasses();
-        if ((controlClasses == null))
+        final String controlClasses = controlAnalysisMap.get(prefixedId).classes();
+        if (StringUtils.isEmpty(controlClasses))
             return;
 
         if (sb.length() > 0)
@@ -1308,45 +1324,6 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
     }
 
     /**
-     * Visit all the control elements without handling repeats or looking at the binding contexts. This is done entirely
-     * statically. Only controls are visited, including grouping controls, leaf controls, and components.
-     */
-    private void visitAllControlStatic(Element startElement, ContainerAnalysis startControlAnalysis, ControlElementVisitorListener controlElementVisitorListener) {
-        handleControlsStatic(controlElementVisitorListener, startElement, startControlAnalysis);
-    }
-
-    private void handleControlsStatic(ControlElementVisitorListener controlElementVisitorListener, Element container, ContainerAnalysis containerControlAnalysis) {
-        for (final Element currentElement: Dom4jUtils.elements(container)) {
-
-            final String elementName = currentElement.getName();
-            final String elementStaticId = XFormsUtils.getElementStaticId(currentElement);
-
-            if (XFormsControlFactory.isContainerControl(currentElement.getNamespaceURI(), elementName)) {
-                // Handle XForms grouping controls
-                final ContainerAnalysis newContainer = (ContainerAnalysis) controlElementVisitorListener.startVisitControl(currentElement, containerControlAnalysis, elementStaticId, true);
-                handleControlsStatic(controlElementVisitorListener, currentElement, newContainer);
-                controlElementVisitorListener.endVisitControl(currentElement, containerControlAnalysis, newContainer, true);
-            } else if (XFormsControlFactory.isCoreControl(currentElement.getNamespaceURI(), elementName)
-                    || xblBindings.isComponent(currentElement.getQName())
-                    || elementName.equals(XFormsConstants.XXFORMS_VARIABLE_NAME)) {
-                // Handle core control, component, or variable
-                final ControlAnalysis newControl = controlElementVisitorListener.startVisitControl(currentElement, containerControlAnalysis, elementStaticId, false);
-                controlElementVisitorListener.endVisitControl(currentElement, containerControlAnalysis, newControl, false);
-            } else if (XFormsControlFactory.isLHHA(currentElement.getNamespaceURI(), elementName)) {
-                // LHHA element within container
-                if (!(containerControlAnalysis instanceof ComponentAnalysis))
-                    controlElementVisitorListener.handleLHHA(currentElement, elementStaticId);
-            }
-        }
-    }
-
-    private static interface ControlElementVisitorListener {
-        ControlAnalysis startVisitControl(Element controlElement, ContainerAnalysis containerControlAnalysis, String controlStaticId, boolean isContainer);
-        void endVisitControl(Element controlElement, ContainerAnalysis containerControlAnalysis, ControlAnalysis newControl, boolean isContainer);
-        void handleLHHA(Element lhhaElement, String controlStaticId);
-    }
-
-    /**
      * Find the closest common ancestor repeat given two prefixed ids.
      *
      * @param prefixedId1   first control prefixed id
@@ -1377,7 +1354,7 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
 
             result = repeatId1;
         }
-        
+
         return result;
     }
 
@@ -1391,29 +1368,29 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
      */
     public List<String> getAncestorRepeats(String startPrefixedId, String endPrefixedId) {
 
-        // Try control infos
-        ControlAnalysis controlAnalysis = controlAnalysisMap.get(startPrefixedId);
-        if (controlAnalysis == null) {
+        // Try control analysis
+        ElementAnalysis elementAnalysis = controlAnalysisMap.get(startPrefixedId);
+        if (elementAnalysis == null) {
             // Not found, so try actions
             final String newStartPrefixedId = eventHandlerAncestorsMap.get(startPrefixedId);
-            controlAnalysis = controlAnalysisMap.get(newStartPrefixedId);
+            elementAnalysis = controlAnalysisMap.get(newStartPrefixedId);
         }
 
         // Simple case where source doesn't exist
-        if (controlAnalysis == null)
+        if (elementAnalysis == null)
             return Collections.emptyList();
 
         // Simple case where there is no ancestor repeat
-        RepeatAnalysis repeatControlAnalysis = controlAnalysis.getAncestorRepeat();
-        if (repeatControlAnalysis == null)
+        RepeatControl repeatControl = RepeatControl.getAncestorRepeatOrNull(elementAnalysis);
+        if (repeatControl == null)
             return Collections.emptyList();
 
         // At least one ancestor repeat
         final List<String> result = new ArrayList<String>();
         // Go until there are no more ancestors OR we find the boundary repeat
-        while (repeatControlAnalysis != null && (endPrefixedId == null || !endPrefixedId.equals(repeatControlAnalysis.prefixedId)) ) {
-            result.add(repeatControlAnalysis.prefixedId);
-            repeatControlAnalysis = repeatControlAnalysis.getAncestorRepeat();
+        while (repeatControl != null && (endPrefixedId == null || !endPrefixedId.equals(repeatControl.prefixedId())) ) {
+            result.add(repeatControl.prefixedId());
+            repeatControl = RepeatControl.getAncestorRepeatOrNull(repeatControl);
         }
         return result;
     }
@@ -1422,7 +1399,7 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
         return metadata.marks.get(prefixedId);
     }
 
-    public ControlAnalysis getControlAnalysis(String prefixedId) {
+    public ElementAnalysis getControlAnalysis(String prefixedId) {
         return controlAnalysisMap.get(prefixedId);
     }
 
@@ -1437,13 +1414,12 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
         XMLUtils.wrapWithRequestElement(propertyContext, helper, new XMLUtils.DebugXML() {
             public void toXML(PropertyContext propertyContext, ContentHandlerHelper helper) {
 
-                for (final ControlAnalysis controlAnalysis: controlAnalysisMap.values()) {
-                    controlAnalysis.toXML(propertyContext, helper);
-                }
+                for (final ElementAnalysis controlAnalysis: controlAnalysisMap.values())
+                    if (!(controlAnalysis instanceof ExternalLHHAAnalysis))// because they are logged as part of their related control
+                        controlAnalysis.javaToXML(propertyContext, helper);
 
-                for (final Model model: modelsByPrefixedId.values()) {
-                    model.toXML(propertyContext, helper);
-                }
+                for (final Model model: modelsByPrefixedId.values())
+                    model.javaToXML(propertyContext, helper);
             }
         });
     }
@@ -1484,9 +1460,10 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
         private final Map<String, NamespaceMapping> namespaceMappings = new HashMap<String, NamespaceMapping>();
         private final Map<String, NamespaceMapping> hashes = new LinkedHashMap<String, NamespaceMapping>();
 
+        private long lastModified = -1;                     // last modification date of bindings
         private Map<String, Set<String>> xblBindings;       // Map<String uri, <String localname>>
         private Map<String, String> automaticMappings;      // ns URI -> directory name
-        private List<String> bindingIncludes;    // list of paths
+        private Set<String> bindingIncludes;                // set of paths
 
         // Initial
         public Metadata() {
@@ -1588,7 +1565,7 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
 
                 // Remember to include later
                 if (bindingIncludes == null)
-                    bindingIncludes = new ArrayList<String>();
+                    bindingIncludes = new LinkedHashSet<String>();
                 bindingIncludes.add(path);
 
                 return true;
@@ -1618,8 +1595,34 @@ public class XFormsStaticState implements XMLUtils.DebugXML {
             localnamesSet.add(localname);
         }
 
-        public List<String> getBindingsIncludes() {
+        public Set<String> getBindingsIncludes() {
             return bindingIncludes;
+        }
+
+        public void updateBindingsLastModified(long lastModified) {
+            this.lastModified = Math.max(this.lastModified, lastModified);
+        }
+
+        /**
+         * Check if the binding includes are up to date.
+         *
+         * @return true iif they are up to date
+         */
+        public boolean checkBindingsIncludes() {
+            if (bindingIncludes != null) {
+                try {
+                    for (final String include : bindingIncludes) {
+                        final long lastModified = ResourceManagerWrapper.instance().lastModified(include, false);
+                        if (lastModified > this.lastModified)
+                            return false;
+                    }
+                } catch (ResourceNotFoundException e) {
+                    // Resource was removed
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }

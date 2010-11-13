@@ -117,6 +117,9 @@
             <!-- XBL implementation -->
             <xbl:implementation>
                 <xforms:model id="{$component-id}-model">
+                    <!-- Copy schema attribute if present -->
+                    <xsl:copy-of select="$fr-form-model/@schema"/>
+
                     <!-- Section data model -->
                     <xforms:instance id="fr-form-instance">
                         <xsl:copy-of select="$section-data"/>
@@ -147,6 +150,10 @@
 
                     <!-- Actions -->
                     <!-- TODO -->
+
+                    <!-- Schema: simply copy so that the types are available locally -->
+                    <!-- NOTE: Could optimized to check if any of the types are actually used -->
+                    <xsl:copy-of select="$fr-form-model/xs:schema"/>
 
                 </xforms:model>
             </xbl:implementation>
@@ -185,6 +192,10 @@
                             </xforms:action>
                         </xforms:group>
 
+                        <!-- Try to match the current form language, or use the first language available if not found -->
+                        <xxforms:variable name="form-resources"
+                                          select="instance('fr-form-resources')/(resource[@xml:lang = xxforms:instance('fr-language-instance')], resource[1])[1]" as="element(resource)"/>
+
                         <xforms:group appearance="xxforms:internal">
                             <!-- Synchronize data with external world upon local value change -->
                             <!-- This assumes the element QName match, or the value is not copied -->
@@ -192,9 +203,6 @@
                                 <xxforms:variable name="binding" select="event('xxforms:binding')" as="element()"/>
                                 <xforms:setvalue ref="$result/*[resolve-QName(name(), .) = resolve-QName(name($binding), $binding)]" value="$binding"/>
                             </xforms:action>
-
-                            <!-- TODO: must change language dynamically -->
-                            <xxforms:variable name="form-resources" select="instance('fr-form-resources')/*[1]" as="element(resource)"/>
 
                             <!-- Copy grids within section -->
                             <xsl:copy-of select="$fr-section/fr:grid"/>

@@ -31,6 +31,8 @@
 
     <property name="src.dir" location="src"/>
 
+    <property name="saxon.jar" value="saxon-9-1-0-8_orbeon_20101011.jar"/>
+
     <fileset id="war.libs" dir="${lib.dir}">
         <include name="dom4j-1_6_1.jar"/>
         <include name="log4j-1_2_15.jar"/>
@@ -50,12 +52,18 @@
         <include name="commons-beanutils-1_5.jar"/>
         <include name="commons-pool-1.3.jar"/>
         <include name="commons-discovery-0_2.jar"/>
-        <include name="commons-httpclient-3_1.jar"/>
         <include name="commons-codec-1_3.jar"/>
 
         <include name="commons-digester-1_5.jar"/>
         <include name="commons-validator-1_0_2.jar"/>
         <include name="commons-logging-1_0_4.jar"/>
+
+        <include name="httpclient-4.0.3.jar"/>
+        <include name="httpcore-4.0.1.jar"/>
+        <include name="httpcore-nio-4.0.1.jar"/>
+        <include name="httpmime-4.0.3.jar"/>
+        <include name="apache-mime4j-0.6.jar"/>
+        <include name="jcifs-1.3.14.jar"/>
 
         <include name="axis_1_2_1-axis.jar"/>
         <include name="axis_1_2_1-jaxrpc.jar"/>
@@ -74,7 +82,7 @@
         <include name="activation-1_0_2.jar"/>
         <include name="jtidy-8.0-20060801.131059-3.jar"/>
         <include name="tagsoup-1.2.jar"/>
-        <include name="saxon-9-1-0-8_orbeon_20100810.jar"/>
+        <include name="${saxon.jar}"/>
         <include name="batik-all-1_6.jar"/>
         <include name="avalon-framework-4_2_0.jar"/>
         <include name="fop-0_93.jar"/>
@@ -83,7 +91,6 @@
         <include name="metadata-extractor-2_1.jar"/>
         <include name="castor-0_9_4_3-xml.jar"/>
         <include name="antlr-2_7_4_orbeon.jar"/>
-        <include name="jakarta-slide-webdavlib-2.0rc1.jar"/>
 
         <include name="exist-1_2_6_orbeon_20090702.jar"/>
         <include name="exist-modules-1_2_6_orbeon_20090702.jar"/>
@@ -100,6 +107,8 @@
         <include name="exist-xmlrpc-client-3_1_1.jar"/>
         <include name="exist-xmlrpc-common-3_1_1.jar"/>
         <include name="exist-xmlrpc-server-3_1_1.jar"/>
+
+        <include name="scala-library.jar"/>
 
         <include name="flyingsaucer-core-renderer_orbeon_20100512.jar"/>
         <include name="flyingsaucer-20100212-itext-2_1_7.jar"/>
@@ -179,6 +188,7 @@
         <echo message="##teamcity[buildNumber '${orbeon-version}']"/>
 
         <property name="java-src.dir" value="${src.dir}/java"/>
+        <property name="scala-src.dir" value="${src.dir}/scala"/>
         <property name="examples-cli-src.dir" value="${src.dir}/examples-cli"/>
         <property name="resources.dir" value="${src.dir}/resources"/>
         <property name="resources-packaged.dir" value="${src.dir}/resources-packaged"/>
@@ -224,18 +234,32 @@
     <!-- Set classpath to compile and run the application -->
     <target name="classpath" depends="prepare">
         <path id="class.path">
+            <fileset dir="${lib.dir}">
+                <include name="**/*.jar"/>
+            </fileset>
+        </path>
+    </target>
+
+    <target name="test-classpath" depends="classpath">
+        <path id="test.class.path">
             <pathelement location="${jar.file}"/>
             <pathelement location="${xforms-filter.jar.file}"/>
             <fileset dir="${lib.dir}">
                 <include name="**/*.jar"/>
             </fileset>
-            <!--            <pathelement location="${build.classes.dir}"/>-->
-            <pathelement location="${java.home}/../lib/tools.jar"/>
         </path>
     </target>
 
     <!-- Compile source -->
     <target name="classes" depends="classpath" unless="skip.compilation">
+
+        <taskdef resource="scala/tools/ant/antlib.xml">
+            <classpath>
+                <pathelement location="${lib.dir}/scala-compiler.jar"/>
+                <pathelement location="${lib.dir}/scala-library.jar"/>
+            </classpath>
+        </taskdef>
+
         <mkdir dir="${build.dir}/src"/>
         <copy todir="${build.dir}/src" file="${java-src.dir}/org/orbeon/oxf/common/Version.java" overwrite="true">
             <filterset>
@@ -243,10 +267,20 @@
                 <filter token="EDITION" value="${edition}"/>
             </filterset>
         </copy>
+
+        <scalac destdir="${build.classes.dir}"
+            classpathref="class.path"
+            fork="true" encoding="utf-8" jvmargs="-Xmx300m">
+            <src path="${build.dir}/src"/>
+            <src path="${java-src.dir}"/>
+            <src path="${scala-src.dir}"/>
+            <exclude name="org/orbeon/oxf/common/Version.java"/>
+        </scalac>
+
         <javac destdir="${build.classes.dir}"
             classpathref="class.path"
             debug="${build.debug}" optimize="off" target="1.5" source="1.5"
-            fork="false" memoryInitialSize="128m" memoryMaximumSize="256m" encoding="utf-8">
+            fork="true" memoryInitialSize="128m" memoryMaximumSize="300m" encoding="utf-8">
             <src path="${build.dir}/src"/>
             <src path="${java-src.dir}"/>
             <exclude name="org/orbeon/oxf/common/Version.java"/>
@@ -255,10 +289,10 @@
     </target>
 
     <!-- Compile test source -->
-    <target name="test-classes" depends="classes">
+    <target name="test-classes" depends="classes, test-classpath">
         <mkdir dir="${build.test-classes.dir}"/>
         <javac srcdir="${test-src.dir}" destdir="${build.test-classes.dir}"
-            classpathref="class.path" debug="on" optimize="off" target="1.5" source="1.5"
+            classpathref="test.class.path" debug="on" optimize="off" target="1.5" source="1.5"
             includes="**/*.java" encoding="utf-8">
         </javac>
     </target>
@@ -287,6 +321,7 @@
               <exclude name="org/orbeon/oxf/servlet/OrbeonXFormsFilter*.class"/>
               <exclude name="org/orbeon/oxf/portlet/OrbeonPortletXFormsFilter*.class"/>
               <exclude name="org/orbeon/oxf/portlet/OrbeonTrampolineServlet*.class"/>
+              <exclude name="org/orbeon/oxf/portlet/OrbeonPortletFilterSample*.class"/>
           </fileset>
           <fileset dir="${resources-packaged.dir}">
               <include name="config/*-processors.xml"/>
@@ -299,6 +334,7 @@
               <include name="org/orbeon/oxf/servlet/OrbeonXFormsFilter*.class"/>
               <include name="org/orbeon/oxf/portlet/OrbeonPortletXFormsFilter*.class"/>
               <include name="org/orbeon/oxf/portlet/OrbeonTrampolineServlet*.class"/>
+              <include name="org/orbeon/oxf/portlet/OrbeonPortletFilterSample*.class"/>
           </fileset>
         </jar>
 
@@ -420,6 +456,11 @@
         <copy todir="${war.lib}">
           <fileset refid="war.libs"/>
         </copy>
+        <!-- Make sure we remove PathMap from Saxon as we have our own implementation -->
+        <delete file="${war.lib}/${saxon.jar}"/>
+        <jar destfile="${war.lib}/${saxon.jar}">
+            <zipfileset src="${lib.dir}/${saxon.jar}" excludes="org/orbeon/saxon/expr/PathMap*.class"/>
+        </jar>
 
         <copy file="${jar.file}" todir="${war.lib}"/>
         <copy file="${xforms-filter.jar.file}" todir="${war.lib}"/>
@@ -466,7 +507,7 @@
     </target>
 
     <!-- WAR file -->
-    <target name="orbeon-war" depends="classes, orbeon-minify-js" description="Create exploded WAR file">
+    <target name="orbeon-war" depends="classes" description="Create exploded WAR file">
         <antcall target="war"/>
         <antcall target="war-copy-descriptors">
             <param name="target" value="devel"/>
@@ -532,6 +573,7 @@
     <target name="orbeon-minify-js" depends="init">
         <!-- Store those under ${war.dir}/WEB-INF/resources so they can be used in dev mode -->
         <mkdir dir="${war.dir}/WEB-INF/resources/ops/javascript"/>
+        <mkdir dir="${war.dir}/WEB-INF/resources/ops/javascript/orbeon/xforms/action"/>
         <mkdir dir="${war.dir}/WEB-INF/resources/ops/yui/button"/>
         <mkdir dir="${war.dir}/WEB-INF/resources/ops/yui/container"/>
         <mkdir dir="${war.dir}/WEB-INF/resources/ops/yui/treeview"/>
@@ -541,87 +583,50 @@
         <mkdir dir="${war.dir}/WEB-INF/resources/ops/javascript/ajaxxslt"/>
         <mkdir dir="${war.dir}/WEB-INF/resources/ops/javascript/encryption"/>
 
-        <!-- Orbeon xforms.js -->
-        <antcall target="orbeon-minify-maybe-js">
-            <param name="name" value="javascript/xforms"/>
-        </antcall>
+        <!-- Orbeon Orbeon's own JavaScript -->
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="javascript/xforms"/></antcall>
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="javascript/orbeon/xforms/action/Message"/></antcall>
 
         <!-- YUI -->
-        <antcall target="orbeon-minify-maybe-js">
-            <param name="name" value="yui/button/button"/>
-        </antcall>
-        <antcall target="orbeon-minify-maybe-js">
-            <param name="name" value="yui/container/container"/>
-        </antcall>
-        <antcall target="orbeon-minify-maybe-js">
-            <param name="name" value="yui/treeview/treeview"/>
-        </antcall>
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="yui/button/button"/></antcall>
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="yui/container/container"/></antcall>
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="yui/treeview/treeview"/></antcall>
 
         <!-- From YUI examples -->
-        <antcall target="orbeon-minify-maybe-js">
-            <param name="name" value="yui/examples/treeview/assets/js/TaskNode"/>
-        </antcall>
-        <antcall target="orbeon-minify-maybe-js">
-            <param name="name" value="yui/examples/treeview/assets/js/CheckOnClickNode"/>
-        </antcall>
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="yui/examples/treeview/assets/js/TaskNode"/></antcall>
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="yui/examples/treeview/assets/js/CheckOnClickNode"/></antcall>
 
         <!-- JSCalendar -->
-        <antcall target="orbeon-minify-maybe-js">
-            <param name="name" value="javascript/jscalendar/calendar"/>
-        </antcall>
-        <antcall target="orbeon-minify-maybe-js">
-            <param name="name" value="javascript/jscalendar/lang/calendar-en"/>
-        </antcall>
-        <antcall target="orbeon-minify-maybe-js">
-            <param name="name" value="javascript/jscalendar/calendar-setup"/>
-        </antcall>
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="javascript/jscalendar/calendar"/></antcall>
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="javascript/jscalendar/lang/calendar-en"/></antcall>
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="javascript/jscalendar/calendar-setup"/></antcall>
 
         <!-- Autocomplete -->
-        <antcall target="orbeon-minify-maybe-js">
-            <param name="name" value="javascript/suggest-common"/>
-        </antcall>
-        <antcall target="orbeon-minify-maybe-js">
-            <param name="name" value="javascript/suggest-actb"/>
-        </antcall>
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="javascript/suggest-common"/></antcall>
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="javascript/suggest-actb"/></antcall>
 
         <!-- AJAXXSLT -->
-        <antcall target="orbeon-minify-maybe-js">
-            <param name="name" value="javascript/ajaxxslt/util"/>
-        </antcall>
-        <antcall target="orbeon-minify-maybe-js">
-            <param name="name" value="javascript/ajaxxslt/xmltoken"/>
-        </antcall>
-        <antcall target="orbeon-minify-maybe-js">
-            <param name="name" value="javascript/ajaxxslt/dom"/>
-        </antcall>
-        <antcall target="orbeon-minify-maybe-js">
-            <param name="name" value="javascript/ajaxxslt/xpath"/>
-        </antcall>
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="javascript/ajaxxslt/util"/></antcall>
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="javascript/ajaxxslt/xmltoken"/></antcall>
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="javascript/ajaxxslt/dom"/></antcall>
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="javascript/ajaxxslt/xpath"/></antcall>
 
         <!-- Encryption -->
-        <antcall target="orbeon-minify-maybe-js">
-            <param name="name" value="javascript/encryption/encryption"/>
-        </antcall>
-        <antcall target="orbeon-minify-maybe-js">
-            <param name="name" value="javascript/encryption/md5"/>
-        </antcall>
-        <antcall target="orbeon-minify-maybe-js">
-            <param name="name" value="javascript/encryption/utf-8"/>
-        </antcall>
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="javascript/encryption/encryption"/></antcall>
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="javascript/encryption/md5"/></antcall>
+        <antcall target="orbeon-minify-maybe-js"><param name="name" value="javascript/encryption/utf-8"/></antcall>
 
     </target>
 
     <target name="orbeon-minify-maybe-js">
-        <echo message="srcfile: ${resources-packaged.dir}/ops/${name}.js"/>
-        <echo message="targetfile: ${war.dir}/WEB-INF/resources/ops/${name}-min.js"/>
         <uptodate property="min.uptodate" srcfile="${resources-packaged.dir}/ops/${name}.js" targetfile="${war.dir}/WEB-INF/resources/ops/${name}-min.js"/>
-        <echo message="Uptodate: ${min.uptodate}"/>
         <antcall target="orbeon-minify-one-js">
             <param name="name" value="${name}"/>
         </antcall>
     </target>
 
     <target name="orbeon-minify-one-js" unless="min.uptodate">
+        <echo message="Minimizing ${resources-packaged.dir}/ops/${name}.js"/>
         <java classname="com.yahoo.platform.yui.compressor.YUICompressor" classpath="${lib.dir}/yuicompressor-2.4.1.jar" fork="false" failonerror="true">
             <arg value="${resources-packaged.dir}/ops/${name}.js"/>
             <arg value="-o"/>
@@ -643,7 +648,7 @@
         <property name="debug.arg4" value=""/>
     </target>
 
-    <target name="test" depends="jars, test-classes, debug-enabled, debug-disabled">
+    <target name="test" depends="jars, test-classes, debug-enabled, debug-disabled, test-classpath">
     	<!-- 11/14/2004 d : Found Processor was sorta invalid cause once it ran successfully
     	     				it would leave behind .class files in java.io.tmpdir.  This
     	     				meant that on subsequent runs of the test it wouldn't try to
@@ -698,7 +703,7 @@
         	<sysproperty key="java.io.tmpdir" value="${test.tmp.dir}"/>
 
             <classpath>
-                <path refid="class.path"/>
+                <path refid="test.class.path"/>
                 <pathelement location="${build.test-classes.dir}"/>
                 <pathelement location="${resources-private.jar.file}"/>
                 <!-- SHOULD ADD THIS WHEN skip.compilation:  <pathelement location="${war.classes}"/>-->

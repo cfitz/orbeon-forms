@@ -215,7 +215,7 @@ public class XFormsFeatures {
             // Yahoo UI Library
             new ResourceConfig("/ops/yui/yahoo/yahoo.js", "/ops/yui/yahoo/yahoo-min.js"),
             // Selector is so far only used offline
-            new ResourceConfig("/ops/yui/selector/selector-beta.js", "/ops/yui/selector/selector-beta-min.js") {
+            new ResourceConfig("/ops/yui/selector/selector.js", "/ops/yui/selector/selector-min.js") {
                 public boolean isInUse(XFormsContainingDocument containingDocument, Map appearancesMap) {
                     return XFormsProperties.isOfflineMode(containingDocument);
                 }
@@ -270,7 +270,7 @@ public class XFormsFeatures {
                 }
                 public String getFeatureName() { return "fckeditor"; }
             },
-            new ResourceConfig("/ops/yui/element/element-beta.js", "/ops/yui/element/element-beta-min.js") {
+            new ResourceConfig("/ops/yui/element/element.js", "/ops/yui/element/element-min.js") {
                 public boolean isInUse(XFormsContainingDocument containingDocument, Map appearancesMap) {
                     return isYUIRTEInUse(containingDocument, appearancesMap);
                 }
@@ -339,14 +339,18 @@ public class XFormsFeatures {
                 }
                 public String getFeatureName() { return "offline"; }
             },
+
             new ResourceConfig("/ops/javascript/encryption/utf-8.js", "/ops/javascript/encryption/utf-8-min.js") {
                 public boolean isInUse(XFormsContainingDocument containingDocument, Map appearancesMap) {
                     return XFormsProperties.isOfflineMode(containingDocument);
                 }
                 public String getFeatureName() { return "offline"; }
             },
+            // Underscore library
+            new ResourceConfig("/ops/javascript/underscore/underscore.js", "/ops/javascript/underscore/underscore-min.js"),
             // XForms client
-            new ResourceConfig("/ops/javascript/xforms.js", "/ops/javascript/xforms-min.js")
+            new ResourceConfig("/ops/javascript/xforms.js", "/ops/javascript/xforms-min.js"),
+            new ResourceConfig("/ops/javascript/orbeon/xforms/action/Message.js", "/ops/javascript/orbeon/xforms/action/Message-min.js")
     };
 
     public static class ResourceConfig {

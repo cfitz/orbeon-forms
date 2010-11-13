@@ -41,6 +41,7 @@
                 <xsl:template match="/">
                     <xxforms:event-request xmlns:context="java:org.orbeon.oxf.pipeline.StaticExternalContext">
                         <xxforms:uuid><xsl:value-of select="$uuid"/></xxforms:uuid>
+                        <xxforms:sequence>1</xxforms:sequence>
                         <xxforms:static-state>
                             <xsl:variable name="static-state" as="document-node()">
                                 <xsl:document>
@@ -58,7 +59,7 @@
                             <xsl:if test="doc('input:instances')/instances/instance">
                                 <xsl:variable name="dynamic-state" as="document-node()">
                                     <xsl:document>
-                                        <dynamic-state xmlns="" uuid="{$uuid}" sequence="0">
+                                        <dynamic-state xmlns="" uuid="{$uuid}" sequence="1">
                                             <instances>
                                                 <xsl:for-each select="doc('input:instances')/instances/instance">
                                                     <xsl:copy>

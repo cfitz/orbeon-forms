@@ -3433,7 +3433,7 @@
         </output>
     </test>
 
-    <test description="XBL components within non-relevant control doesn't through an exception" name="oxf:pipeline">
+    <test description="XBL components within non-relevant control doesn't throw an exception" name="oxf:pipeline">
         <input name="config" href="xforms-server/wrap-xforms-state.xpl"/>
         <input name="document">
             <xhtml:html xmlns:xxforms="http://orbeon.org/oxf/xml/xforms" xmlns:fr="http://orbeon.org/oxf/xml/form-runner">
@@ -3457,6 +3457,8 @@
                 <xxf:action>
                     <xxf:control-values>
                         <xxf:control id="my-group" relevant="false"/>
+                        <xxf:control id="my-button$xf-2" class="yui-button yui-push-button" relevant="false"/>
+                        <xxf:control id="my-button$xf-3" relevant="false"/>
                     </xxf:control-values>
                 </xxf:action>
             </xxf:event-response>
@@ -3658,6 +3660,83 @@
                     </xxf:control-values>
                 </xxf:action>
             </xxf:event-response>
+        </output>
+    </test>
+
+    <test description="Test that automatic include occurs" name="oxf:pipeline">
+        <input name="config" href="xforms-server/wrap-xforms-controls.xpl"/>
+        <input name="document">
+            <xhtml:html xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+                        xmlns:fr="http://orbeon.org/oxf/xml/form-runner"
+                        xmlns:xxbl="http://orbeon.org/oxf/xml/xbl">
+                <xhtml:head>
+                    <xforms:model id="model">
+                        <xforms:instance>
+                            <instance/>
+                        </xforms:instance>
+                    </xforms:model>
+                </xhtml:head>
+                <xhtml:body>
+                    <fr:tutorial-input id="my-input" ref="."/>
+                </xhtml:body>
+            </xhtml:html>
+        </input>
+        <output name="response">
+            <controls xmlns:xhtml="http://www.w3.org/1999/xhtml">
+                <xhtml:span id="my-input$xf-3" class="xforms-group">
+                    <xhtml:span id="my-input$xf-4" class="xforms-group">
+                        <xhtml:span id="my-input$xf-7" class="xforms-control xforms-input">
+                            <xhtml:input id="my-input$xf-7$xforms-input-1" type="text" name="my-input$xf-7$xforms-input-1" value="" class="xforms-input-input"/>
+                        </xhtml:span>
+                    </xhtml:span>
+                </xhtml:span>
+            </controls>
+        </output>
+    </test>
+
+    <test description="Inline model in XBL template does not cause incorrect scoping of following controls" name="oxf:pipeline">
+        <!-- See: http://forge.ow2.org/tracker/?func=detail&atid=350207&aid=315613&group_id=168 -->
+        <input name="config" href="xforms-server/wrap-xforms-controls.xpl"/>
+        <input name="document">
+            <xh:html xmlns:xh="http://www.w3.org/1999/xhtml" xmlns:xf="http://www.w3.org/2002/xforms"
+                     xmlns:xxf="http://orbeon.org/oxf/xml/xforms" xmlns:fr="http://orbeon.org/oxf/xml/form-runner"
+                 xmlns:xbl="http://www.w3.org/ns/xbl" xmlns:xxbl="http://orbeon.org/oxf/xml/xbl">
+                <xh:head>
+                    <xf:model id="model">
+                        <xf:instance id="instance">
+                            <instance>Hello</instance>
+                        </xf:instance>
+                    </xf:model>
+                    <xbl:xbl>
+                        <xbl:binding id="fr-foo" element="fr|foo">
+                            <xbl:template>
+                                <xf:group id="foo-group" xxbl:scope="outer">
+                                    <xf:model id="datatable-model" xxbl:scope="inner">
+                                        <xf:instance>
+                                            <instance>world!</instance>
+                                        </xf:instance>
+                                    </xf:model>
+                                    <xxf:variable id="v1" name="v1" select="."/>
+                                    <xxf:variable id="v2" name="v2" xxbl:scope="inner">
+                                        <xxf:sequence select="$v1" xxbl:scope="outer"/>
+                                    </xxf:variable>
+                                    <xf:output id="my-output" value="$v2" xxbl:scope="inner"/>
+                                </xf:group>
+                            </xbl:template>
+                        </xbl:binding>
+                    </xbl:xbl>
+                </xh:head>
+                <xh:body>
+                    <fr:foo id="my-foo"/>
+                </xh:body>
+            </xh:html>
+        </input>
+        <output name="response">
+            <controls xmlns:xhtml="http://www.w3.org/1999/xhtml">
+                <xh:span xmlns:xh="http://www.w3.org/1999/xhtml" id="my-foo$foo-group" class="xforms-group">
+                    <xh:span id="my-foo$my-output" class="xforms-control xforms-output">Hello</xh:span>
+                </xh:span>
+            </controls>
         </output>
     </test>
 

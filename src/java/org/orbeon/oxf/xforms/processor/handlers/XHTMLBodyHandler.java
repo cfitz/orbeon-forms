@@ -101,6 +101,12 @@ public class XHTMLBodyHandler extends XFormsBaseHandler {
             helper.element(htmlPrefix, XMLConstants.XHTML_NAMESPACE_URI, "input", new String[] {
                     "type", "hidden", "name", "$uuid", "value", containingDocument.getUUID()
             });
+            // NOTE: we don't need $sequence here as HTML form posts are either:
+            //
+            // o 2nd phase of replace="all" submission: we don't (and can't) retry
+            // o background upload: we don't want a sequence number as this run in parallel
+            // o noscript mode: we don't (and can't) retry
+            //
             // NOTE: Keep empty static state and dynamic state until client is able to deal without them
             final String clientEncodedStaticState = XFormsStateManager.instance().getClientEncodedStaticState(pipelineContext, containingDocument);
 //            if (clientEncodedStaticState != null) {
@@ -186,12 +192,12 @@ public class XHTMLBodyHandler extends XFormsBaseHandler {
                 // HACK: We would be ok with just one template, but IE 6 doesn't allow setting the input/@type attribute properly
 
                 // xforms:select[@appearance = 'full'], xforms:input[@type = 'xs:boolean']
-                XFormsSelect1Handler.outputItemFullTemplate(pipelineContext, handlerContext, xmlReceiver, htmlPrefix, spanQName,
+                XFormsSelect1Handler.outputItemFullTemplate(pipelineContext, this, xmlReceiver, htmlPrefix, spanQName,
                         containingDocument, reusableAttributes, attributes,
                         "xforms-select-full-template", TEMPLATE_ID, true, "checkbox");
 
                 // xforms:select1[@appearance = 'full']
-                XFormsSelect1Handler.outputItemFullTemplate(pipelineContext, handlerContext, xmlReceiver, htmlPrefix, spanQName,
+                XFormsSelect1Handler.outputItemFullTemplate(pipelineContext, this, xmlReceiver, htmlPrefix, spanQName,
                         containingDocument, reusableAttributes, attributes,
                         "xforms-select1-full-template", TEMPLATE_ID, true, "radio");
             }

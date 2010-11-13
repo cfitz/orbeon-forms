@@ -19,7 +19,7 @@ import org.dom4j.Text;
 import org.orbeon.oxf.common.ValidationException;
 import org.orbeon.oxf.util.*;
 import org.orbeon.oxf.xforms.*;
-import org.orbeon.oxf.xforms.analysis.controls.Select1Analysis;
+import org.orbeon.oxf.xforms.analysis.controls.SelectionControl;
 import org.orbeon.oxf.xforms.control.controls.XFormsSelect1Control;
 import org.orbeon.oxf.xforms.control.controls.XFormsSelectControl;
 import org.orbeon.oxf.xforms.xbl.XBLBindings;
@@ -95,8 +95,8 @@ public class XFormsItemUtils {
         // Optimize static itemsets
         {
             final boolean isStaticItemset; {
-            final Select1Analysis analysis = container.getContainingDocument().getStaticState().getSelect1Analysis(select1Control.getPrefixedId());
-                isStaticItemset = analysis != null && !analysis.hasNonStaticItem;
+            final SelectionControl analysis = container.getContainingDocument().getStaticState().getSelect1Analysis(select1Control.getPrefixedId());
+                isStaticItemset = analysis != null && !analysis.hasNonStaticItem();
             }
 
             if (isStaticItemset)
@@ -120,7 +120,7 @@ public class XFormsItemUtils {
             private ItemContainer currentContainer = result;
 
             private String getElementEffectiveId(Element element) {
-                return XFormsUtils.getRelatedEffectiveId(select1Control.getEffectiveId(), element.attributeValue("id"));
+                return XFormsUtils.getRelatedEffectiveId(select1Control.getEffectiveId(), element.attributeValue(XFormsConstants.ID_QNAME));
             }
 
             public void startElement(Element element) {
@@ -130,7 +130,7 @@ public class XFormsItemUtils {
 
 //                    mayReuse[0] = false;
                     final String label = getLabelValue(element.element(XFormsConstants.LABEL_QNAME));
-                    final String value = getValueValue(element.element(XFormsConstants.VALUE_QNAME));
+                    final String value = getValueValue(element.element(XFormsConstants.XFORMS_VALUE_QNAME));
 
                     final Map<String, String> attributes = getAttributes(element);
                     currentContainer.addChildItem(new Item(isMultiple, isEncryptItemValues, attributes, StringUtils.defaultString(label), StringUtils.defaultString(value)));
@@ -164,12 +164,12 @@ public class XFormsItemUtils {
                                     // NOTE: If a node is non-relevant, all its descendants will be non-relevant as
                                     // well. If a node is non-relevant, it should be as if it had not even been part of
                                     // the nodeset.
-                                    final boolean isRelevant = (currentNodeInfo instanceof NodeInfo) ? InstanceData.getInheritedRelevant((NodeInfo) currentNodeInfo) : true;
+                                    final boolean isRelevant = (!(currentNodeInfo instanceof NodeInfo)) || InstanceData.getInheritedRelevant((NodeInfo) currentNodeInfo);
                                     if (isRelevant) {
                                         final String label = getLabelValue(element.element(XFormsConstants.LABEL_QNAME));
                                         final Element valueCopyElement;
                                         {
-                                            final Element valueElement = element.element(XFormsConstants.VALUE_QNAME);
+                                            final Element valueElement = element.element(XFormsConstants.XFORMS_VALUE_QNAME);
                                             valueCopyElement = (valueElement != null)
                                                     ? valueElement : element.element(XFormsConstants.COPY_QNAME);
                                         }
@@ -198,7 +198,7 @@ public class XFormsItemUtils {
                                         }
 
                                         // Handle new item
-                                        if (valueCopyElement.getName().equals(XFormsConstants.VALUE_QNAME.getName())) {
+                                        if (valueCopyElement.getName().equals(XFormsConstants.XFORMS_VALUE_QNAME.getName())) {
                                             // Handle xforms:value
                                             // TODO: This could be optimized for xforms:value/@ref|@value as we could get the expression from the cache only once
                                             final String value = getValueValue(valueCopyElement);
@@ -392,7 +392,7 @@ public class XFormsItemUtils {
                         throw new ValidationException("xforms:item must contain an xforms:label element.", (LocationData) controlElement.getData());
                     final String label = XFormsUtils.getStaticChildElementValue(labelElement, false, null);
 
-                    final Element valueElement = element.element(XFormsConstants.VALUE_QNAME);
+                    final Element valueElement = element.element(XFormsConstants.XFORMS_VALUE_QNAME);
                     if (valueElement == null)
                         throw new ValidationException("xforms:item must contain an xforms:value element.", (LocationData) controlElement.getData());
                     final String value = XFormsUtils.getStaticChildElementValue(valueElement, false, null);
@@ -444,7 +444,7 @@ public class XFormsItemUtils {
 
         final Map<String, String> result = new LinkedHashMap<String, String>();
         for (String attributeName: ATTRIBUTES_TO_PROPAGATE) {
-            final String attributeValue = itemChoiceItemsetElement.attributeValue("class");
+            final String attributeValue = itemChoiceItemsetElement.attributeValue(XFormsConstants.CLASS_QNAME);
             if (attributeValue != null)
                 result.put(attributeName, attributeValue);
         }

@@ -34,6 +34,8 @@ import java.util.List;
 
 /**
  * Represents an exforms:variable / xxforms:variable element.
+ *
+ * TODO: Use more static information.
  */
 public class Variable {
 
@@ -54,7 +56,7 @@ public class Variable {
         this.contextStack = contextStack;
         this.variableElement = variableElement;
 
-        this.variableName = variableElement.attributeValue("name");
+        this.variableName = variableElement.attributeValue(XFormsConstants.NAME_QNAME);
         if (variableName == null)
             throw new ValidationException("xxforms:variable or exforms:variable element must have a \"name\" attribute", getLocationData());
 
@@ -66,10 +68,10 @@ public class Variable {
             this.valueElement = sequenceElement;
         }
 
-        this.selectAttribute = valueElement.attributeValue("select");
+        this.selectAttribute = valueElement.attributeValue(XFormsConstants.SELECT_QNAME);
     }
 
-    private void evaluate(PropertyContext pipelineContext, String sourceEffectiveId, boolean pushOuterContext, boolean useCache) {
+    private void evaluate(PropertyContext pipelineContext, String sourceEffectiveId, boolean pushOuterContext) {
         if (selectAttribute == null) {
             // Inline constructor (for now, only textual content, but in the future, we could allow xforms:output in it? more?)
             variableValue = new StringValue(valueElement.getStringValue());
@@ -79,7 +81,7 @@ public class Variable {
             final boolean pushContext = pushOuterContext || variableElement != valueElement;
             if (pushContext) {
                 // Push binding for evaluation, so that @context and @model are evaluated
-                final String variableValuePrefixedId = container.getFullPrefix() + valueElement.attributeValue("id");
+                final String variableValuePrefixedId = container.getFullPrefix() + valueElement.attributeValue(XFormsConstants.ID_QNAME);
                 final XBLBindings.Scope variableValueScope = container.getContainingDocument().getStaticState().getXBLBindings().getResolutionScopeByPrefixedId(variableValuePrefixedId);
                 contextStack.pushBinding(pipelineContext, valueElement, sourceEffectiveId, variableValueScope);
             }
@@ -92,7 +94,7 @@ public class Variable {
                     final XFormsFunction.Context functionContext = contextStack.getFunctionContext(sourceEffectiveId);
                     variableValue = XPathCache.evaluateAsExtent(pipelineContext,
                             currentNodeset, bindingContext.getPosition(),
-                            selectAttribute, container.getNamespaceMappings(valueElement), bindingContext.getInScopeVariables(useCache),
+                            selectAttribute, container.getNamespaceMappings(valueElement), bindingContext.getInScopeVariables(),
                             XFormsContainingDocument.getFunctionLibrary(), functionContext, null, getLocationData());
                     contextStack.returnFunctionContext();
                 } else {
@@ -109,11 +111,11 @@ public class Variable {
         return variableName;
     }
 
-    public ValueRepresentation getVariableValue(PropertyContext pipelineContext, String sourceEffectiveId, boolean pushOuterContext, boolean useCache) {
+    public ValueRepresentation getVariableValue(PropertyContext pipelineContext, String sourceEffectiveId, boolean pushOuterContext) {
         // Make sure the variable is evaluated
         if (!evaluated) {
             evaluated = true;
-            evaluate(pipelineContext, sourceEffectiveId, pushOuterContext, useCache);
+            evaluate(pipelineContext, sourceEffectiveId, pushOuterContext);
         }
 
         // Return value and rewrap if necessary
@@ -139,11 +141,6 @@ public class Variable {
     public LocationData getLocationData() {
         return (LocationData) variableElement.getData();
     }
-
-//    public void testAs() {
-//        final String testAs = "element(foobar)";
-//        new XSLVariable().makeSequenceType(testAs);
-//    }
 
     /**
      * This iterator rewraps NodeWrapper elements so that the original NodeWrapper is discarded and a new one created.

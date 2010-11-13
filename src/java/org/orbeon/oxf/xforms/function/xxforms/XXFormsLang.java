@@ -15,9 +15,8 @@ package org.orbeon.oxf.xforms.function.xxforms;
 
 import org.dom4j.Element;
 import org.orbeon.oxf.util.PropertyContext;
-import org.orbeon.oxf.xforms.XFormsContainingDocument;
-import org.orbeon.oxf.xforms.XFormsUtils;
-import org.orbeon.oxf.xforms.analysis.controls.ControlAnalysis;
+import org.orbeon.oxf.xforms.*;
+import org.orbeon.oxf.xforms.analysis.controls.AttributeControl;
 import org.orbeon.oxf.xforms.control.controls.XXFormsAttributeControl;
 import org.orbeon.oxf.xforms.function.XFormsFunction;
 import org.orbeon.oxf.xforms.xbl.XBLBindings;
@@ -107,8 +106,8 @@ public class XXFormsLang extends XFormsFunction {
             final XFormsContainingDocument containingDocument = xblContainer.getContainingDocument();
 
             final String attributeControlStaticId; {
-                final ControlAnalysis controlAnalysis = containingDocument.getStaticState().getAttributeControl(xmlLang.substring(1), "xml:lang");
-                attributeControlStaticId = controlAnalysis.element.attributeValue("id");
+                final AttributeControl controlAnalysis = containingDocument.getStaticState().getAttributeControl(xmlLang.substring(1), "xml:lang");
+                attributeControlStaticId = controlAnalysis.element().attributeValue(XFormsConstants.ID_QNAME);
             }
 
             final XXFormsAttributeControl attributeControl = (XXFormsAttributeControl) containingDocument.getControls().getObjectByEffectiveId(attributeControlStaticId);

@@ -53,7 +53,7 @@
                     Event = YAHOO.util.Event;
 
                 Event.onDOMReady(function() {
-                    var layoutElement = ORBEON.util.Dom.getElementById("fb-layout");
+                    var layoutElement = ORBEON.util.Dom.get("fb-layout");
                     layoutElement.style.height = YAHOO.util.Dom.getViewportHeight() + "px";
 
                     var layout = new YAHOO.widget.Layout(layoutElement, {
@@ -234,7 +234,7 @@
 
                         <!-- Publish form -->
                         <xforms:group model="fr-persistence-model" ref="instance('fr-triggers-instance')/publish">
-                            <fr:button id="fb-publish-button">
+                            <fr:button id="fb-publish-button" ref=".">
                                 <xforms:label>
                                     <xhtml:img src="/apps/fr/style/images/pixelmixer/globe_16.png" alt=""/>
                                     <xhtml:span><xforms:output value="$fr-resources/detail/labels/publish"/></xhtml:span>

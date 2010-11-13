@@ -104,7 +104,7 @@ ORBEON.testcases = {
         // Test for bug: click on date field, (Calendar opens), click again => date is replaced in ISO format
         testClickOnDate: function() {
             ORBEON.testing.executeWithInitialInstance(this, function() {
-                var dateControl = ORBEON.util.Dom.getElementById("input-date");
+                var dateControl = ORBEON.util.Dom.get("input-date");
                 var dateInput = ORBEON.util.Dom.getChildElementByIndex(dateControl, 0);
                 var valueBefore = dateInput.value;
                 dateInput.focus();
@@ -112,7 +112,7 @@ ORBEON.testcases = {
                 YAHOO.util.UserAction.click(dateInput);
                 YAHOO.util.UserAction.mousedown(dateInput); // Simulate mousedown as this is the event the calendar is listening on
                 YAHOO.util.Assert.areEqual(valueBefore, dateInput.value);
-                var focusedElement = ORBEON.util.Dom.getElementById(ORBEON.xforms.Globals.currentFocusControlId);
+                var focusedElement = ORBEON.util.Dom.get(ORBEON.xforms.Globals.currentFocusControlId);
                 dateInput.blur(); // Close the date picker
 
             });
@@ -124,11 +124,11 @@ ORBEON.testcases = {
                 ORBEON.testing.executeCausingAjaxRequest(this, function() {
                     ORBEON.xforms.Document.setValue("input-type", "date");
                 }, function() {
-                    var dateControl = ORBEON.util.Dom.getElementById("input-field");
+                    var dateControl = ORBEON.util.Dom.get("input-field");
                     var firstInput = ORBEON.util.Dom.getChildElementByIndex(dateControl, 0);
                     var secondInput = ORBEON.util.Dom.getChildElementByIndex(dateControl, 1);
-                    YAHOO.util.Assert.isTrue(ORBEON.util.Dom.hasClass(dateControl, "xforms-type-date"));
-                    YAHOO.util.Assert.isTrue(ORBEON.util.Dom.hasClass(firstInput, "xforms-type-date"));
+                    YAHOO.util.Assert.isTrue(YAHOO.util.Dom.hasClass(dateControl, "xforms-type-date"));
+                    YAHOO.util.Assert.isTrue(YAHOO.util.Dom.hasClass(firstInput, "xforms-type-date"));
                     YAHOO.util.Assert.isNull(secondInput);
                 });
             });
@@ -141,12 +141,12 @@ ORBEON.testcases = {
                     ORBEON.xforms.Document.setValue("input-type", "date-time");
                     ORBEON.xforms.Document.setValue("input-field", "1997-05-19T21:02:13");
                 }, function() {
-                    var control = ORBEON.util.Dom.getElementById("input-field");
+                    var control = ORBEON.util.Dom.get("input-field");
                     var firstInput = ORBEON.util.Dom.getChildElementByIndex(control, 0);
                     var secondInput = ORBEON.util.Dom.getChildElementByIndex(control, 1);
-                    YAHOO.util.Assert.isTrue(ORBEON.util.Dom.hasClass(control, "xforms-type-dateTime"));
-                    YAHOO.util.Assert.isTrue(ORBEON.util.Dom.hasClass(firstInput, "xforms-type-date"));
-                    YAHOO.util.Assert.isTrue(ORBEON.util.Dom.hasClass(secondInput, "xforms-type-time"));
+                    YAHOO.util.Assert.isTrue(YAHOO.util.Dom.hasClass(control, "xforms-type-dateTime"));
+                    YAHOO.util.Assert.isTrue(YAHOO.util.Dom.hasClass(firstInput, "xforms-type-date"));
+                    YAHOO.util.Assert.isTrue(YAHOO.util.Dom.hasClass(secondInput, "xforms-type-time"));
                     YAHOO.util.Assert.areEqual("5/19/1997", firstInput.value);
                     YAHOO.util.Assert.areEqual("9:02:13 p.m.", secondInput.value);
                 });
@@ -161,14 +161,14 @@ ORBEON.testcases = {
                     ORBEON.xforms.Document.setValue("input-type", "date-time");
                 }, function() {
                     // Check it is dateTime
-                    var control = ORBEON.util.Dom.getElementById("input-field");
-                    YAHOO.util.Assert.isTrue(ORBEON.util.Dom.hasClass(control, "xforms-type-dateTime"));
+                    var control = ORBEON.util.Dom.get("input-field");
+                    YAHOO.util.Assert.isTrue(YAHOO.util.Dom.hasClass(control, "xforms-type-dateTime"));
                     ORBEON.testing.executeCausingAjaxRequest(this, function() {
                         ORBEON.xforms.Document.setValue("input-type", "time");
                         ORBEON.xforms.Document.setValue("input-field", "21:02:13");
                     }, function() {
                         var firstInput = ORBEON.util.Dom.getChildElementByIndex(control, 0);
-                        YAHOO.util.Assert.isTrue(ORBEON.util.Dom.hasClass(control, "xforms-type-time"));
+                        YAHOO.util.Assert.isTrue(YAHOO.util.Dom.hasClass(control, "xforms-type-time"));
                         YAHOO.util.Assert.areEqual("9:02:13 p.m.", firstInput.value);
                     });
                 });
@@ -184,7 +184,7 @@ ORBEON.testcases = {
                     ORBEON.xforms.Document.setValue("input-field", "9:05 pm");
                 }, function() {
                     // Check date coming back is formated
-                    var control = ORBEON.util.Dom.getElementById("input-field");
+                    var control = ORBEON.util.Dom.get("input-field");
                     var firstInput = ORBEON.util.Dom.getChildElementByIndex(control, 0);
                     YAHOO.util.Assert.areEqual("9:05:00 p.m.", firstInput.value);
                     YAHOO.util.Assert.areEqual("21:05:00", ORBEON.xforms.Document.getValue("input-field"));
@@ -202,7 +202,7 @@ ORBEON.testcases = {
                     ORBEON.xforms.Document.setValue("input-type", "date-time");
                 }, function() {
                     // Get reference to control and input fields
-                    var control = ORBEON.util.Dom.getElementById("input-field");
+                    var control = ORBEON.util.Dom.get("input-field");
                     var firstInput = ORBEON.util.Dom.getChildElementByIndex(control, 0);
                     var secondInput = ORBEON.util.Dom.getChildElementByIndex(control, 1);
                     ORBEON.testing.executeCausingAjaxRequest(this, function() {
@@ -228,9 +228,9 @@ ORBEON.testcases = {
                 ORBEON.testing.executeCausingAjaxRequest(this, function() {
                     ORBEON.xforms.Document.setValue("input-is-readonly", "true");
                 }, function() {
-                    var control = ORBEON.util.Dom.getElementById("input-field");
+                    var control = ORBEON.util.Dom.get("input-field");
                     var firstInput = ORBEON.util.Dom.getChildElementByIndex(control, 0);
-                    YAHOO.util.Assert.isTrue(ORBEON.util.Dom.hasClass(control, "xforms-readonly"));
+                    YAHOO.util.Assert.isTrue(YAHOO.util.Dom.hasClass(control, "xforms-readonly"));
                     YAHOO.util.Assert.isTrue(firstInput.disabled);
                 });
             });
@@ -243,9 +243,9 @@ ORBEON.testcases = {
                     ORBEON.xforms.Document.setValue("input-is-readonly", "true");
                     ORBEON.xforms.Document.setValue("input-type", "date");
                 }, function() {
-                    var control = ORBEON.util.Dom.getElementById("input-field");
+                    var control = ORBEON.util.Dom.get("input-field");
                     var firstInput = ORBEON.util.Dom.getChildElementByIndex(control, 0);
-                    YAHOO.util.Assert.isTrue(ORBEON.util.Dom.hasClass(control, "xforms-readonly"));
+                    YAHOO.util.Assert.isTrue(YAHOO.util.Dom.hasClass(control, "xforms-readonly"));
                     YAHOO.util.Assert.isTrue(firstInput.disabled);
                 });
             });
@@ -258,10 +258,10 @@ ORBEON.testcases = {
                     ORBEON.xforms.Document.setValue("input-is-readonly", "true");
                     ORBEON.xforms.Document.setValue("input-type", "date-time");
                 }, function() {
-                    var control = ORBEON.util.Dom.getElementById("input-field");
+                    var control = ORBEON.util.Dom.get("input-field");
                     var firstInput = ORBEON.util.Dom.getChildElementByIndex(control, 0);
                     var secondInput = ORBEON.util.Dom.getChildElementByIndex(control, 1);
-                    YAHOO.util.Assert.isTrue(ORBEON.util.Dom.hasClass(control, "xforms-readonly"));
+                    YAHOO.util.Assert.isTrue(YAHOO.util.Dom.hasClass(control, "xforms-readonly"));
                     YAHOO.util.Assert.isTrue(firstInput.disabled);
                     YAHOO.util.Assert.isTrue(secondInput.disabled);
                 });
@@ -274,8 +274,8 @@ ORBEON.testcases = {
                 ORBEON.testing.executeCausingAjaxRequest(this, function() {
                     ORBEON.xforms.Document.setValue("input-is-relevant", "false");
                 }, function() {
-                    var control = ORBEON.util.Dom.getElementById("input-field");
-                    YAHOO.util.Assert.isTrue(ORBEON.util.Dom.hasClass(control, "xforms-disabled"));
+                    var control = ORBEON.util.Dom.get("input-field");
+                    YAHOO.util.Assert.isTrue(YAHOO.util.Dom.hasClass(control, "xforms-disabled"));
                 });
             });
         },
@@ -287,10 +287,10 @@ ORBEON.testcases = {
                 ORBEON.testing.executeCausingAjaxRequest(this, function() {
                     ORBEON.xforms.Document.setValue("input-label", newLabel);
                 }, function() {
-                    var control = ORBEON.util.Dom.getElementById("input-field");
+                    var control = ORBEON.util.Dom.get("input-field");
                     var currentLabel = ORBEON.xforms.Controls.getLabelMessage(control);
                     YAHOO.util.Assert.areEqual(newLabel, currentLabel);
-                    var control = ORBEON.util.Dom.getElementById("input-field-for");
+                    var control = ORBEON.util.Dom.get("input-field-for");
                     var currentLabel = ORBEON.xforms.Controls.getLabelMessage(control);
                     YAHOO.util.Assert.areEqual(newLabel, currentLabel);
                 });
@@ -304,10 +304,10 @@ ORBEON.testcases = {
                 ORBEON.testing.executeCausingAjaxRequest(this, function() {
                     ORBEON.xforms.Document.setValue("input-hint", newHint);
                 }, function() {
-                    var control = ORBEON.util.Dom.getElementById("input-field");
+                    var control = ORBEON.util.Dom.get("input-field");
                     var currentHint = ORBEON.xforms.Controls.getHintMessage(control);
                     YAHOO.util.Assert.areEqual(newHint, currentHint);
-                    var control = ORBEON.util.Dom.getElementById("input-field-for");
+                    var control = ORBEON.util.Dom.get("input-field-for");
                     var currentHint = ORBEON.xforms.Controls.getHintMessage(control);
                     YAHOO.util.Assert.areEqual(newHint, currentHint);
                 });
@@ -321,10 +321,10 @@ ORBEON.testcases = {
                 ORBEON.testing.executeCausingAjaxRequest(this, function() {
                     ORBEON.xforms.Document.setValue("input-help", newHelp);
                 }, function() {
-                    var control = ORBEON.util.Dom.getElementById("input-field");
+                    var control = ORBEON.util.Dom.get("input-field");
                     var currentHelp = ORBEON.xforms.Controls.getHelpMessage(control);
                     YAHOO.util.Assert.areEqual(newHelp, currentHelp);
-                    var control = ORBEON.util.Dom.getElementById("input-field-for");
+                    var control = ORBEON.util.Dom.get("input-field-for");
                     var currentHelp = ORBEON.xforms.Controls.getHelpMessage(control);
                     YAHOO.util.Assert.areEqual(newHelp, currentHelp);
                 });
@@ -338,7 +338,7 @@ ORBEON.testcases = {
                 ORBEON.testing.executeCausingAjaxRequest(this, function() {
                     ORBEON.xforms.Document.setValue("input-alert", newAlert);
                 }, function() {
-                    var control = ORBEON.util.Dom.getElementById("input-field");
+                    var control = ORBEON.util.Dom.get("input-field");
                     var currentAlert = ORBEON.xforms.Controls.getAlertMessage(control);
                     YAHOO.util.Assert.areEqual(newAlert, currentAlert);
                 });
@@ -356,16 +356,16 @@ ORBEON.testcases = {
         // the class xforms-invalid-visited once its value changed.
         testValidVisited: function() {
             ORBEON.testing.executeWithInitialInstance(this, function() {
-                var field = ORBEON.util.Dom.getElementById("output-field");
-                YAHOO.util.Assert.isTrue(ORBEON.util.Dom.hasClass(field, "xforms-invalid"));
-                YAHOO.util.Assert.isTrue(!ORBEON.util.Dom.hasClass(field, "xforms-visited"));
+                var field = ORBEON.util.Dom.get("output-field");
+                YAHOO.util.Assert.isTrue(YAHOO.util.Dom.hasClass(field, "xforms-invalid"));
+                YAHOO.util.Assert.isTrue(!YAHOO.util.Dom.hasClass(field, "xforms-visited"));
                 ORBEON.testing.executeCausingAjaxRequest(this, function() {
-                    var input = ORBEON.util.Dom.getElementById();
+                    var input = ORBEON.util.Dom.get();
                     ORBEON.xforms.Document.setValue("output-field-input", "bar");
                 }, function() {
-                    YAHOO.util.Assert.isTrue(ORBEON.util.Dom.hasClass(field, "xforms-invalid"));
-                    YAHOO.util.Assert.isTrue(ORBEON.util.Dom.hasClass(field, "xforms-visited"));
-                    YAHOO.util.Assert.isTrue(ORBEON.util.Dom.hasClass(field, "xforms-invalid-visited"));
+                    YAHOO.util.Assert.isTrue(YAHOO.util.Dom.hasClass(field, "xforms-invalid"));
+                    YAHOO.util.Assert.isTrue(YAHOO.util.Dom.hasClass(field, "xforms-visited"));
+                    YAHOO.util.Assert.isTrue(YAHOO.util.Dom.hasClass(field, "xforms-invalid-visited"));
                 });
             });
         },
@@ -416,7 +416,7 @@ ORBEON.testing = {
     },
 
     executeCausingAjaxRequest: function(testCase, causingAjaxRequestFunction, afterAjaxResponseFunction) {
-        
+
         function ajaxReceived() {
             testCase.resume(function() {
                 ORBEON.xforms.Events.ajaxResponseProcessedEvent.unsubscribe(ajaxReceived);
@@ -456,7 +456,7 @@ ORBEON.testing = {
                 for (var testFunctionID in currentTestCase) {
                     // Test function start with "test"
                     if (testFunctionID.indexOf("test") == 0) {
-                        if (onlyRunTestCase != testcaseID || 
+                        if (onlyRunTestCase != testcaseID ||
                                 (!YAHOO.lang.isUndefined(onlyRunTestFunction) && onlyRunTestFunction != testFunctionID)) {
                             currentTestCase._should.ignore[testFunctionID] = true;
                         }

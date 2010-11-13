@@ -13,8 +13,9 @@
  */
 package org.orbeon.oxf.xforms.processor.handlers;
 
+import org.orbeon.oxf.xforms.XFormsConstants;
 import org.orbeon.oxf.xforms.XFormsUtils;
-import org.orbeon.oxf.xforms.analysis.controls.ControlAnalysis;
+import org.orbeon.oxf.xforms.analysis.controls.AttributeControl;
 import org.orbeon.oxf.xforms.control.controls.XXFormsAttributeControl;
 import org.orbeon.oxf.xml.XMLUtils;
 import org.xml.sax.*;
@@ -54,8 +55,8 @@ public class XHTMLElementHandler extends XFormsBaseHandler {
 
                         // Get static id of attribute control associated with this particular attribute
                         final String attributeControlStaticId; {
-                            final ControlAnalysis controlAnalysis = containingDocument.getStaticState().getAttributeControl(prefixedId, attributeQName);
-                            attributeControlStaticId = controlAnalysis.element.attributeValue("id");
+                            final AttributeControl controlAnalysis = containingDocument.getStaticState().getAttributeControl(prefixedId, attributeQName);
+                            attributeControlStaticId = controlAnalysis.element().attributeValue(XFormsConstants.ID_QNAME);
                         }
 
                         // Find concrete control if possible

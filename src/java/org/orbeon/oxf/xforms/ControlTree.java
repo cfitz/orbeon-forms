@@ -17,8 +17,8 @@ import org.dom4j.Element;
 import org.orbeon.oxf.common.OXFException;
 import org.orbeon.oxf.util.IndentedLogger;
 import org.orbeon.oxf.util.PropertyContext;
+import org.orbeon.oxf.xforms.analysis.ElementAnalysis;
 import org.orbeon.oxf.xforms.analysis.XPathDependencies;
-import org.orbeon.oxf.xforms.analysis.controls.ControlAnalysis;
 import org.orbeon.oxf.xforms.control.*;
 import org.orbeon.oxf.xforms.control.controls.*;
 import org.orbeon.oxf.xforms.event.XFormsEvents;
@@ -527,7 +527,7 @@ public class ControlTree implements ExternalCopyable {
     }
 
     private void addMissingRepeatIndexes(XFormsStaticState staticState, Map<String, Integer> repeatIdToIndex) {
-        final Map<String, ControlAnalysis> repeats = staticState.getRepeatControlAnalysisMap();
+        final Map<String, ElementAnalysis> repeats = staticState.getRepeatControlAnalysisMap();
         if (repeats != null) {
             for (String repeatPrefixedId: repeats.keySet()) {
                 if (repeatIdToIndex.get(repeatPrefixedId) == null) {
@@ -740,19 +740,18 @@ public class ControlTree implements ExternalCopyable {
 
         private XFormsControl currentControlsContainer;
 
-        private final Map serializedControls;
+        private final Map<String, Element> serializedControls;
         private final PropertyContext propertyContext;
         private final ControlIndex controlIndex;
 
         private transient int updateCount;
         private transient int iterationCount;
 
-        public CreateControlsListener(PropertyContext propertyContext, ControlIndex controlIndex, XFormsControl rootControl,
-                                      Map serializedControlStateMap) {
+        public CreateControlsListener(PropertyContext propertyContext, ControlIndex controlIndex, XFormsControl rootControl, Map<String, Element> serializedControls) {
 
             this.currentControlsContainer = rootControl;
 
-            this.serializedControls = serializedControlStateMap;
+            this.serializedControls = serializedControls;
             this.propertyContext = propertyContext;
             this.controlIndex = controlIndex;
         }
@@ -762,14 +761,7 @@ public class ControlTree implements ExternalCopyable {
             updateCount++;
 
             // Create XFormsControl with basic information
-            final XFormsControl control = XFormsControlFactory.createXFormsControl(container, currentControlsContainer, controlElement, effectiveControlId);
-
-            // If needed, deserialize control state
-            if (serializedControls != null) {
-                final Element element = (Element) serializedControls.get(effectiveControlId);
-                if (element != null)
-                    control.deserializeLocal(element);
-            }
+            final XFormsControl control = XFormsControlFactory.createXFormsControl(container, currentControlsContainer, controlElement, effectiveControlId, serializedControls);
 
             // Set current binding for control element
             final XFormsContextStack.BindingContext currentBindingContext = container.getContextStack().getCurrentBindingContext();
@@ -787,16 +779,6 @@ public class ControlTree implements ExternalCopyable {
             if (control instanceof XFormsContainerControl) {
                 currentControlsContainer = control;
             }
-
-//            if (control instanceof XFormsComponentControl) {
-//                // Compute new id prefix for nested component
-//                final String newIdPrefix = idPrefix + staticControlId + XFormsConstants.COMPONENT_SEPARATOR;
-//
-//                // Recurse into component tree
-//                final Element shadowTreeDocumentElement = staticState.getCompactShadowTree(idPrefix + staticControlId);
-//                XFormsControls.visitControlElementsHandleRepeat(pipelineContext, this, isOptimizeRelevance,
-//                        staticState, newContainer, shadowTreeDocumentElement, newIdPrefix, idPostfix);
-//            }
 
             return control;
         }
@@ -871,6 +853,7 @@ public class ControlTree implements ExternalCopyable {
 
         private transient int visitedCount;
         private transient int updateCount;
+        private transient int optimizedCount;
         private transient int iterationCount;
 
         public UpdateBindingsListener(PropertyContext propertyContext, XFormsContainingDocument containingDocument, Map<String, XFormsControl> effectiveIdsToControls) {
@@ -977,9 +960,11 @@ public class ControlTree implements ExternalCopyable {
             } else {
                 final XFormsControl currentControl = effectiveIdsToControls.get(controlEffectiveId);
                 // TODO: do this better: null in create mode for now; what about with relevance optimization?
-                if (currentControl != null) {
+                final boolean hasModelAttribute = currentControlElement.attribute(XFormsConstants.MODEL_QNAME) != null;
+                if (currentControl != null && !hasModelAttribute) { // TODO TEMP HACK: don't optimize if there is a @model attribute, as that causes model variable evaluation!
                     // Push existing binding without re-evaluating
                     currentContextStack.pushBinding(currentControl.getBindingContext());
+                    optimizedCount++;
                 } else {
                     // Push with evaluation
                     currentContextStack.pushBinding(propertyContext, currentControlElement, controlEffectiveId, newScope);
@@ -996,6 +981,10 @@ public class ControlTree implements ExternalCopyable {
 
         public int getUpdateCount() {
             return updateCount;
+        }
+
+        public int getOptimizedCount() {
+            return optimizedCount;
         }
 
         public int getIterationCount() {

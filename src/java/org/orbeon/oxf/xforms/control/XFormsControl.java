@@ -22,7 +22,7 @@ import org.orbeon.oxf.processor.converter.XHTMLRewrite;
 import org.orbeon.oxf.util.*;
 import org.orbeon.oxf.xforms.*;
 import org.orbeon.oxf.xforms.analysis.XPathDependencies;
-import org.orbeon.oxf.xforms.analysis.controls.ControlAnalysis;
+import org.orbeon.oxf.xforms.analysis.controls.LHHAAnalysis;
 import org.orbeon.oxf.xforms.control.controls.XFormsRepeatControl;
 import org.orbeon.oxf.xforms.control.controls.XFormsRepeatIterationControl;
 import org.orbeon.oxf.xforms.event.*;
@@ -105,7 +105,7 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
         this.controlElement = element;
         this.name = name;
 
-        this.id = (element != null) ? element.attributeValue("id") : null;
+        this.id = (element != null) ? element.attributeValue(XFormsConstants.ID_QNAME) : null;
         this.prefixedId = XFormsUtils.getPrefixedId(effectiveId);
         this.effectiveId = effectiveId;
     }
@@ -139,7 +139,7 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
     }
 
     public XBLBindings.Scope getChildElementScope(Element element) {
-        return containingDocument.getStaticState().getXBLBindings().getResolutionScopeByPrefixedId(getXBLContainer().getFullPrefix() + element.attributeValue("id"));
+        return containingDocument.getStaticState().getXBLBindings().getResolutionScopeByPrefixedId(getXBLContainer().getFullPrefix() + element.attributeValue(XFormsConstants.ID_QNAME));
     }
 
     /**
@@ -247,8 +247,8 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
     private LHHA getLabelLHHA() {
         LHHA result = lhha.get(XFormsConstants.LHHA.LABEL);
         if (result == null) {
-            final ControlAnalysis.LHHAAnalysis lhhaElement = containingDocument.getStaticState().getLabel(getPrefixedId());
-            result = (lhhaElement == null) ? NULL_LHHA : new ConcreteLHHA(this, lhhaElement, isSupportHTMLLabels());
+            final LHHAAnalysis lhhaElement = containingDocument.getStaticState().getLabel(getPrefixedId());
+            result = (lhhaElement == null) ? NULL_LHHA : new ConcreteLHHA(lhhaElement, isSupportHTMLLabels());
             lhha.put(XFormsConstants.LHHA.LABEL, result);
         }
         return result;
@@ -257,8 +257,8 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
     private LHHA getHelpLHHA() {
         LHHA result = lhha.get(XFormsConstants.LHHA.HELP);
         if (result == null) {
-            final ControlAnalysis.LHHAAnalysis lhhaElement = containingDocument.getStaticState().getHelp(getPrefixedId());
-            result = (lhhaElement == null) ? NULL_LHHA : new ConcreteLHHA(this, lhhaElement, true);
+            final LHHAAnalysis lhhaElement = containingDocument.getStaticState().getHelp(getPrefixedId());
+            result = (lhhaElement == null) ? NULL_LHHA : new ConcreteLHHA(lhhaElement, true);
             lhha.put(XFormsConstants.LHHA.HELP, result);
         }
         return result;
@@ -267,8 +267,8 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
     private LHHA getHintLHHA() {
         LHHA result = lhha.get(XFormsConstants.LHHA.HINT);
         if (result == null) {
-            final ControlAnalysis.LHHAAnalysis lhhaElement = containingDocument.getStaticState().getHint(getPrefixedId());
-            result = (lhhaElement == null) ? NULL_LHHA : new ConcreteLHHA(this, lhhaElement, isSupportHTMLHints());
+            final LHHAAnalysis lhhaElement = containingDocument.getStaticState().getHint(getPrefixedId());
+            result = (lhhaElement == null) ? NULL_LHHA : new ConcreteLHHA(lhhaElement, isSupportHTMLHints());
             lhha.put(XFormsConstants.LHHA.HINT, result);
         }
         return result;
@@ -277,8 +277,8 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
     private LHHA getAlertLHHA() {
         LHHA result = lhha.get(XFormsConstants.LHHA.ALERT);
         if (result == null) {
-            final ControlAnalysis.LHHAAnalysis lhhaElement = containingDocument.getStaticState().getAlert(getPrefixedId());
-            result = (lhhaElement == null) ? NULL_LHHA : new ConcreteLHHA(this, lhhaElement, true);
+            final LHHAAnalysis lhhaElement = containingDocument.getStaticState().getAlert(getPrefixedId());
+            result = (lhhaElement == null) ? NULL_LHHA : new ConcreteLHHA(lhhaElement, true);
             lhha.put(XFormsConstants.LHHA.ALERT, result);
         }
         return result;
@@ -431,7 +431,7 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
      */
     public String getMediatype() {
         if (mediatype == null)
-            mediatype = controlElement.attributeValue("mediatype");
+            mediatype = controlElement.attributeValue(XFormsConstants.MEDIATYPE_QNAME);
         return mediatype;
     }
 
@@ -533,13 +533,9 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
     protected void markDirtyImpl(XPathDependencies xpathDependencies) {
 
         // Check LHHA
-        for (final Map.Entry<XFormsConstants.LHHA, LHHA> entry: lhha.entrySet()) {
-            final XFormsConstants.LHHA key = entry.getKey();
-            final LHHA value = entry.getValue();
-
-            if (value != null && !value.isDirty() && xpathDependencies.requireLHHAUpdate(key, getPrefixedId()))
-                value.markDirty();
-        }
+        for (final LHHA currentLHHA : lhha.values())
+            if (currentLHHA != null)
+                currentLHHA.handleMarkDirty();
 
         // For now clear this all the time
         // TODO: dependencies
@@ -907,15 +903,6 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
     }
 
     /**
-     * Deserialize this control's information which cannot be reconstructed from instances.
-     *
-     * @param element containing attributes which can be used by the control
-     */
-    public void deserializeLocal(Element element) {
-        // NOP
-    }
-
-    /**
      * Clone a control. It is important to understand why this is implemented: to create a copy of a tree of controls
      * before updates that may change control bindings. Also, it is important to understand that we clone "back", that
      * is the new clone will be used as the reference copy for the difference engine.
@@ -1068,95 +1055,195 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
         return Collections.emptySet();
     }
 
-    // Empty LHHA
-    protected static final LHHA NULL_LHHA = new LHHA();
+    /**
+     * Represent a property of the control that can be evaluated, marked dirty, and optimized.
+     */
+    protected abstract class ControlProperty<T> implements Cloneable {
+        private T value;
+        private boolean isEvaluated;
+        private boolean isOptimized;
 
-    protected static class LHHA implements Cloneable {
-        public String getValue(PropertyContext propertyContext) {
-            return null;
+        public ControlProperty() {}
+
+        protected abstract boolean requireUpdate();
+        protected abstract void notifyCompute();
+        protected abstract void notifyOptimized();
+        protected abstract T evaluateValue(PropertyContext propertyContext);
+
+        final public T getValue(PropertyContext propertyContext) {
+            if (!isEvaluated) {
+                if (XFormsControl.this.isRelevant()) {
+                    notifyCompute();
+                    value = evaluateValue(propertyContext);
+                } else {
+                    // NOTE: if the control is not relevant, nobody should ask about this in the first place
+                    value = null;
+                }
+                isEvaluated = true;
+            } else if (isOptimized) {
+                // This is only for statistics: if the value was not re-evaluated because of the dependency engine
+                // giving us the green light, the first time the value is asked we notify the dependency engine of that
+                // situation.
+                notifyOptimized();
+                isOptimized = false;
+            }
+            return value;
         }
 
-        public String getEscapedValue(PipelineContext pipelineContext) {
-            return null;
+        public void handleMarkDirty() {
+            if (!isDirty()) { // don't do anything if we are already dirty
+                if (relevant != wasRelevant) {
+                    // Control becomes relevant or non-relevant
+                    markDirty();
+                } else if (relevant) {
+                    // Control remains relevant
+                    if (requireUpdate())
+                        markDirty();
+                    else
+                        markOptimized(); // for statistics only
+                }
+                // If control is clean and remains non-relevant, no need to mark dirty as it's value remains null
+                // NOTE: Ideally nobody should call to get the value if the control is not relevant
+            }
         }
 
-        public boolean isHTML(PropertyContext propertyContext) {
+        protected void markDirty() {
+            value = null;
+            isEvaluated = false;
+            isOptimized = false;
+        }
+
+        protected void markOptimized() {
+            isOptimized = true;
+        }
+
+        private boolean isDirty() {
+            return !isEvaluated;
+        }
+
+        @Override
+        public ControlProperty<T> clone() {
+            try {
+                return (ControlProperty<T>) super.clone();
+            } catch (CloneNotSupportedException e) {
+                throw new OXFException("");// must not happen
+            }
+        }
+    }
+
+    protected class ConstantControlProperty<T> extends ControlProperty<T> {
+
+        private T value;
+
+        public ConstantControlProperty(T value) {
+            this.value = value;
+        }
+
+        @Override
+        protected boolean requireUpdate() {
             return false;
         }
 
-        public void markDirty() {}
-        public boolean isDirty() { return false; }
+        @Override
+        protected void notifyCompute() {
+        }
 
         @Override
-        public LHHA clone() {
+        protected void notifyOptimized() {
+        }
+
+        @Override
+        protected T evaluateValue(PropertyContext propertyContext) {
+            return value;
+        }
+    }
+
+    // Empty LHHA
+    protected static final LHHA NULL_LHHA = new NullLHHA();
+
+    protected static class NullLHHA implements LHHA {
+        public String getValue(PropertyContext propertyContext) { return null; }
+        public String getEscapedValue(PipelineContext pipelineContext) { return null; }
+        public boolean isHTML(PropertyContext propertyContext) { return false; }
+        public void handleMarkDirty() {}
+
+        @Override
+        public NullLHHA clone() {
             try {
-                return (LHHA) super.clone();
+                return (NullLHHA) super.clone();
             } catch (CloneNotSupportedException e) {
                 throw new OXFException(e);
             }
         }
     }
 
-    // LHHA corresponding to an existing xforms:label, etc. element
-    private static class ConcreteLHHA extends LHHA {
+    protected interface LHHA extends Cloneable {
+        String getValue(PropertyContext propertyContext);
+        String getEscapedValue(PipelineContext pipelineContext);
+        boolean isHTML(PropertyContext propertyContext);
+        void handleMarkDirty();
+        LHHA clone();
+    }
 
-        private final XFormsControl control;
-        private final ControlAnalysis.LHHAAnalysis lhhaAnalysis;
+    // LHHA corresponding to an existing xforms:label, etc. element
+    private class ConcreteLHHA extends ControlProperty<String> implements LHHA {
+
+        private final LHHAAnalysis lhhaAnalysis;
         private final Element lhhaElement;
         private final boolean supportsHTML;
 
-        private String value;
-        private boolean isEvaluated;
         private boolean isHTML;
 
-        public ConcreteLHHA(XFormsControl control, ControlAnalysis.LHHAAnalysis lhhaAnalysis, boolean supportsHTML) {
+        public ConcreteLHHA(LHHAAnalysis lhhaAnalysis, boolean supportsHTML) {
 
-            assert lhhaAnalysis != null && lhhaAnalysis.element != null : "LHHA analysis/element can't be null";
+            assert lhhaAnalysis != null && lhhaAnalysis.element() != null : "LHHA analysis/element can't be null";
 
-            this.control = control;
             this.lhhaAnalysis = lhhaAnalysis;
-            this.lhhaElement = lhhaAnalysis.element;
+            this.lhhaElement = lhhaAnalysis.element();
             this.supportsHTML = supportsHTML;
         }
 
         @Override
-        public String getValue(PropertyContext propertyContext) {
-            if (!isEvaluated) {
-                if (control.isRelevant()) {
-                    value = evaluateValue(propertyContext);
-                    isHTML = value != null && control.tempContainsHTML[0];
-                } else {
-                    // NOTE: if the control is not relevant, nobody should ask about this in the first place
-                    value = null;
-                    isHTML = false;
-                }
-                isEvaluated = true;
-            }
-            return value;
+        protected String evaluateValue(PropertyContext propertyContext) {
+            final String result = doEvaluateValue(propertyContext);
+            isHTML = result != null && tempContainsHTML[0];
+            return result;
         }
 
-        @Override
         public String getEscapedValue(PipelineContext pipelineContext) {
-            getValue(pipelineContext);
-            return isHTML ? control.getEscapedHTMLValue(pipelineContext, value) : XMLUtils.escapeXMLMinimal(value);
+            final String value = getValue(pipelineContext);
+            return isHTML ? XFormsControl.this.getEscapedHTMLValue(pipelineContext, value) : XMLUtils.escapeXMLMinimal(value);
         }
 
-        @Override
         public boolean isHTML(PropertyContext propertyContext) {
             getValue(propertyContext);
             return isHTML;
         }
 
         @Override
-        public void markDirty() {
-            value = null;
-            isEvaluated = false;
+        protected void markDirty() {
+            super.markDirty();
             isHTML = false;
         }
 
         @Override
-        public boolean isDirty() {
-            return !isEvaluated;
+        protected boolean requireUpdate() {
+            return containingDocument.getXPathDependencies().requireLHHAUpdate(lhhaElement.getName(), getPrefixedId());
+        }
+
+        @Override
+        protected void notifyCompute() {
+            containingDocument.getXPathDependencies().notifyComputeLHHA();
+        }
+
+        @Override
+        protected void notifyOptimized() {
+            containingDocument.getXPathDependencies().notifyOptimizeLHHA();
+        }
+
+        @Override
+        public ConcreteLHHA clone() {
+            return (ConcreteLHHA) super.clone();
         }
 
         /**
@@ -1165,11 +1252,13 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
          * @param propertyContext       current context
          * @return                      string containing the result of the evaluation, null if evaluation failed
          */
-        private String evaluateValue(PropertyContext propertyContext) {
+        private String doEvaluateValue(PropertyContext propertyContext) {
+
+            final XFormsControl control = XFormsControl.this;
 
             final XFormsContextStack contextStack = control.getContextStack();
             final String value;
-            if (lhhaAnalysis.isLocal) {
+            if (lhhaAnalysis.isLocal()) {
                 // LHHA is direct child of control, evaluate within context
                 contextStack.setBinding(control);
                 contextStack.pushBinding(propertyContext, lhhaElement, control.effectiveId, control.getChildElementScope(lhhaElement));
@@ -1180,7 +1269,7 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
 
                 // Find context object for XPath evaluation
                 final Element contextElement = lhhaElement.getParent();
-                final String contextStaticId = contextElement.attributeValue("id");
+                final String contextStaticId = contextElement.attributeValue(XFormsConstants.ID_QNAME);
                 final String contextEffectiveId;
                 if (contextStaticId == null) {
                     // Assume we are at the top-level
@@ -1188,7 +1277,7 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
                     contextEffectiveId = control.container.getFirstControlEffectiveId();
                 } else {
                     // Not at top-level, find containing object
-                    final XFormsControl ancestorContextControl = findAncestorContextControl(contextStaticId, lhhaElement.attributeValue("id"));
+                    final XFormsControl ancestorContextControl = findAncestorContextControl(contextStaticId, lhhaElement.attributeValue(XFormsConstants.ID_QNAME));
                     if (ancestorContextControl != null) {
                         contextStack.setBinding(ancestorContextControl);
                         contextEffectiveId = ancestorContextControl.effectiveId;
@@ -1211,6 +1300,9 @@ public abstract class XFormsControl implements XFormsEventTarget, XFormsEventObs
         }
 
         private XFormsControl findAncestorContextControl(String contextStaticId, String lhhaStaticId) {
+
+            final XFormsControl control = XFormsControl.this;
+
             // NOTE: LHHA element must be in the same resolution scope as the current control (since @for refers to @id)
             final XBLBindings.Scope lhhaScope = control.getResolutionScope();
             final String lhhaPrefixedId = lhhaScope.getPrefixedIdForStaticId(lhhaStaticId);

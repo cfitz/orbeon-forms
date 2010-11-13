@@ -13,12 +13,13 @@
  */
 package org.orbeon.oxf.xforms.processor.handlers;
 
+import org.apache.commons.lang.StringUtils;
 import org.dom4j.QName;
 import org.orbeon.oxf.common.ValidationException;
 import org.orbeon.oxf.pipeline.api.PipelineContext;
 import org.orbeon.oxf.pipeline.api.XMLReceiver;
 import org.orbeon.oxf.xforms.*;
-import org.orbeon.oxf.xforms.analysis.controls.ControlAnalysis;
+import org.orbeon.oxf.xforms.analysis.controls.LHHAAnalysis;
 import org.orbeon.oxf.xforms.control.*;
 import org.orbeon.oxf.xml.*;
 import org.orbeon.saxon.om.FastStringBuffer;
@@ -80,27 +81,24 @@ public abstract class XFormsBaseHandler extends ElementHandler {
     }
 
     /**
-     * Whether the control is disabled. Occurs when:
-     *
-     * o control is not null and is non-relevant
-     * o control is null and is not in a repeat template
+     * Whether the control is disabled in the resulting HTML. Occurs when:
+     * 
+     * o control is readonly but not static readonly
      *
      * @param control   control to check or null if no concrete control available
      * @return          whether the control is to be marked as disabled
      */
-    protected boolean isDisabled(XFormsControl control) {
-        return control != null && !control.isRelevant() || control == null && !handlerContext.isTemplate();
+    protected boolean isHTMLDisabled(XFormsControl control) {
+        return
+//                control == null || !control.isRelevant() ||
+//                !handlerContext.getCaseVisibility() || // no longer do this as it is better handled with CSS
+                (control instanceof XFormsSingleNodeControl) && ((XFormsSingleNodeControl) control).isReadonly() && !XFormsProperties.isStaticReadonlyAppearance(containingDocument);
     }
 
-    public static void handleDisabledAttribute(AttributesImpl newAttributes, XFormsContainingDocument containingDocument, XFormsSingleNodeControl xformsControl) {
-        if ((xformsControl != null && xformsControl.isReadonly() && !XFormsProperties.isStaticReadonlyAppearance(containingDocument))
-                || (xformsControl == null || !xformsControl.isRelevant())) {
-
-            // @disabled="disabled"
-
-            // HTML 4: @disabled supported on: input, button, select, optgroup, option, and textarea. 
-            newAttributes.addAttribute("", "disabled", "disabled", ContentHandlerHelper.CDATA, "disabled");
-        }
+    protected static void outputDisabledAttribute(AttributesImpl newAttributes) {
+        // @disabled="disabled"
+        // HTML 4: @disabled supported on: input, button, select, optgroup, option, and textarea.
+        newAttributes.addAttribute("", "disabled", "disabled", ContentHandlerHelper.CDATA, "disabled");
     }
 
     public void handleMIPClasses(StringBuilder sb, String controlPrefixedId, XFormsControl control) {
@@ -249,43 +247,7 @@ public abstract class XFormsBaseHandler extends ElementHandler {
 
         final StringBuilder sb = new StringBuilder(50);
         // User-defined classes go first
-        {
-            {
-                final String attributeValue = controlAttributes.getValue("class");
-                final String value;
-                if (attributeValue != null) {
-
-                    if (!XFormsUtils.maybeAVT(attributeValue)) {
-                        // Definitely not an AVT
-                        value = attributeValue;
-                    } else {
-                        // Possible AVT
-                        if (control != null) {
-                            // Ask the control if possible
-                            value = control.getExtensionAttributeValue(XFormsConstants.CLASS_QNAME);
-                        } else {
-                            // Otherwise we can't compute it
-                            value = null;
-                        }
-                    }
-
-                    if (value != null) {
-                        if (sb.length() > 0)
-                            sb.append(' ');
-                        sb.append(value);
-                    }
-                }
-            }
-            {
-                // TODO: Do we need to support this? Should just use @class
-                final String value = controlAttributes.getValue(XMLConstants.XHTML_NAMESPACE_URI, "class");
-                if (value != null) {
-                    if (sb.length() > 0)
-                        sb.append(' ');
-                    sb.append(value);
-                }
-            }
-        }
+        appendControlUserClasses(controlAttributes, control, sb);
 
         // Control name
         {
@@ -363,6 +325,46 @@ public abstract class XFormsBaseHandler extends ElementHandler {
         return sb;
     }
 
+    protected void appendControlUserClasses(Attributes controlAttributes, XFormsControl control, StringBuilder sb) {
+        // @class
+        {
+            final String attributeValue = controlAttributes.getValue("class");
+            final String value;
+            if (attributeValue != null) {
+
+                if (!XFormsUtils.maybeAVT(attributeValue)) {
+                    // Definitely not an AVT
+                    value = attributeValue;
+                } else {
+                    // Possible AVT
+                    if (control != null) {
+                        // Ask the control if possible
+                        value = control.getExtensionAttributeValue(XFormsConstants.CLASS_QNAME);
+                    } else {
+                        // Otherwise we can't compute it
+                        value = null;
+                    }
+                }
+
+                if (value != null) {
+                    if (sb.length() > 0)
+                        sb.append(' ');
+                    sb.append(value);
+                }
+            }
+        }
+        // @xhtml:class
+        // TODO: Do we need to support this? Should just use @class
+        {
+            final String value = controlAttributes.getValue(XMLConstants.XHTML_NAMESPACE_URI, "class");
+            if (value != null) {
+                if (sb.length() > 0)
+                    sb.append(' ');
+                sb.append(value);
+            }
+        }
+    }
+
     protected boolean isStaticReadonly(XFormsControl control) {
         return control != null && control.isStaticReadonly();
     }
@@ -407,7 +409,7 @@ public abstract class XFormsBaseHandler extends ElementHandler {
         {
             // Statically obtain attributes information
             final XFormsStaticState staticState = containingDocument.getStaticState();
-            final ControlAnalysis.LHHAAnalysis lhhaAnalysis;
+            final LHHAAnalysis lhhaAnalysis;
             final String forPrefixedId = XFormsUtils.getPrefixedId(controlEffectiveId);
             if (isLabel) {
                 elementName = handlerContext.getLabelElementName();
@@ -425,7 +427,7 @@ public abstract class XFormsBaseHandler extends ElementHandler {
                 throw new IllegalStateException("Illegal type requested");
             }
 
-            labelHintHelpAlertAttributes = (lhhaAnalysis != null) ? XMLUtils.getSAXAttributes(lhhaAnalysis.element) : null;
+            labelHintHelpAlertAttributes = (lhhaAnalysis != null) ? XMLUtils.getSAXAttributes(lhhaAnalysis.element()) : null;
         }
 
         if (labelHintHelpAlertAttributes != null || isAlert) {
@@ -464,7 +466,7 @@ public abstract class XFormsBaseHandler extends ElementHandler {
                     }
                 } else {
                     // For help and hint, consider "non-relevant" if empty
-                    final boolean isHintHelpRelevant = control.isRelevant() && !(labelHintHelpAlertValue == null || labelHintHelpAlertValue.equals(""));
+                    final boolean isHintHelpRelevant = control.isRelevant() && StringUtils.isNotEmpty(labelHintHelpAlertValue);
                     if (!isHintHelpRelevant) {
                         if (classes.length() > 0)
                             classes.append(' ');
@@ -575,7 +577,7 @@ public abstract class XFormsBaseHandler extends ElementHandler {
         final XMLReceiver xmlReceiver = handlerContext.getController().getOutput();
 
         // Only output content when there value is non-empty
-        if (labelValue != null && !labelValue.equals("")) {
+        if (StringUtils.isNotEmpty(labelValue)) {
             if (mustOutputHTMLFragment) {
                 XFormsUtils.streamHTMLFragment(xmlReceiver, labelValue, null, xhtmlPrefix);
             } else {

@@ -18,10 +18,7 @@ import org.orbeon.oxf.xforms.XFormsControls;
 import org.orbeon.oxf.xforms.XFormsUtils;
 import org.orbeon.oxf.xforms.control.XFormsControl;
 import org.orbeon.oxf.xforms.control.controls.XFormsTriggerControl;
-import org.orbeon.oxf.xml.ContentHandlerHelper;
-import org.orbeon.oxf.xml.XMLConstants;
-import org.orbeon.oxf.xml.XMLReceiverAdapter;
-import org.orbeon.oxf.xml.XMLUtils;
+import org.orbeon.oxf.xml.*;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
@@ -46,6 +43,8 @@ public class XFormsTriggerFullHandler extends XFormsTriggerHandler {
 
         final String elementName;
         if (handlerContext.isNoScript()) {
+            // Noscript mode
+
             // We need a name to detect activation
             containerAttributes.addAttribute("", "name", "name", ContentHandlerHelper.CDATA, effectiveId);
 
@@ -114,6 +113,8 @@ public class XFormsTriggerFullHandler extends XFormsTriggerHandler {
             // In JS-free mode, all buttons are submit inputs or image inputs
             containerAttributes.addAttribute("", "type", "type", ContentHandlerHelper.CDATA, inputType);
         } else {
+            // Script mode
+
             // Just a button without action
             containerAttributes.addAttribute("", "type", "type", ContentHandlerHelper.CDATA, "button");
             elementName = "button";
@@ -121,7 +122,8 @@ public class XFormsTriggerFullHandler extends XFormsTriggerHandler {
 
         // xhtml:button or xhtml:input
         final String spanQName = XMLUtils.buildQName(xhtmlPrefix, elementName);
-        handleDisabledAttribute(containerAttributes, containingDocument, triggerControl);
+        if (isHTMLDisabled(triggerControl))
+            outputDisabledAttribute(containerAttributes);
         xmlReceiver.startElement(XMLConstants.XHTML_NAMESPACE_URI, elementName, spanQName, containerAttributes);
         {
             if ("button".equals(elementName)) {

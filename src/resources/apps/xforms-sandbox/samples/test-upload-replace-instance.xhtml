@@ -34,6 +34,7 @@
         </xforms:model>
         <xhtml:link type="text/css" rel="stylesheet" href="/ops/yui/logger/assets/logger.css"/>
         <xhtml:script type="text/javascript" src="/ops/yui/logger/logger.js"/>
+        <xhtml:script type="text/javascript" src="/ops/yui/event-simulate/event-simulate.js"/>
         <xhtml:script type="text/javascript" src="/ops/yui/yuitest/yuitest.js"/>
         <xhtml:script type="text/javascript">
             <![CDATA[
@@ -54,9 +55,9 @@
                             // button, there is a first Ajax request made and the response tells us to do for a form submission
                             // for the upload. We want to run code when that second Ajax response arrives.
                             ORBEON.util.Test.executeCausingAjaxRequest(this, function() {}, function() {
-                                var textSpan = document.getElementById("text-output");
-                                var textValue = ORBEON.util.Dom.getStringValue(textSpan);
-                                YAHOO.util.Assert.isTrue(textValue.indexOf("\n") == -1);
+                                var textValue = ORBEON.xforms.Document.getValue("text-output");
+                                YAHOO.util.Assert.isTrue(textValue.indexOf("Lorem ipsum") == 0, "xforms:setvalue happened successfully");
+                                YAHOO.util.Assert.isTrue(textValue.indexOf("\n") == -1, "response must not contain any carriage return");
                             });
                         });
                     }

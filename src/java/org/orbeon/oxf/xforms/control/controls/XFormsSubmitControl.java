@@ -17,6 +17,7 @@ import org.dom4j.Element;
 import org.orbeon.oxf.common.ValidationException;
 import org.orbeon.oxf.util.IndentedLogger;
 import org.orbeon.oxf.util.PropertyContext;
+import org.orbeon.oxf.xforms.XFormsConstants;
 import org.orbeon.oxf.xforms.control.XFormsControl;
 import org.orbeon.oxf.xforms.event.XFormsEvent;
 import org.orbeon.oxf.xforms.event.XFormsEvents;
@@ -38,12 +39,13 @@ public class XFormsSubmitControl extends XFormsTriggerControl {
         if (XFormsEvents.DOM_ACTIVATE.equals(event.getName())) {
 
             // Find submission id
-            final String submissionId =  getControlElement().attributeValue("submission");
+            final String submissionId =  getControlElement().attributeValue(XFormsConstants.SUBMISSION_QNAME);
             if (submissionId == null)
                 throw new ValidationException("xforms:submit requires a submission attribute.", getLocationData());
 
             // Find submission object and dispatch submit event to it
-            final Object object = getXBLContainer().getObjectByEffectiveId(submissionId);// xxx fix not effective
+
+            final Object object = getXBLContainer().findResolutionScope(getEffectiveId()).resolveObjectById(getEffectiveId(), submissionId, null);
             if (object instanceof XFormsModelSubmission) {
                 final XFormsModelSubmission submission = (XFormsModelSubmission) object;
                 submission.getXBLContainer(containingDocument).dispatchEvent(propertyContext, new XFormsSubmitEvent(containingDocument, submission));

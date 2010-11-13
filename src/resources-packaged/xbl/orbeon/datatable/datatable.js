@@ -26,8 +26,8 @@
  */
 
 YAHOO.namespace("xbl.fr");
-
 YAHOO.xbl.fr.Datatable = function() {};
+ORBEON.xforms.XBL.declareClass(YAHOO.xbl.fr.Datatable, "xbl-fr-datatable");
 
 /**
  * Used to manage the datatables that are located in a page
@@ -88,7 +88,7 @@ YAHOO.xbl.fr.DatatableManager = {
             var datatable = YAHOO.xbl.fr.Datatable._instances[id];
             if (datatable.isDisplayed()) {
                 datatable.isInitialized = false;
-                datatable.draw(datatable.innerTableWidth);
+                datatable.draw();
             }
         }
     },
@@ -98,8 +98,6 @@ YAHOO.xbl.fr.DatatableManager = {
 
 // Set the event listener for window resize events
 YAHOO.util.Event.addListener(window, "resize", YAHOO.xbl.fr.DatatableManager.resize);
-
-ORBEON.xforms.XBL.declareClass(YAHOO.xbl.fr.Datatable, "xbl-fr-datatable");
 
 /*
  * Datatable class
@@ -140,6 +138,14 @@ YAHOO.xbl.fr.Datatable.prototype = {
     colSorters: [],
     masterRow: null,                                            // Header "master" row
     headerColumns: [],
+    delayedDraw: null,                                          // A version of draw with all the arguments bound
+
+    init: function() {
+        /** @type {HTMLElement} */  var innerTableWidthSpan = YAHOO.util.Dom.getElementsByClassName("fr-dt-inner-table-width", null, this.container)[0];
+        /** @type {String} */       var innerTableWidthText = ORBEON.util.Dom.getStringValue(innerTableWidthSpan);
+        this.innerTableWidth = innerTableWidthText == "" ? null : parseInt(innerTableWidthText);
+        this.draw();
+    },
 
     /**
      * Initialize a datatable.
@@ -147,9 +153,7 @@ YAHOO.xbl.fr.Datatable.prototype = {
      *
      * @param innerTableWidth
      */
-    draw: function (innerTableWidth) {
-        // Initializes a datatable (called by xforms-enabled events)
-        this.innerTableWidth = innerTableWidth;
+    draw: function() {
 
         // We don't care about datatable that are disabled (we'll receive a new event when they'll be enabled again)
         // TODO: check if this test is still needed
@@ -162,13 +166,12 @@ YAHOO.xbl.fr.Datatable.prototype = {
                     this.isInitialized = true;
                     this.container.fr_dt_initialized = true;
                     this.columnsUpdateUUID = this.getRequestUUID();
-                    this.rowsUpdateUUID = this.columnsUpdateUUID;
                 } else {
                     // Hack!!! We are here if the datatable is hidden unselected in an xforms:switch/xforms:case...
-                    var thiss = this;
-                    setTimeout(function() {
-                        thiss.draw(innerTableWidth);
-                    }, 100);
+                    // Store a curried version of draw(), to avoid creating a new closure which can't be garbage
+                    // collected every 100 ms
+                    if (this.delayedDraw == null) this.delayedDraw = _.bind(this.draw, this);
+                    setTimeout(this.delayedDraw, 100);
                 }
             } else {
                 this.updateColumns();
@@ -178,15 +181,11 @@ YAHOO.xbl.fr.Datatable.prototype = {
     },
 
     /**
-     *  Get the request UUID
+     *  Get the request sequence number
      */
     getRequestUUID: function() {
         var form = ORBEON.xforms.Controls.getForm(this.container);
-        var formDynamicState = ORBEON.xforms.Globals.formDynamicState[form.id];
-        if (formDynamicState !== undefined) {
-            this.lastRequestUUID = formDynamicState.value;
-        }
-        return this.lastRequestUUID;
+        return ORBEON.xforms.Document.getFromClientState(form.id, "sequence");
     },
 
     /**
@@ -201,7 +200,6 @@ YAHOO.xbl.fr.Datatable.prototype = {
      *  Is the component displayed?
      */
     isDisplayed: function() {
-
         var region = YAHOO.util.Region.getRegion(this.container);
         return region.left >= 0 && region.top >= 0 && region.left < region.right && region.top < region.bottom;
     },
@@ -219,7 +217,7 @@ YAHOO.xbl.fr.Datatable.prototype = {
         this.scroll = this.scrollV || this.scrollH;
         this.headBodySplit = this.scroll;
 
-        var tables = YAHOO.util.Selector.query('table', this.divContainer, false);
+        var tables = this.divContainer.getElementsByTagName("table");
         this.headerTable = tables[0];
         this.headerTable.style.height = "";
 
@@ -228,9 +226,9 @@ YAHOO.xbl.fr.Datatable.prototype = {
         } else {
             this.table = tables[0];
         }
-    
-        this.thead = YAHOO.util.Selector.query('thead', this.headerTable, true);
-        this.tbody = YAHOO.util.Selector.query('tbody', this.table, true);
+
+        this.thead = ORBEON.util.Dom.getElementByTagName(this.headerTable, 'thead');
+        this.tbody = ORBEON.util.Dom.getElementByTagName(this.table, 'tbody');
         this.getAndSetColumns();
         this.id = this.table.getAttribute('id');
         this.originalWidth = YAHOO.xbl.fr.Datatable.utils.getStyle(this.table.parentNode, 'width', 'auto');
@@ -500,13 +498,7 @@ YAHOO.xbl.fr.Datatable.prototype = {
                 liner = childDiv;
             }
 
-			var widthTest = this.columnWidths[j] - 20
-			if (widthTest < 355 ) {
-				var width = widthTest + 'px' }
-		    else {
-		    	var width = '355px' } 
-
-            // var width = (this.columnWidths[j] - 20) + 'px';
+            var width = (this.columnWidths[j] - 20) + 'px';
             var rule;
             // See _setColumnWidth in YUI datatable.js...
             if (YAHOO.env.ua.ie == 0) {
@@ -515,7 +507,7 @@ YAHOO.xbl.fr.Datatable.prototype = {
                 YAHOO.util.Dom.addClass(liner, className);
                 for (var k = 0; k < this.bodyColumns[j].length; k++) {
                     var cell = this.bodyColumns[j][k];
-                    liner = YAHOO.util.Selector.query('div', cell, true);
+                    liner = ORBEON.util.Dom.getElementByTagName(cell, 'div');
                     YAHOO.util.Dom.addClass(liner, className);
 
                 }
@@ -576,11 +568,10 @@ YAHOO.xbl.fr.Datatable.prototype = {
         var pxWidth;
 
         if (this.originalWidth.indexOf('%') != - 1) {
-
-            if (this.scrollH) {
+            if (this.scrollV) {
                 pxWidth = this.divContainer.clientWidth - 21;
             } else {
-                pxWidth = this.divContainer.clientWidth - 2;
+                pxWidth = this.divContainer.clientWidth;
             }
         } else if (this.originalWidth == 'auto') {
             pxWidth = this.table.clientWidth;
@@ -756,7 +747,7 @@ YAHOO.xbl.fr.Datatable.prototype = {
                 this.reset();
                 this.isInitialized = false;
                 thiss = this;
-                this.draw(this.innerTableWidth);
+                this.draw();
             }
             // Otherwise, we've already done an update for this dynamic state!
         }
@@ -822,7 +813,7 @@ YAHOO.xbl.fr.Datatable.prototype = {
                         } else {
                             // Resizing is supported through dynamic styles
                             var className = 'dt-' + this.id + '-col-' + (icol + 1);
-                            className = className.replace('\$', '-', 'g');
+                            className = className.replace(/\$/g, '-');
                             for (var irow = 0; irow < this.bodyColumns[icol].length; irow++) {
                                 var cell = this.bodyColumns[icol][irow];
                                 var cellDivs = YAHOO.util.Dom.getElementsByClassName('yui-dt-liner', 'div', cell);
@@ -955,7 +946,7 @@ YAHOO.xbl.fr.Datatable.utils = {
 };
 
 YAHOO.xbl.fr.Datatable.colSorter = function (th) {
-    var liner = YAHOO.util.Selector.query('div.yui-dt-liner', th, true);
+    var liner = ORBEON.util.Dom.getElementByTagName(th, "div");
     YAHOO.util.Event.addListener(liner, "click", function (ev) {
         var triggerControl = YAHOO.util.Selector.query('.xforms-trigger:not(.xforms-disabled)', liner, true);
         var a = ORBEON.util.Dom.getElementByTagName(triggerControl, "a");
@@ -1080,3 +1071,4 @@ YAHOO.extend(YAHOO.xbl.fr.Datatable.colResizer, YAHOO.util.DDProxy, {
         this.datatable.table.style.display = '';
     }
 });
+

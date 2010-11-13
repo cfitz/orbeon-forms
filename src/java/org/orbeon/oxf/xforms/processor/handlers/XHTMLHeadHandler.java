@@ -197,9 +197,9 @@ public class XHTMLHeadHandler extends XFormsBaseHandler {
         if (xblStyles != null) {
             for (final Element styleElement: xblStyles) {
                 attributesImpl.clear();
-                if (styleElement.attributeValue("src") != null) {
+                if (styleElement.attributeValue(XFormsConstants.SRC_QNAME) != null) {
                     // xhtml:link
-                    final String[] attributesList = new String[]{"rel", "stylesheet", "href", styleElement.attributeValue("src"), "type", "text/css", "media", styleElement.attributeValue("media")};
+                    final String[] attributesList = new String[]{"rel", "stylesheet", "href", styleElement.attributeValue(XFormsConstants.SRC_QNAME), "type", "text/css", "media", styleElement.attributeValue("media")};
                     ContentHandlerHelper.populateAttributes(attributesImpl, attributesList);
                     helper.element(xhtmlPrefix, XMLConstants.XHTML_NAMESPACE_URI, "link", attributesImpl);
                 } else {
@@ -250,9 +250,9 @@ public class XHTMLHeadHandler extends XFormsBaseHandler {
         if (xblScripts != null) {
             for (final Element scriptElement: xblScripts) {
                 attributesImpl.clear();
-                if (scriptElement.attributeValue("src") != null) {
+                if (scriptElement.attributeValue(XFormsConstants.SRC_QNAME) != null) {
                     // xhtml:script with @src
-                    final String[] attributesList = new String[]{"type", "text/javascript", "src", scriptElement.attributeValue("src")};
+                    final String[] attributesList = new String[]{"type", "text/javascript", "src", scriptElement.attributeValue(XFormsConstants.SRC_QNAME)};
                     ContentHandlerHelper.populateAttributes(attributesImpl, attributesList);
                     helper.element(xhtmlPrefix, XMLConstants.XHTML_NAMESPACE_URI, "script", attributesImpl);
                 } else {
@@ -316,7 +316,7 @@ public class XHTMLHeadHandler extends XFormsBaseHandler {
                         }
                     }
                 }
-    
+
                 // Offline mode
 //                        if (containingDocument.getStaticState().isHasOfflineSupport()) {
 //                            dynamicProperties.put(XFormsProperties.OFFLINE_SUPPORT_PROPERTY, Boolean.TRUE);
@@ -421,7 +421,7 @@ public class XHTMLHeadHandler extends XFormsBaseHandler {
                                 sb.append(", ");
                             } else {
                                 foundModalMessage = true;
-                                sb.append("ORBEON.xforms.Controls.showMessage([");
+                                sb.append("ORBEON.xforms.action.Message.showMessages([");
                             }
                             sb.append("\"");
                             sb.append(XFormsUtils.escapeJavaScript(message.getMessage()));
@@ -483,7 +483,7 @@ public class XHTMLHeadHandler extends XFormsBaseHandler {
 
                 sb.append("\"xforms-server\": \"");
                 sb.append(handlerContext.getExternalContext().getResponse().rewriteResourceURL("/xforms-server", false));
-                
+
                 sb.append("\",\"resources-base\": \"");
                 sb.append(handlerContext.getExternalContext().getResponse().rewriteResourceURL("/", false));
                 sb.append('"');
@@ -572,10 +572,10 @@ public class XHTMLHeadHandler extends XFormsBaseHandler {
 
                 sb.append(']');
             }
-            
+
             // Output server events
             if (hasServerEvents) {
-                if (hasInitControls || hasKeyListeners)
+                if (hasPaths || hasInitControls || hasKeyListeners)
                     sb.append(',');
 
                 sb.append("\"server-events\":[");
