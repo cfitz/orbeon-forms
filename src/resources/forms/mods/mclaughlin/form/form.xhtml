@@ -17,8 +17,7 @@
 	xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xxi="http://orbeon.org/oxf/xml/xinclude"
 	xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
 	xmlns:mods="http://www.loc.gov/mods/v3" xmlns:fr="http://orbeon.org/oxf/xml/form-runner"
-	xmlns:dl="http://dl.lib.brown.edu/editor/mods/dl"
-	xmlns:xlink="http://www.w3.org/1999/xlink">
+	xmlns:dl="http://dl.lib.brown.edu/editor/mods/dl" xmlns:xlink="http://www.w3.org/1999/xlink">
 	<head>
 
 		<title>Metadata Toolkit</title>
@@ -142,10 +141,11 @@
 
 
 				<xforms:bind nodeset="mods:relatedItem/mods:identifier"/>
-				<xforms:bind nodeset="mods:relatedItem/@type" />
-				<xforms:bind nodeset="mods:relatedItem/@displayLabel" />
-				<xforms:bind nodeset="mods:relatedItem/@xlink:href" calculate="concat('https://mdtoolkit-dev.stanford.edu/orbeon/fr/mods/mclaughlin/edit/', 'mods:identifier[@displayLabel = ''SU DRUID'']')"/>
-				
+				<xforms:bind nodeset="mods:relatedItem/@type"/>
+				<xforms:bind nodeset="mods:relatedItem/@displayLabel"/>
+				<xforms:bind nodeset="mods:relatedItem/@xlink:href"
+					calculate="concat('https://mdtoolkit-dev.stanford.edu/orbeon/fr/mods/mclaughlin/edit/', 'mods:identifier[@displayLabel = ''SU DRUID'']')"/>
+
 			</xforms:bind>
 
 
@@ -201,24 +201,24 @@
 			<xforms:label>Metadata Toolkit</xforms:label>
 			<xhtml:img src="/apps/fr/style/sulair-banner.gif"/>
 			<fr:body>
-				
+
 				<!-- XFORMS Repeats have a hard-time showing up in the summary table. This section exposes values to be populated in the 
-					form's summary table --> 
-				<div style="display:none" >
-				
-					
-							<xforms:input class="fr-summary fr-search fr-email-subject"  ref="mods:identifier[@displayLabel = 'entry_number']">
-								<xforms:label>Entry Number</xforms:label>
-							</xforms:input>
-					<xforms:input class="fr-summary fr-search fr-email-subject"  ref="mods:titleInfo/mods:title">
+					form's summary table -->
+				<div style="display:none">
+					<xforms:input class="fr-summary fr-search fr-email-subject"
+						ref="mods:identifier[@displayLabel = 'entry_number']">
+						<xforms:label>Entry Number</xforms:label>
+					</xforms:input>
+					<xforms:input class="fr-summary fr-search fr-email-subject"
+						ref="mods:titleInfo/mods:title">
 						<xforms:label>Title</xforms:label>
 					</xforms:input>
-					<xforms:input class="fr-summary fr-search fr-email-subject"  ref="mods:name/mods:namePart">
+					<xforms:input class="fr-summary fr-search fr-email-subject"
+						ref="mods:name/mods:namePart">
 						<xforms:label>Name</xforms:label>
 					</xforms:input>
-				
 				</div>
-				
+
 				<!-- BEGIN DRUID -->
 				<fr:section id="druid-section" bind="fr-form-binds">
 					<xforms:label ref="$form-resources/detail/titles/druid"/>
@@ -356,15 +356,19 @@
 											<fr:td>
 												<div class="item-row">
 												<div class="item-cell">
-												<xforms:input incremental="true"
-												ref="@displayLabel">
+												<xforms:select1 ref="@displayLabel">
 												<xforms:label
 												ref="$form-resources/detail/labels/label"/>
 												<xforms:alert
 												ref="$form-resources/detail/alerts/label"/>
 												<xforms:help
 												ref="$form-resources/detail/help/label"/>
-												</xforms:input>
+												<xforms:itemset
+												nodeset="$form-resources/lists/identifierDisplayLabels/instance//(section|item)">
+												<xforms:label ref="label"/>
+												<xforms:value ref="value"/>
+												</xforms:itemset>
+												</xforms:select1>
 												</div>
 												<div class="item-cell">
 												<xforms:input incremental="true" ref=".">
@@ -407,9 +411,10 @@
 											<fr:td>
 												<div class="item-row">
 												<div class="item-cell">
-													<a href="https://mdtoolkit.stanford.edu/ops/fr/mods/mclaughlin/edit/{replace(mods:identifier[@displayLabel = 'SU DRUID'], 'druid:', '')}" target="_blank"><img
-												src="/apps/fr/style/images/silk/eye.png"
-												/></a>
+												<a
+												href="https://mdtoolkit.stanford.edu/ops/fr/mods/mclaughlin/edit/{replace(mods:identifier[@displayLabel = 'SU DRUID'], 'druid:', '')}"
+												target="_blank"><img
+												src="/apps/fr/style/images/silk/eye.png"/></a>
 												</div>
 												<div class="item-cell">
 												<xforms:select1 ref="@type" class="drop-down">
@@ -459,7 +464,8 @@
 												</xforms:input>
 												</div>
 												</xforms:group>
-												</div> </fr:td>
+												</div>
+											</fr:td>
 										</fr:tr>
 									</fr:body>
 								</fr:repeat>
@@ -642,12 +648,27 @@
 												</xforms:itemset>
 												</xforms:select1>
 												</div>
+												<div class="item-cell">
+												<xforms:select1 ref="@authority">
+												<xforms:label
+												ref="$form-resources/detail/titles/nameauthority"/>
+												<xforms:alert
+												ref="$form-resources/detail/alerts/nameauthority"/>
+												<xforms:help
+												ref="$form-resources/detail/help/nameauthority"/>
+												<xforms:itemset
+												nodeset="$form-resources/lists/nameauthority/instance//(section|item)">
+												<xforms:label ref="label"/>
+												<xforms:value ref="value"/>
+												</xforms:itemset>
+												</xforms:select1>
+												</div>
 												</div>
 												<div class="nested-repeatable-header-cell">
 												<div class="nested-repeatable-header-cell">
 												<xforms:group ref=".">
-												<xforms:insert ev:event="DOMActivate"
-												nodeset="./mods:namePart" position="last()"
+												<xforms:insert ev:event="DOMActivate" context="."
+												position="after" at="namePart-repeat"
 												origin="instance('mods-insert')/insert[@name = 'name']/mods:name/mods:namePart"/>
 												<fr:button bind="buttons-triggers">
 												<xforms:label>
@@ -714,8 +735,8 @@
 												<!-- name role -->
 												<div class="nested-repeatable-header-cell">
 												<xforms:group ref=".">
-												<xforms:insert ev:event="DOMActivate"
-												nodeset="./mods:role" position="last()"
+												<xforms:insert ev:event="DOMActivate" context="."
+												position="after" at="nameRole-repeat"
 												origin="instance('mods-insert')/insert[@name = 'name']/mods:name/mods:role"/>
 												<fr:button id="control-2-control"
 												bind="buttons-triggers">
@@ -944,7 +965,8 @@
 												<!-- Creation Date -->
 												<xforms:repeat
 												nodeset="mods:dateCreated[position()]"
-												id="originInfo-dateCreated"><div class="item-row">
+												id="originInfo-dateCreated">
+												<div class="item-row">
 												<div class="repeat-container">
 												<div class="repeat-container-item">
 												<div class="item-row">
@@ -1432,6 +1454,135 @@
 					</fr:grid>
 				</fr:section>
 				<!-- END ORIGIN INFO -->
+				<!-- START COORDINATE -->
+				
+				<fr:section id="coordinates" bind="fr-form-binds">
+					<xforms:label ref="$form-resources/detail/titles/coordinates"/>
+					<xforms:help ref="$form-resources/detail/help/coordinates"/>
+					<fr:grid>
+						<fr:tr>
+							<fr:td>
+														
+								<fr:repeat nodeset="mods:subject[position()][child::node()[ name() = 'mods:cartographics']]"
+									id="cartographics-repeat[position()]"
+									origin="xxforms:instance('mods-insert')/insert[@name = 'subjectcartographics']/child::*"
+									appearance="xxforms:table">
+									<fr:body>
+										<fr:tr>
+											<fr:td>
+												<xforms:group ref=".">
+												<xforms:label class="add-xforms-label"
+												value="concat('Add ', $form-resources/detail/titles/coordinates)"
+												/>
+												</xforms:group>
+											</fr:td>
+										</fr:tr>
+										<fr:tr>
+											<fr:td>
+												<div class="button-row">
+												<!--ADD authority-->
+												<div class="item-cell">
+												<xforms:group ref=".">
+												<xforms:insert ev:event="DOMActivate" context="."
+												origin="instance('mods-insert')/insert[@name =  'subject']/mods:subject/@authority"/>
+												<fr:button bind="buttons-triggers">
+												<xforms:label>
+												<img src="/apps/fr/style/images/silk/add.png"
+												alt="Add"/>
+												<span class="label">Authority</span>
+												</xforms:label></fr:button>
+												</xforms:group>
+												</div>
+												</div>
+												<!-- END BUTTON -->
+												<!-- Authority -->
+												<div class="item-row">
+												<div class="item-cell">
+												<xforms:select1 ref="@authority"
+												id="coordinates-authority-select" class="drop-down">
+												<xforms:label
+												ref="$form-resources/detail/titles/authority"/>
+												<xforms:alert
+												ref="$form-resources/detail/alerts/authority"/>
+												<xforms:help
+												ref="$form-resources/detail/help/authority"/>
+												<xforms:itemset
+												nodeset="$form-resources/lists/authority/instance//(section|item)">
+												<xforms:label ref="label"/>
+												<xforms:value ref="value"/>
+												</xforms:itemset>
+												</xforms:select1>
+												</div>
+												</div>
+												<!-- START SUBJECT CARTO -->
+												<xforms:repeat nodeset="mods:cartographics[position()]"
+												id="coordinate-cartographics">
+												<div class="item-row">
+												<div class="repeat-container">
+												<div class="repeat-container-item">
+												<div class="item-row">
+												<div class="repeat-remove">
+												<xforms:group ref=".">
+												<xforms:delete ev:event="DOMActivate" context="."
+												nodeset=".[position()]"/>
+												<xforms:trigger appearance="minimal" ref=".">
+												<xforms:label>
+												<img src="/apps/fr/style/remove.gif"
+												alt="Remove Cartographics"/>
+												</xforms:label>
+												</xforms:trigger>
+												</xforms:group>
+												</div>
+												<div class="item-cell">
+												<xforms:select1 ref="mods:coordinates">
+												<xforms:label
+												ref="$form-resources/detail/titles/coordinates"/>
+												<xforms:alert
+												ref="$form-resources/detail/alerts/coordinates"/>
+												<xforms:help
+												ref="$form-resources/detail/help/coordinates"/>
+												<xforms:itemset
+												nodeset="$form-resources/lists/coordinates/instance//(section|item)">
+												<xforms:label ref="label"/>
+												<xforms:value ref="value"/>
+												</xforms:itemset>
+												</xforms:select1>
+												</div>
+												<div class="item-cell">
+												<xforms:input incremental="true" ref="mods:scale">
+												<xforms:label
+												ref="$form-resources/detail/titles/scale"/>
+												<xforms:alert
+												ref="$form-resources/detail/alerts/scale"/>
+												<xforms:help
+												ref="$form-resources/detail/help/scale"/>
+												</xforms:input>
+												</div>
+												<div class="item-cell">
+												<xforms:input incremental="true"
+												ref="mods:projection">
+												<xforms:label
+												ref="$form-resources/detail/titles/projection"/>
+												<xforms:alert
+												ref="$form-resources/detail/alerts/projection"/>
+												<xforms:help
+												ref="$form-resources/detail/help/projection"/>
+												</xforms:input>
+												</div>
+												</div>
+												</div>
+												</div>
+												</div>
+												</xforms:repeat>
+											</fr:td>
+										</fr:tr>
+									</fr:body>
+									</fr:repeat>
+							</fr:td>
+						</fr:tr>
+					</fr:grid>
+				</fr:section>
+				<!-- END COORDINATE DATA -->
 				<!-- START SUBJECT -->
 				<fr:section id="subject" bind="fr-form-binds">
 					<xforms:label ref="$form-resources/detail/titles/subject"/>
@@ -1439,7 +1590,7 @@
 					<fr:grid>
 						<fr:tr>
 							<fr:td>
-								<fr:repeat nodeset="mods:subject[position()]"
+								<fr:repeat nodeset="mods:subject[position()][count(child::*) = 0 or child::*[ name() != 'mods:cartographics']]"
 									id="subject-repeat[position()]"
 									origin="xxforms:instance('mods-insert')/insert[@name = 'subject']/child::*"
 									appearance="xxforms:table">
@@ -1540,22 +1691,40 @@
 												</xforms:label></fr:button>
 												</xforms:group>
 												</div>
-												<!--ADD cartographic-->
+												<!--ADD authority-->
 												<div class="item-cell">
 												<xforms:group ref=".">
 												<xforms:insert ev:event="DOMActivate" context="."
-												position="after" at="subject-cartographic"
-												origin="instance('mods-insert')/insert[@name =  'cartographics']/child::*"/>
+												origin="instance('mods-insert')/insert[@name =  'subject']/mods:subject/@authority"/>
 												<fr:button bind="buttons-triggers">
 												<xforms:label>
 												<img src="/apps/fr/style/images/silk/add.png"
 												alt="Add"/>
-												<span class="label">Cartographic</span>
+												<span class="label">Authority</span>
 												</xforms:label></fr:button>
 												</xforms:group>
 												</div>
 												</div>
 												<!-- END BUTTON -->
+												<!-- Authority -->
+												<div class="item-row">
+												<div class="item-cell">
+												<xforms:select1 ref="@authority"
+												id="subject-authority-select" class="drop-down">
+												<xforms:label
+												ref="$form-resources/detail/titles/authority"/>
+												<xforms:alert
+												ref="$form-resources/detail/alerts/authority"/>
+												<xforms:help
+												ref="$form-resources/detail/help/authority"/>
+												<xforms:itemset
+												nodeset="$form-resources/lists/authority/instance//(section|item)">
+												<xforms:label ref="label"/>
+												<xforms:value ref="value"/>
+												</xforms:itemset>
+												</xforms:select1>
+												</div>
+												</div>
 												<!-- subject temporal -->
 												<xforms:repeat nodeset="mods:temporal[position()]"
 												id="subject-date">
@@ -1888,68 +2057,13 @@
 												</div>
 												</div>
 												</div></div>
+												
 												</xforms:repeat>
+												
 												<!-- END SUBJECT GEOGRAPHIC -->
-												<!-- START SUBJECT CARTO -->
-												<xforms:repeat
-												nodeset="mods:cartographics[position()]"
-												id="subject-cartographics">
-												<div class="item-row">
-												<div class="repeat-container">
-												<div class="repeat-container-item">
-												<div class="item-row">
-												<div class="repeat-remove">
-												<xforms:group ref=".">
-												<xforms:delete ev:event="DOMActivate" context="."
-												nodeset=".[position()]"/>
-												<xforms:trigger appearance="minimal" ref=".">
-												<xforms:label>
-												<img src="/apps/fr/style/remove.gif"
-												alt="Remove Cartographics"/>
-												</xforms:label>
-												</xforms:trigger>
-												</xforms:group>
-												</div>
-												<div class="item-cell">
-												<xforms:input incremental="true"
-												ref="mods:coordinates">
-												<xforms:label
-												ref="$form-resources/detail/titles/coordinates"/>
-												<xforms:alert
-												ref="$form-resources/detail/alerts/coordinates"/>
-												<xforms:help
-												ref="$form-resources/detail/help/coordinates"/>
-												</xforms:input>
-												</div>
-												<div class="item-cell">
-												<xforms:input incremental="true" ref="mods:scale">
-												<xforms:label
-												ref="$form-resources/detail/titles/scale"/>
-												<xforms:alert
-												ref="$form-resources/detail/alerts/scale"/>
-												<xforms:help
-												ref="$form-resources/detail/help/scale"/>
-												</xforms:input>
-												</div>
-												<div class="item-cell">
-												<xforms:input incremental="true"
-												ref="mods:projection">
-												<xforms:label
-												ref="$form-resources/detail/titles/projection"/>
-												<xforms:alert
-												ref="$form-resources/detail/alerts/projection"/>
-												<xforms:help
-												ref="$form-resources/detail/help/projection"/>
-												</xforms:input>
-												</div>
-												</div>
-												</div>
-												</div>
-												</div>
-												</xforms:repeat>
 											</fr:td>
 										</fr:tr>
-									</fr:body>
+									</fr:body>		
 								</fr:repeat>
 							</fr:td>
 						</fr:tr>
@@ -2027,9 +2141,12 @@
 										</fr:tr>
 										<fr:tr>
 											<fr:td>
+												<xforms:switch>
+												<xforms:case id="code" selected="true">
 												<div class="item-row">
 												<div class="item-cell">
-												<xforms:select1 ref="mods:languageTerm"
+												<xforms:select1
+												ref="mods:languageTerm[@type = 'code']"
 												class="drop-down">
 												<xforms:label
 												ref="$form-resources/detail/titles/language"
@@ -2045,7 +2162,50 @@
 												</xforms:itemset>
 												</xforms:select1>
 												</div>
+												<div class="item-cell">
+												<xforms:trigger>
+												<xforms:label>Enter A Language Not Found On The
+												List</xforms:label>
+												<xforms:delete ev:event="DOMActivate"
+												nodeset="mods:languageTerm[@type = 'code']"/>
+												<xforms:insert ev:event="DOMActivate" context="."
+												position="after"
+												origin="instance('mods-insert')/insert[@name = 'language']/mods:language/mods:languageTerm[@type = 'text']"/>
+												<xforms:toggle ev:event="DOMActivate" case="text"
+												/>
+												</xforms:trigger>
 												</div>
+												</div>
+												</xforms:case>
+												<xforms:case id="text">
+												<div class="item-row">
+												<div class="item-cell">
+												<xforms:input incremental="true"
+												ref="mods:languageTerm[ @type = 'text' ]">
+												<xforms:label
+												ref="$form-resources/detail/titles/language"
+												class="forms-hidden"/>
+												<xforms:alert
+												ref="$form-resources/detail/alerts/language"/>
+												<xforms:help
+												ref="$form-resources/detail/help/language"/>
+												</xforms:input>
+												</div>
+												<div class="item-cell">
+												<xforms:trigger>
+												<xforms:label>Go Back To List</xforms:label>
+												<xforms:delete ev:event="DOMActivate"
+												nodeset="mods:languageTerm[@type = 'text']"/>
+												<xforms:insert ev:event="DOMActivate" context="."
+												position="after"
+												origin="instance('mods-insert')/insert[@name = 'language']/mods:language/mods:languageTerm[@type = 'code']"/>
+												<xforms:toggle ev:event="DOMActivate" case="code"
+												/>
+												</xforms:trigger>
+												</div>
+												</div>
+												</xforms:case>
+												</xforms:switch>
 											</fr:td>
 										</fr:tr>
 									</fr:body>

@@ -161,6 +161,35 @@
                 </div>
                 
 
+
+                <!-- BEGIN DRUID -->
+				<fr:section id="druid-section" bind="fr-form-binds">
+					<xforms:label ref="$form-resources/detail/titles/druid"/>
+					<xforms:help ref="$form-resources/detail/help/druid"/>
+					<div class="repeat-container">
+						<div class="repeat-container-body">
+							<div class="repeat-container-item">
+								<div class="item-row">
+									<xforms:group ref="msIdentifier">
+                                        <xforms:group ref="idno">
+										<div class="item-cell bordered">
+											<xforms:output value="."/>
+										</div>
+										<div class="item-cell barcode">
+											<xforms:output mediatype="text/html"
+												value="concat('&lt;img', ' class=&#34;mods-barcode&#34;', ' src=&#34;/barcode/', replace(., 'druid:', '') ,'&#34; /&gt;')"
+											/>
+										</div>
+										<div style="clear:both"/>
+                                            </xforms:group>
+									</xforms:group>
+								</div>
+							</div>
+						</div>
+					</div>
+				</fr:section>
+				<!-- END DRUID -->
+
                 <!-- mdIdentifier -->
                 <fr:section id="manuscript-identifier" bind="fr-form-binds">
 

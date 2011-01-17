@@ -147,11 +147,6 @@
                     <form/>
                     <!-- Free text search query -->
                        <query/>
-					<!-- <query name="title" label="title" control="input" path="mods:titleInfo[1]/mods:title[1]" type="xs:string"  search-field="false" match="substring" xmlns:saxon="http://saxon.sf.net/"  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
-					<query name="name" label="name" control="input" path="mods:name[1]/mods:namePart[1]" type="xs:string"  search-field="false" match="substring" xmlns:saxon="http://saxon.sf.net/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
-				<query name="identifier" label="identifier" control="input" path="mods:identifier[1]" type="xs:string"   search-field="false" match="substring" xmlns:saxon="http://saxon.sf.net/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
-				     -->
-                 
                     <!-- Paging -->
                     <page-size>5</page-size>
                     <page-number>1</page-number>
@@ -332,14 +327,14 @@
                 <!-- Handle offline mode -->
                 <!--<xxforms:script ev:event="xforms-submit-done">-->
                     <!--if (ORBEON.xforms.Document.isOfflineAvailable()) {-->
-                        <!--var noFormDataDiv = ORBEON.util.Dom.getElementById("fr-no-form-data");-->
+                        <!--var noFormDataDiv = ORBEON.util.Dom.get("fr-no-form-data");-->
                         <!--// If the table is empty, skip this-->
-                        <!--if (ORBEON.util.Dom.hasClass(noFormDataDiv, "xforms-disabled")) {-->
+                        <!--if (YAHOO.util.Dom.hasClass(noFormDataDiv, "xforms-disabled")) {-->
                             <!--var summaryIndex = 1;-->
                             <!--while (true) {-->
                                 <!--// Check if there is an item at this index; otherwise stop.-->
                                 <!--var nameControlId = "fr-document-name" + XFORMS_SEPARATOR_1 + summaryIndex;-->
-                                <!--if (ORBEON.util.Dom.getElementById(nameControlId) == null) break;-->
+                                <!--if (ORBEON.util.Dom.get(nameControlId) == null) break;-->
                                 <!--// Get URL for edit page of this form-->
                                 <!--var name = ORBEON.xforms.Document.getValue(nameControlId);-->
                                 <!--var url = window.location.href + "/" + name + "/edit";-->
@@ -553,7 +548,7 @@
                         <div class="fr-clear"/>
                     </xforms:group>
 
-                    <xforms:group ref="instance('fr-summary-instance')">
+                    <xforms:group ref="instance('fr-summary-instance')" xxforms:update="full">
 
                         <!-- Stop propagation of all the UI events here because we don't care about validity and visited properties -->
                         <xforms:action ev:event="#all" ev:propagate="stop"/>
@@ -778,7 +773,7 @@
                         <xhtml:span class="fr-button">
                             <!-- New button -->
                             <xforms:group ref="if (. = 'new') then instance('fr-summary-triggers-instance')/new else ()">
-                                <fr:button>
+                                <fr:button ref=".">
                                     <xforms:label>
                                         <!--<xhtml:img src="/apps/fr/style/add.gif" alt=""/>-->
                                         <xhtml:img width="16" height="16" src="/apps/fr/style/images/pixelmixer/plus_16.png" alt=""/>
@@ -791,7 +786,7 @@
                             </xforms:group>
                             <!-- Print button -->
                             <xforms:group ref="if (. = 'print') then instance('fr-summary-triggers-instance')/view else ()">
-                                <fr:button>
+                                <fr:button ref=".">
                                     <xforms:label>
                                         <xhtml:img width="16" height="16" src="/apps/fr/style/images/silk/eye.png" alt=""/>
                                         <xhtml:span><xforms:output value="$fr-resources/detail/labels/review"/></xhtml:span>
@@ -807,7 +802,7 @@
                             </xforms:group>
                             <!-- PDF button -->
                             <xforms:group ref="if (. = 'pdf') then instance('fr-summary-triggers-instance')/pdf else ()">
-                                <fr:button>
+                                <fr:button ref=".">
                                     <xforms:label>
                                         <xhtml:img width="16" height="16" src="/apps/fr/style/pdf.png" alt=""/>
                                         <xhtml:span><xforms:output value="$fr-resources/detail/labels/print-pdf"/></xhtml:span>
@@ -821,7 +816,7 @@
                             </xforms:group>
                             <!-- Test button -->
                             <xforms:group ref="if (. = 'test') then instance('fr-summary-triggers-instance')/view else ()">
-                                <fr:button>
+                                <fr:button ref=".">
                                     <xforms:label>
                                         <xhtml:img width="16" height="16" src="/forms/orbeon/builder/images/play.png" alt="" title="Test Form"/>
                                         <xhtml:span>Test</xhtml:span>
@@ -835,43 +830,43 @@
                             </xforms:group>
                             <!-- Delete button -->
                             <xforms:group ref="if (. = 'delete') then instance('fr-summary-triggers-instance')/delete else ()">
-                                <fr:button>
+                                <fr:button ref=".">
                                     <xforms:label>
                                         <!--<xhtml:img src="/apps/fr/style/delete.gif" alt=""/>-->
                                         <xhtml:img width="16" height="16" src="/apps/fr/style/images/pixelmixer/delete_16.png" alt=""/>
                                         <xhtml:span><xforms:output ref="$fr-resources/summary/labels/delete-form"/></xhtml:span>
                                     </xforms:label>
-                                    <xforms:action ev:event="DOMActivate">
-                                        <!-- Parse the selected rows -->
-                                        <xforms:action xxforms:iterate="tokenize(instance('fr-selection-instance'), '\s+')">
-                                            <!--<xxforms:variable name="position" select="." as="xs:integer"/>-->
-                                            <xxforms:variable name="document-name" select="." as="xs:string"/>
-                                            <xforms:dispatch name="fr-delete-data" target="fr-persistence-model">
-                                                <xxforms:context name="document-id" select="$document-name"/>
-                                            </xforms:dispatch>
-                                        </xforms:action>
-                                        <!-- Reset search selection and navigation -->
-                                        <xforms:setvalue ref="instance('fr-selection-instance')" value="''"/>
-                                        <xforms:setindex repeat="documents-repeat" index="1"/>
-                                        <xforms:setvalue ref="instance('fr-search-instance')/page-number" value="1"/>
-                                        <!-- Update search -->
-                                        <xforms:send submission="search-submission"/>
-                                    </xforms:action>
+                                    <!-- Open delete confirmation dialog -->
+                                    <xforms:dispatch ev:event="DOMActivate" name="fr-show" targetid="delete-confirmation-dialog"/>
                                 </fr:button>
                             </xforms:group>
                         </xhtml:span>
                     </xforms:repeat>
                 </xforms:group>
 
-                <!-- TODO
-                <xforms:trigger>
-                    <xforms:label>
-                        <xhtml:img src="/apps/fr/style/view-xml.gif" alt="XML"/>
-                        <xforms:output ref="$fr-resources/summary/labels/view-xml"/>
-                    </xforms:label>
-                    <xforms:dispatch ev:event="DOMActivate" target="fr-persistence-model" name="fr-summary-xml"/>
-                </xforms:trigger>
-                -->
+                <!-- Delete confirmation dialog -->
+                <fr:alert-dialog id="delete-confirmation-dialog">
+                    <fr:label ref="$fr-resources/summary/labels/delete-form"/>
+                    <fr:message><xforms:output value="$fr-resources/summary/messages/delete-confirmation"/></fr:message>
+                    <fr:negative-choice/>
+                    <fr:positive-choice>
+                        <xforms:action ev:event="DOMActivate">
+                            <!-- Parse the selected rows -->
+                            <xforms:action xxforms:iterate="tokenize(instance('fr-selection-instance'), '\s+')">
+                                <xxforms:variable name="document-name" select="." as="xs:string"/>
+                                <xforms:dispatch name="fr-delete-data" target="fr-persistence-model">
+                                    <xxforms:context name="document-id" select="$document-name"/>
+                                </xforms:dispatch>
+                            </xforms:action>
+                            <!-- Reset search selection and navigation -->
+                            <xforms:setvalue ref="instance('fr-selection-instance')" value="''"/>
+                            <xforms:setindex repeat="documents-repeat" index="1"/>
+                            <xforms:setvalue ref="instance('fr-search-instance')/page-number" value="1"/>
+                            <!-- Update search -->
+                            <xforms:send submission="search-submission"/>
+                        </xforms:action>
+                    </fr:positive-choice>
+                </fr:alert-dialog>
             </fr:bottom>
         </fr:view>
     </body>

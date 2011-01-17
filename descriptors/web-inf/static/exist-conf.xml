@@ -468,7 +468,7 @@
         <job type="system" name="backup"
             class="org.exist.storage.BackupSystemTask"
             cron-trigger="0 0 */6 * * ?">
-            <parameter name="dir" value="/usr/share/tomcat5/logs/exist-backup/"/>
+            <parameter name="dir" value="/home/lyberadmin/exist-backup/"/>
             <parameter name="suffix" value=".zip"/>
             <parameter name="prefix" value="backup-"/>
             <parameter name="collection" value="/db"/>

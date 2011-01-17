@@ -2,5 +2,113 @@
   <profile version="1.0" is_locked="false">
     <option name="myName" value="Project Default" />
     <option name="myLocal" value="false" />
+    <inspection_tool class="BooleanConstructor" level="WARNING" enabled="false" />
+    <inspection_tool class="CloneCallsSuperClone" level="WARNING" enabled="false" />
+    <inspection_tool class="CloneDeclaresCloneNotSupported" level="WARNING" enabled="false" />
+    <inspection_tool class="ConstantConditions" level="WARNING" enabled="false">
+      <option name="SUGGEST_NULLABLE_ANNOTATIONS" value="false" />
+      <option name="DONT_REPORT_TRUE_ASSERT_STATEMENTS" value="false" />
+    </inspection_tool>
+    <inspection_tool class="ContinueOrBreakFromFinallyBlock" level="WARNING" enabled="false" />
+    <inspection_tool class="CssInvalidElementInspection" level="ERROR" enabled="false" />
+    <inspection_tool class="EmptyCatchBlock" level="WARNING" enabled="false">
+      <option name="m_includeComments" value="true" />
+      <option name="m_ignoreTestCases" value="true" />
+      <option name="m_ignoreIgnoreParameter" value="true" />
+    </inspection_tool>
+    <inspection_tool class="EmptyFinallyBlock" level="WARNING" enabled="false" />
+    <inspection_tool class="EmptyStatementBody" level="WARNING" enabled="false">
+      <option name="m_reportEmptyBlocks" value="false" />
+    </inspection_tool>
+    <inspection_tool class="EmptyTryBlock" level="WARNING" enabled="false" />
+    <inspection_tool class="ExtendsObject" level="WARNING" enabled="false" />
+    <inspection_tool class="FacesModelInspection" level="INFO" enabled="true" />
+    <inspection_tool class="FieldHidesSuperclassField" level="WARNING" enabled="false">
+      <option name="m_ignoreInvisibleFields" value="false" />
+    </inspection_tool>
+    <inspection_tool class="FinalPrivateMethod" level="WARNING" enabled="false" />
+    <inspection_tool class="FinalStaticMethod" level="WARNING" enabled="false" />
+    <inspection_tool class="FinalizeCallsSuperFinalize" level="WARNING" enabled="false">
+      <option name="m_ignoreForObjectSubclasses" value="false" />
+    </inspection_tool>
+    <inspection_tool class="ForCanBeForeach" level="WARNING" enabled="false">
+      <option name="REPORT_INDEXED_LOOP" value="true" />
+    </inspection_tool>
+    <inspection_tool class="InfiniteLoopStatement" level="WARNING" enabled="false" />
+    <inspection_tool class="InfiniteRecursion" level="WARNING" enabled="false" />
+    <inspection_tool class="InnerClassVariableHidesOuterClassVariable" level="WARNING" enabled="false">
+      <option name="m_ignoreInvisibleFields" value="false" />
+    </inspection_tool>
+    <inspection_tool class="JSDeprecatedSymbols" level="INFO" enabled="false" />
+    <inspection_tool class="JavaDoc" level="WARNING" enabled="false">
+      <option name="TOP_LEVEL_CLASS_OPTIONS">
+        <value>
+          <option name="ACCESS_JAVADOC_REQUIRED_FOR" value="none" />
+          <option name="REQUIRED_TAGS" value="" />
+        </value>
+      </option>
+      <option name="INNER_CLASS_OPTIONS">
+        <value>
+          <option name="ACCESS_JAVADOC_REQUIRED_FOR" value="none" />
+          <option name="REQUIRED_TAGS" value="" />
+        </value>
+      </option>
+      <option name="METHOD_OPTIONS">
+        <value>
+          <option name="ACCESS_JAVADOC_REQUIRED_FOR" value="none" />
+          <option name="REQUIRED_TAGS" value="@return@param@throws or @exception" />
+        </value>
+      </option>
+      <option name="FIELD_OPTIONS">
+        <value>
+          <option name="ACCESS_JAVADOC_REQUIRED_FOR" value="none" />
+          <option name="REQUIRED_TAGS" value="" />
+        </value>
+      </option>
+      <option name="IGNORE_DEPRECATED" value="false" />
+      <option name="IGNORE_JAVADOC_PERIOD" value="true" />
+      <option name="myAdditionalJavadocTags" value="" />
+    </inspection_tool>
+    <inspection_tool class="LoopStatementsThatDontLoop" level="WARNING" enabled="false" />
+    <inspection_tool class="ManualArrayCopy" level="WARNING" enabled="false" />
+    <inspection_tool class="NoExplicitFinalizeCalls" level="WARNING" enabled="false" />
+    <inspection_tool class="ObjectEquality" level="WARNING" enabled="false">
+      <option name="m_ignoreEnums" value="false" />
+      <option name="m_ignoreClassObjects" value="false" />
+      <option name="m_ignorePrivateConstructors" value="false" />
+    </inspection_tool>
+    <inspection_tool class="ParameterHidingMemberVariable" level="WARNING" enabled="false">
+      <option name="m_ignoreInvisibleFields" value="false" />
+      <option name="m_ignoreStaticMethodParametersHidingInstanceFields" value="false" />
+      <option name="m_ignoreForConstructors" value="false" />
+      <option name="m_ignoreForPropertySetters" value="false" />
+      <option name="m_ignoreForAbstractMethods" value="false" />
+    </inspection_tool>
+    <inspection_tool class="PointlessArithmeticExpression" level="WARNING" enabled="false">
+      <option name="m_ignoreExpressionsContainingConstants" value="false" />
+    </inspection_tool>
+    <inspection_tool class="RedundantCast" level="WARNING" enabled="false" />
+    <inspection_tool class="ReturnFromFinallyBlock" level="WARNING" enabled="false" />
+    <inspection_tool class="StringConstructor" level="WARNING" enabled="false">
+      <option name="ignoreSubstringArguments" value="false" />
+    </inspection_tool>
+    <inspection_tool class="StringEquality" level="WARNING" enabled="false" />
+    <inspection_tool class="StringToString" level="WARNING" enabled="false" />
+    <inspection_tool class="SynchronizeOnNonFinalField" level="WARNING" enabled="false" />
+    <inspection_tool class="ThrowFromFinallyBlock" level="WARNING" enabled="false" />
+    <inspection_tool class="TrivialIf" level="WARNING" enabled="false" />
+    <inspection_tool class="UNCHECKED_WARNING" level="WARNING" enabled="false" />
+    <inspection_tool class="UnnecessaryBoxing" level="WARNING" enabled="false" />
+    <inspection_tool class="UnnecessaryReturn" level="WARNING" enabled="false" />
+    <inspection_tool class="UnnecessarySemicolon" level="WARNING" enabled="false" />
+    <inspection_tool class="UnnecessaryTemporaryOnConversionFromString" level="WARNING" enabled="false" />
+    <inspection_tool class="UnnecessaryTemporaryOnConversionToString" level="WARNING" enabled="false" />
+    <inspection_tool class="UnnecessaryUnboxing" level="WARNING" enabled="false" />
+    <inspection_tool class="UnusedAssignment" level="WARNING" enabled="false">
+      <option name="REPORT_PREFIX_EXPRESSIONS" value="false" />
+      <option name="REPORT_POSTFIX_EXPRESSIONS" value="true" />
+      <option name="REPORT_REDUNDANT_INITIALIZER" value="true" />
+    </inspection_tool>
+    <inspection_tool class="UnusedLabel" level="WARNING" enabled="false" />
   </profile>
 </component>

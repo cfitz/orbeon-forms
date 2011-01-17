@@ -59,6 +59,7 @@
                 <item>Item</item>
                 <folder>Folder</folder>
                 <box>Box</box>
+                <druid>Druid</druid>
             </titles>
 
             <!-- Triggers labels -->
