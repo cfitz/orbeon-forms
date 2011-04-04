@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mods:mods          xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+                    xmlns:mods="http://www.loc.gov/mods/v3"
+                    xmlns:xforms="http://www.w3.org/2002/xforms">       
+    <mods:identifier type="local" displayLabel="SU DRUID">1234</mods:identifier>
+     <mods:identifier type="local" displayLabel="book_number"></mods:identifier>    
+    <mods:titleInfo type='main'>        
+        <mods:nonSort />
+        <mods:title />
+        <mods:subTitle />
+        <mods:partNumber />
+        <mods:partName /> 
+    </mods:titleInfo> 
+    <mods:typeOfResource>cartographic</mods:typeOfResource>
+    <mods:originInfo>
+        <mods:place><mods:placeTerm type="text"></mods:placeTerm></mods:place>
+        <mods:dateCreated encoding="w3cdtf" keyDate="yes" qualifier="" />
+       
+    </mods:originInfo> 
+  <mods:name type="personal" authority="local">
+        <mods:namePart type=""/>
+        <mods:role>
+            <mods:roleTerm type="text" authority="marcrelator"></mods:roleTerm>
+        </mods:role>                       
+    </mods:name>    
+    <mods:genre></mods:genre>  
+    <mods:physicalDescription>
+    		<mods:form  authority="marcform"/>
+    		<mods:internetMediaType>image/tiff</mods:internetMediaType>
+    		<mods:extent></mods:extent>
+    		<mods:digitalOrigin>digitized other analog</mods:digitalOrigin> 
+    </mods:physicalDescription>  
+    <mods:location>
+    	<mods:physicalLocation></mods:physicalLocation>
+    	<mods:url usage="primary display" access=""></mods:url>
+    </mods:location>    
+    <mods:accessCondition type="useAndReproduction" ></mods:accessCondition>   
+    <mods:subject authority="keyword"><mods:topic/></mods:subject>
+    <mods:recordInfo>
+    <mods:recordContentSource>Lyberteam Metadata ToolKit</mods:recordContentSource>
+    <mods:recordCreationDate encoding="iso8601"></mods:recordCreationDate>
+    </mods:recordInfo>
+    <mods:relatedItem type="host">
+    <mods:titleInfo><mods:title type=''>mapSimple Map Collection</mods:title><mods:subTitle/></mods:titleInfo>
+    <mods:typeOfResource collection="yes"/>
+    <mods:location><mods:physicalLocation>Department of Special Collections. Stanford University Libraries.</mods:physicalLocation></mods:location>
+    <mods:originInfo><mods:dateIssued point="start"></mods:dateIssued><mods:dateIssued point="end"></mods:dateIssued></mods:originInfo>
+    <mods:recordInfo><mods:recordIdentifier source="Symphony Catalog Key"></mods:recordIdentifier></mods:recordInfo>
+    </mods:relatedItem>
+</mods:mods>

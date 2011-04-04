@@ -27,6 +27,23 @@
 		<xhtml:link rel="stylesheet" href="http://localhost/form-runner-orbeon.css" type="text/css"/> -->
 		<xforms:model id="fr-form-model" xxforms:help-tooltip="false">
 
+			<xforms:action ev:event="xforms-model-construct-done">
+				<xxforms:variable name="coordinates" select="tokenize(xxforms:instance('fr-form-instance')/mods:subject/mods:cartographics/mods:coordinates, '\s+')" as="xs:token"/>
+				<xforms:setvalue
+				ref="xxforms:instance('form-coordinates')/west" value="$coordinates[1]"/>
+				<xforms:setvalue
+				ref="xxforms:instance('form-coordinates')/east" value="$coordinates[2]"/>
+				<xforms:setvalue
+				ref="xxforms:instance('form-coordinates')/north" value="$coordinates[3]"/>
+				<xforms:setvalue
+				ref="xxforms:instance('form-coordinates')/south" value="$coordinates[4]"/>
+			</xforms:action>
+			
+			<xforms:action ev:observer="mods-coordinates-group"  ev:event="xforms-value-changed">
+				<xforms:setvalue ref="xxforms:instance('fr-form-instance')/mods:subject/mods:cartographics/mods:coordinates" value="concat(xxforms:instance('form-coordinates')/west, ' ', xxforms:instance('form-coordinates')/east, ' ', xxforms:instance('form-coordinates')/north, ' ', xxforms:instance('form-coordinates')/south)" />
+			</xforms:action>
+			
+			
 			<!-- BOILER PLATE DLSS SURI DRUID service -->
 			<!-- Varaible to the SURI URL that mints DRUIDS. THis is set in the config/properties-form-runner.xml -->
 			<xxforms:variable name="suri-uri" select="xxforms:property('oxf.fr.suri.uri')"
@@ -44,6 +61,7 @@
 				<xforms:setvalue
 					ref="xxforms:instance('fr-form-instance')/mods:identifier[@displayLabel = 'SU DRUID']"
 					value="concat('druid:' , xxforms:instance('suri-instance')/identifier/id)"/>
+					
 			</xforms:action>
 
 			<!-- Handy Brown date schema. -->
@@ -56,13 +74,12 @@
 			<!-- This is the default basic skeleton for your form. Any nodes you want to be present, or
 				default values, add to this xml file. -->
 			<xforms:instance id="fr-form-instance" xxforms:validation="lax">
-				<xi:include href="oxf:/forms/mods/mclaughlin/template.xml" xxi:omit-xml-base="true"
-				/>
+				<xi:include href="oxf:/forms/mods/mapSimple/template.xml" xxi:omit-xml-base="true"/>
 			</xforms:instance>
 
 
 			<!--  Insert Instance -->
-			<xforms:instance id="mods-insert" src="oxf:/forms/mods/mclaughlin/mods-insert.xml"/>
+			<xforms:instance id="mods-insert" src="oxf:/forms/mods/mapSimple/mods-insert.xml"/>
 
 
 
@@ -113,6 +130,7 @@
 
 			<xforms:bind id="fr-form-binds" nodeset=".">
 
+			
 				<xforms:bind id="identifier-bind" nodeset="mods:identifier" required="true()"/>
 				<xforms:bind id="identifier-type" nodeset="mods:identifier/@type" required="true()"/>
 				<xforms:bind id="suri-bind" nodeset="mods:identifier[@displayLabel='SU DRUID']"
@@ -126,7 +144,6 @@
 				<xforms:bind id="titletype" nodeset="mods:titleInfo/@type" type="xs:string"/>
 				<xforms:bind id="name-bind" nodeset="mods:name"/>
 				<xforms:bind id="name-type-bind" nodeset="mods:name/@type"/>
-				<xforms:bind id="name-link-bind" nodeset="mods:name/@xlink:href" type="xs:anyURI"/>
 				<xforms:bind nodeset="mods:originInfo/mods:copyrightDate" type="dl:date"/>
 				<xforms:bind nodeset="mods:originInfo/mods:dateCreated" type="dl:date"/>
 				<xforms:bind nodeset="mods:originInfo/mods:dateIssued" type="dl:date"/>
@@ -139,13 +156,14 @@
 				<xforms:bind nodeset="mods:accessCondition" required="true()" type="xs:string"/>
 				<xforms:bind nodeset="mods:accessCondition/@type" required="true()" type="xs:string"/>
 				<xforms:bind nodeset="mods:note/@displayLabel" type="xs:string"/>
-
-
-				<xforms:bind nodeset="mods:relatedItem/mods:identifier"/>
+				<!-- <xforms:bind nodeset="mods:subject/mods:cartographics/mods:coordinates"
+					type="xs:string"
+					calculate=" "/> -->
+			    <xforms:bind nodeset="mods:relatedItem/mods:identifier"/>
 				<xforms:bind nodeset="mods:relatedItem/@type"/>
 				<xforms:bind nodeset="mods:relatedItem/@displayLabel"/>
 				<xforms:bind nodeset="mods:relatedItem/@xlink:href"
-					calculate="concat('https://mdtoolkit-dev.stanford.edu/orbeon/fr/mods/mclaughlin/edit/', 'mods:identifier[@displayLabel = ''SU DRUID'']')"/>
+					calculate="concat('https://mdtoolkit-dev.stanford.edu/orbeon/fr/mods/mapSimple/edit/', 'mods:identifier[@displayLabel = ''SU DRUID'']')"/>
 
 			</xforms:bind>
 
@@ -155,8 +173,8 @@
 			<xforms:instance id="fr-form-metadata" xxforms:readonly="true">
 				<metadata xmlns="">
 					<application-name>mods</application-name>
-					<form-name>mclaughlin</form-name>
-					<title xml:lang="en">MODS mclaughlin</title>
+					<form-name>mapSimple</form-name>
+					<title xml:lang="en">MODS mapSimple</title>
 					<description xml:lang="en">MODS Metadata Toolkit</description>
 					<title xml:lang="fr">MODS Metadata Toolkit</title>
 					<author>Stanford University Library</author>
@@ -166,6 +184,8 @@
 					<logo mediatype="" filename="" size=""/>
 				</metadata>
 			</xforms:instance>
+
+
 
 			<xforms:instance id="fr-form-attachments">
 				<attachments xmlns="">
@@ -181,10 +201,20 @@
 				the values into the form. However, a few values were added to the resources.xml
 				for form running to properly function -->
 			<xforms:instance id="fr-form-resources">
-				<xi:include href="oxf:/forms/mods/mclaughlin/form/resources.xml"
+				<xi:include href="oxf:/forms/mods/mapSimple/form/resources.xml"
 					xxi:omit-xml-base="true"/>
 			</xforms:instance>
 
+
+			<!-- This is an instance being used to concat the mods:coordinates together -->
+			<xforms:instance id="form-coordinates">
+				<coordinates xmlns="">
+					<north/>
+					<south/>
+					<east/>
+					<west/>
+				</coordinates>
+			</xforms:instance>
 
 
 
@@ -413,7 +443,7 @@
 												<div class="item-row">
 												<div class="item-cell">
 												<a
-												href="https://mdtoolkit.stanford.edu/ops/fr/mods/mclaughlin/edit/{replace(mods:identifier[@displayLabel = 'SU DRUID'], 'druid:', '')}"
+												href="https://mdtoolkit.stanford.edu/ops/fr/mods/mapSimple/edit/{replace(mods:identifier[@displayLabel = 'SU DRUID'], 'druid:', '')}"
 												target="_blank"><img
 												src="/apps/fr/style/images/silk/eye.png"/></a>
 												</div>
@@ -664,21 +694,6 @@
 												</xforms:itemset>
 												</xforms:select1>
 												</div>
-												<div class="item-cell">
-													<fr:optional-element ref="@xlink:href" nodeset="mods:name">
-												<xforms:output
-												ref="$form-resources/detail/titles/namelink"/>
-												<xforms:input ref="." selection="open"
-												incremental="true">
-												<xforms:label
-												value="$form-resources/detail/titles/namelink"/>
-												<xforms:alert
-												ref="$form-resources/detail/alerts/namelink"/>
-												<xforms:help
-												ref="$form-resources/detail/help/namelink"/>
-												</xforms:input>
-												</fr:optional-element>
-												</div>
 												</div>
 												<div class="nested-repeatable-header-cell">
 												<div class="nested-repeatable-header-cell">
@@ -711,36 +726,6 @@
 												</xforms:trigger>
 												</xforms:group>
 												</div>
-												<xforms:switch>
-												<xforms:case id="namelist">
-												<div class="item-row">
-												<div class="item-cell">
-												<xforms:select1 ref="." class="drop-down">
-												<xforms:label
-												value="$form-resources/detail/titles/nameParts"/>
-												<xforms:alert
-												ref="$form-resources/detail/alerts/namepart"/>
-												<xforms:help
-												ref="$form-resources/detail/help/namepart"/>
-												<xforms:itemset
-												nodeset="$form-resources/lists/names/instance//(section|item)">
-												<xforms:label ref="label"/>
-												<xforms:value ref="value"/>
-												</xforms:itemset>
-												</xforms:select1>
-												</div>
-												<div class="item-cell">
-												<xforms:trigger>
-												<xforms:label>Enter A Name Not Found On The
-												List</xforms:label>
-												<xforms:toggle ev:event="DOMActivate"
-												case="nametext"/>
-												</xforms:trigger>
-												</div>
-												</div>
-												</xforms:case>
-												<xforms:case id="nametext" selected="true">
-												<div class="item-row">
 												<div class="item-cell">
 												<xforms:input ref="." selection="open"
 												incremental="true">
@@ -752,19 +737,7 @@
 												ref="$form-resources/detail/help/namepart"/>
 												</xforms:input>
 												</div>
-												<div class="item-cell">
-												<xforms:trigger>
-												<xforms:label>Choose a name from the
-												list</xforms:label>
-												<xforms:toggle ev:event="DOMActivate"
-												case="namelist"/>
-												</xforms:trigger>
-												</div>
-												</div>
-												</xforms:case>
-												</xforms:switch>
 												<!-- NamePart @type -->
-												<div class="item-row">
 												<div class="item-cell">
 												<fr:optional-element ref="./@type"
 												nodeset="mods:namePart">
@@ -785,7 +758,6 @@
 												</xforms:itemset>
 												</xforms:select1>
 												</fr:optional-element>
-												</div>
 												</div>
 												</div>
 												</div>
@@ -1539,77 +1511,74 @@
 										</fr:tr>
 										<fr:tr>
 											<fr:td>
-												<div class="button-row">
-												<!--ADD authority-->
-												<div class="item-cell">
-												<xforms:group ref=".">
-												<xforms:insert ev:event="DOMActivate" context="."
-												origin="instance('mods-insert')/insert[@name =  'subject']/mods:subject/@authority"/>
-												<fr:button bind="buttons-triggers">
-												<xforms:label>
-												<img src="/apps/fr/style/images/silk/add.png"
-												alt="Add"/>
-												<span class="label">Authority</span>
-												</xforms:label></fr:button>
-												</xforms:group>
-												</div>
-												</div>
-												<!-- END BUTTON -->
-												<!-- Authority -->
-												<div class="item-row">
-												<div class="item-cell">
-												<xforms:select1 ref="@authority"
-												id="coordinates-authority-select"
-												class="drop-down">
-												<xforms:label
-												ref="$form-resources/detail/titles/authority"/>
-												<xforms:alert
-												ref="$form-resources/detail/alerts/authority"/>
-												<xforms:help
-												ref="$form-resources/detail/help/authority"/>
-												<xforms:itemset
-												nodeset="$form-resources/lists/authority/instance//(section|item)">
-												<xforms:label ref="label"/>
-												<xforms:value ref="value"/>
-												</xforms:itemset>
-												</xforms:select1>
-												</div>
-												</div>
+												
+												
+												
 												<!-- START SUBJECT CARTO -->
 												<xforms:repeat
 												nodeset="mods:cartographics[position()]"
 												id="coordinate-cartographics">
+													
+													
 												<div class="item-row">
 												<div class="repeat-container">
 												<div class="repeat-container-item">
+													<div class="item-row">
+														<div class="item-cell" >
+															Aggregate Coordinates: <xforms:output incremental="true" ref="mods:coordinates" id="mods-coordinates-input"/>
+														</div>
+													</div>
+												<xforms:group ref="instance('form-coordinates')" id="mods-coordinates-group" >
 												<div class="item-row">
-												<div class="repeat-remove">
-												<xforms:group ref=".">
-												<xforms:delete ev:event="DOMActivate" context="."
-												nodeset=".[position()]"/>
-												<xforms:trigger appearance="minimal" ref=".">
-												<xforms:label>
-												<img src="/apps/fr/style/remove.gif"
-												alt="Remove Cartographics"/>
-												</xforms:label>
-												</xforms:trigger>
-												</xforms:group>
-												</div>
 												<div class="item-cell">
-												<xforms:select1 ref="mods:coordinates">
+													<div style="padding-left:120px" class="coordinate-topbottom">
+													<xforms:input incremental="true" ref="./north" >
 												<xforms:label
-												ref="$form-resources/detail/titles/coordinates"/>
+												ref="$form-resources/detail/titles/coordinatesnorth"/>
 												<xforms:alert
 												ref="$form-resources/detail/alerts/coordinates"/>
 												<xforms:help
 												ref="$form-resources/detail/help/coordinates"/>
-												<xforms:itemset
-												nodeset="$form-resources/lists/coordinates/instance//(section|item)">
-												<xforms:label ref="label"/>
-												<xforms:value ref="value"/>
-												</xforms:itemset>
-												</xforms:select1>
+													</xforms:input>
+														</div>
 												</div>
+												</div>
+													<div class="item-row" style="padding-left:30px">
+												<div class="item-cell">
+												<xforms:input incremental="true" ref="./west">
+												<xforms:label
+												ref="$form-resources/detail/titles/coordinateswest"/>
+												<xforms:alert
+												ref="$form-resources/detail/alerts/coordinates"/>
+												<xforms:help
+												ref="$form-resources/detail/help/coordinates"/>
+												</xforms:input>
+												</div>
+												<div class="item-cell">
+												<xforms:input incremental="true" ref="./east">
+												<xforms:label
+												ref="$form-resources/detail/titles/coordinateseast"/>
+												<xforms:alert
+												ref="$form-resources/detail/alerts/coordinates"/>
+												<xforms:help
+												ref="$form-resources/detail/help/coordinates"/>
+												</xforms:input>
+												</div>
+												</div>
+												<div class="item-row">
+												<div class="item-cell">
+													<div style="padding-left:120px" class="coordinate-topbottom">
+												<xforms:input incremental="true" ref="./south">
+												<xforms:label
+												ref="$form-resources/detail/titles/coordinatessouth"/>
+												<xforms:alert
+												ref="$form-resources/detail/alerts/coordinates"/>
+												<xforms:help
+												ref="$form-resources/detail/help/coordinates"/>
+												</xforms:input>
+														</div>
+												</div>
+												</div> </xforms:group>
 												<div class="item-cell">
 												<xforms:input incremental="true" ref="mods:scale">
 												<xforms:label
@@ -1630,7 +1599,6 @@
 												<xforms:help
 												ref="$form-resources/detail/help/projection"/>
 												</xforms:input>
-												</div>
 												</div>
 												</div>
 												</div>
