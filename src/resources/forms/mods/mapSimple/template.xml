@@ -13,6 +13,8 @@
         <mods:partName /> 
     </mods:titleInfo> 
     <mods:typeOfResource>cartographic</mods:typeOfResource>
+    <mods:subject authority="" displayLabel="cartographics"><mods:cartographics><mods:scale/><mods:coordinates></mods:coordinates><mods:projection/></mods:cartographics></mods:subject>
+
     <mods:originInfo>
         <mods:place><mods:placeTerm type="text"></mods:placeTerm></mods:place>
         <mods:dateCreated encoding="w3cdtf" keyDate="yes" qualifier="" />

@@ -28,6 +28,7 @@
     <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.smpl.form" value="/fr/service/resource"/>
     <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.omnibus.form" value="/fr/service/resource"/>
     <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.mclaughlin.form" value="/fr/service/resource"/>
+    <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.mapSimple.form" value="/fr/service/resource"/>
     <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.hummel.form" value="/fr/service/resource"/>
     <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.demo.form" value="/fr/service/resource"/>
     <property as="xs:anyURI"  name="oxf.fr.persistence.app.uri.mods.faf.form" value="/fr/service/resource"/>

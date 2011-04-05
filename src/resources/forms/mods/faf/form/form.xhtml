@@ -13,7 +13,7 @@
   The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
   -->
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:xhtml="http://www.w3.org/1999/xhtml"
-    xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:xf="http://www.w3.org/2002/xforms" xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xs="http://www.w3.org/2001/XMLSchema"
     xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xxi="http://orbeon.org/oxf/xml/xinclude"
     xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
     xmlns:mods="http://www.loc.gov/mods/v3" xmlns:fr="http://orbeon.org/oxf/xml/form-runner"
@@ -230,7 +230,8 @@
                     </xforms:input>
                 </div>
                 <!-- BEGIN DRUID -->
-                <fr:section id="druid-section" bind="fr-form-binds">
+                
+                  <fr:section id="druid-section" open="false" >
                     <xforms:label ref="$form-resources/detail/titles/druid"/>
                     <xforms:help ref="$form-resources/detail/help/druid"/>
                     <div class="repeat-container">
@@ -607,7 +608,6 @@
                                                 <div class="item-row">
                                                   <div class="item-cell">
                                                   <xforms:select appearance="full"
-                                                      ref="@authority"
                                                   bind="nameauthority-bind"
                                                   id="nameauthority-control">
                                                   <xforms:label
@@ -1994,7 +1994,7 @@
                 </fr:section>
                 <!-- END LANGUAGE -->
                 <!-- START PHYSCIALDESC -->
-                <fr:section  open="false"  id="physicalDescription" bind="fr-form-binds">
+                <fr:section id="physicalDescription" open="false" bind="fr-form-binds">
                     <xforms:label ref="$form-resources/detail/titles/physicaldescription"/>
                     <xforms:help ref="$form-resources/detail/help/physicaldescription"/>
                     <fr:grid>
