@@ -1,0 +1,29 @@
+<instance> 
+    <section>
+    <item>
+        <label>-- Select One --</label>
+    </item>
+    </section>
+    <section>
+    <item>
+        <label>Black and White Photographic Print</label>
+        <value>black and white photographic print</value>    
+    </item> 
+     <item>
+        <label>Color Photographic Print</label>
+        <value>color photographic print</value>    
+    </item> 
+     <item>
+        <label>Cyanotype</label>
+        <value>cyanotype</value>    
+    </item> 
+     <item>
+        <label>Print Reproduction of Photograph</label>
+        <value>print reproduction of photograph</value>    
+    </item> 
+    <item>
+    	<lable>Hand-Colored Photograph</lable>
+    	<value>Hand-Colored Photograph</value>
+    </item>
+    </section>
+</instance>

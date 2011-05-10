@@ -1,0 +1,86 @@
+
+<instance>
+  <section>
+  	<item>
+  		<label>--Select One--</label>
+  	</item>
+  </section>
+  <section>
+    <label>Local</label>
+      <item>
+        <label>local</label>
+        <value>local</value>    
+    </item>
+    </section>   
+    <section>
+    	<label>Analog Original</label>
+    <item>
+        <label>isbn</label>
+        <value>isbn</value>    
+    </item>
+    <item>
+        <label>isrc</label>
+        <value>isrc</value>    
+    </item>
+    <item>
+        <label>ismn</label>
+        <value>ismn</value>    
+    </item>
+    <item>
+        <label>issn</label>
+        <value>issn</value>    
+    </item>
+    <item>
+        <label>issue number</label>
+        <value>issue number</value>    
+    </item>
+    <item>
+        <label>istc</label>
+        <value>istc</value>    
+    </item>
+    <item>
+        <label>lccn</label>
+        <value>lccn</value>    
+    </item>
+    <item>
+        <label>matrix number</label>
+        <value>matrix number</value>    
+    </item>
+    <item>
+        <label>music publisher</label>
+        <value>music publisher</value>    
+    </item>
+    <item>
+        <label>music plate</label>
+        <value>music plate</value>    
+    </item>
+    <item>
+        <label>sici</label>
+        <value>sici</value>    
+    </item>
+    
+    <item>
+        <label>upc</label>
+        <value>upc</value>    
+    </item>
+    <item>
+        <label>videorecording identifier</label>
+        <value>videorecording identifier</value>    
+    </item>
+    <item>
+        <label>stock number</label>
+        <value>stock number</value>    
+    </item>
+    </section>
+<section>
+     	<label>Digital Original</label>
+     <item>
+        <label>uri</label>
+        <value>uri</value>    
+    </item>
+    <item>
+        <label>doi</label>
+        <value>doi</value>    
+    </item>
+    </section>     
+</instance>

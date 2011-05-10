@@ -1,0 +1,19 @@
+
+<instance>
+    <section>
+    <item>
+        <label>-- Select One --</label>
+        <value></value>
+    </item>
+    </section>
+    <section>
+    <item>
+        <label>Use and Reproduction</label>
+        <value>useAndReproduction</value>    
+    </item> 
+    <item>
+        <label>Restriction On Access</label>
+        <value>restrictionOnAccess</value>    
+    </item>
+     </section>
+</instance>

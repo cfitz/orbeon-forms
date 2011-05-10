@@ -133,10 +133,11 @@
                 <!-- TODO -->
                 <!--<xforms:load resource="abc" f:url-type="resource"/>-->
             </xforms:action>
-
+           
             <!-- Instance to track search results and paging -->
+            <!-- STANFORD HACK: We have to add the namespaces we're using in the search instance to get back results. --> 
             <xforms:instance id="fr-search-instance">
-                <search xmlns="">
+                <search xmlns=""  xmlns:mods="http://www.loc.gov/mods/v3" >
                     <!-- Application name -->
                     <app/>
                     <!-- Form name -->

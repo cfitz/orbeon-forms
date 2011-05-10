@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+   <!--
+  Copyright (C) 2010 Orbeon, Inc.
+
+  This program is free software; you can redistribute it and/or modify it under the terms of the
+  GNU Lesser General Public License as published by the Free Software Foundation; either version
+  2.1 of the License, or (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  See the GNU Lesser General Public License for more details.
+
+  The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+  -->
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:xhtml="http://www.w3.org/1999/xhtml"
+    xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xxi="http://orbeon.org/oxf/xml/xinclude"
+    xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+    xmlns:mods="http://www.loc.gov/mods/v3" xmlns:fr="http://orbeon.org/oxf/xml/form-runner"
+    xmlns:dl="http://dl.lib.brown.edu/editor/mods/dl">
+
+    <head>
+
+        <title>Metadata Toolkit</title>
+
+
+
+
+        <xforms:model id="fr-form-model" xxforms:help-tooltip="false">
+            <xxforms:variable name="suri-uri" select="xxforms:property('oxf.fr.suri.uri')"
+                as="xs:anyURI"/>
+
+            <xforms:submission id="new-submission" serialize="false" action="{$suri-uri}"
+                method="post" replace="instance" xxforms:instance="suri-instance"
+                xxforms:user="xforms" xxforms:password="lyberteam"/>
+
+
+            <xforms:action ev:event="xforms-ready"
+                if="xxforms:instance('fr-parameters-instance')/mode = 'new'">
+                <xforms:send submission="new-submission"/>
+                <xforms:setvalue ref="xxforms:instance('fr-parameters-instance')/document"
+                    value="xxforms:instance('suri-instance')/identifier/id"/>
+                <xforms:setvalue ref="xxforms:instance('fr-form-instance')/mods:identifier"
+                    value="concat('druid:' , xxforms:instance('suri-instance')/identifier/id)"/>
+            </xforms:action>
+
+            <!-- Handy Brown date schema -->
+            <xi:include href="oxf:/forms/mods/schema.xsd" xxi:omit-xml-base="true"/>
+
+            <!-- MODS schema -->
+            <xi:include href="oxf:/forms/mods/mods-3-3.xsd" xxi:omit-xml-base="true"/>
+
+
+            <!-- Instance that contains all the records -->
+            <xforms:instance id="fr-form-instance" xxforms:validation="lax">
+                <xi:include href="oxf:/forms/mods/fuller/template.xml" xxi:omit-xml-base="true"
+                />
+            </xforms:instance>
+
+            <!--	 Dummy instance for SURI IDs -->
+            <xforms:instance id="suri-instance">
+                <identifiers xmlns=""/>
+            </xforms:instance>
+
+            <!--Insert Instance -->
+            <xforms:instance id="mods-insert" src="oxf:/forms/mods/fuller/mods-insert.xml"/>
+
+            <!-- Instance to control button triggers -->
+            <xforms:instance id="triggers-instance">
+                <control xmlns="">
+                    <buttons-triggers/>
+                </control>
+            </xforms:instance>
+            <xforms:bind nodeset="instance('triggers-instance')">
+                <xforms:bind id="buttons-triggers"
+                    readonly="xxforms:instance('fr-parameters-instance')/mode != 'new' and xxforms:instance('fr-parameters-instance')/mode != 'edit' "
+                />
+            </xforms:bind>
+
+
+            <!--    Xforms Binds to MODS -->
+            <xforms:bind id="fr-form-binds" nodeset=".">
+
+
+                <xforms:bind id="recordCreationDate"
+                    nodeset="mods:recordInfo/mods:recordCreationDate" calculate="now()"
+                    readonly="true()"/>
+                <xforms:bind id="identifier-bind" nodeset="mods:identifier" required="false()"/>
+                <xforms:bind id="identifier-type" nodeset="mods:identifier/@type" required="true()"/>
+                <xforms:bind id="suri-bind" nodeset="mods:identifier[@displayLabel='SU DRUID']"
+                    readonly="true()"/>
+                <xforms:bind id="at-bind" nodeset="mods:identifier[@displayLabel='AT Persistent ID']"
+                    readonly="true()"/>
+                <xforms:bind id="collection-bind"
+                    nodeset="mods:identifier[@displayLabel='Collection ID']" readonly="true()"/>
+                <xforms:bind id="titleInfo" nodeset="mods:titleInfo" required="true()"/>
+               
+                <xforms:bind id="name-bind" nodeset="mods:name"/>
+                <xforms:bind id="name-type-bind" nodeset="mods:name/@type"/>
+               
+                <xforms:bind id="locationBind" readonly="true()" required="true()"
+                    nodeset="mods:location"/>
+             
+
+                <xforms:bind id="titletype" nodeset="mods:titleInfo/@type" type="xs:string"/>
+
+
+
+
+            </xforms:bind>
+
+
+            <!-- Application Metadata -->
+            <xforms:instance id="fr-form-metadata" xxforms:readonly="true">
+                <metadata xmlns="">
+                    <application-name>mods</application-name>
+                    <form-name>fuller</form-name>
+                    <title xml:lang="en">MODS Fuller</title>
+                    <description xml:lang="en">MODS Metadata Toolkit</description>
+                    <title xml:lang="fr">MODS Metadata Toolkit</title>
+                    <author>Stanford University Library</author>
+                    <logo mediatype="image/png" filename="banner.gif" size=""
+                        >/apps/fr/style/banner.gif</logo>
+
+                    <logo mediatype="" filename="" size=""/>
+                </metadata>
+            </xforms:instance>
+
+            <xforms:instance id="fr-form-attachments">
+                <attachments xmlns="">
+                    <css mediatype="text/css" filename="" size=""/> Fix this once we have proper
+                    template <pdf mediatype="application/pdf" filename="template.pdf" size="8638"
+                        >/fr/service/resource/crud/orbeon/bookcast/form/template.pdf</pdf>
+                    <pdf mediatype="application/pdf" filename="" size=""/>
+                </attachments>
+            </xforms:instance>
+
+            <!--          XForms instance containing all the language resources 
+        -->
+            <xforms:instance id="fr-form-resources">
+                <xi:include href="oxf:/forms/mods/fuller/form/resources.xml"
+                    xxi:omit-xml-base="true"/>
+            </xforms:instance>
+        </xforms:model>
+    </head>
+    <body>
+
+        <fr:view>
+
+
+            <xforms:label>Metadata Toolkit</xforms:label>
+            <xhtml:img src="/apps/fr/style/sulair-banner.gif"/>
+            <fr:body>
+
+
+                <!-- XFORMS Repeats have a hard-time showing up in the summary table. This section exposes values to be populated in the 
+                    form's summary table -->
+                <div style="display:none">
+                    <xforms:input class="fr-summary fr-search fr-email-subject"
+                        ref="mods:location/mods:physicalLocation">
+                        <xforms:label>Location</xforms:label>
+                    </xforms:input>
+                    <xforms:input class="fr-summary fr-search fr-email-subject"
+                        ref="mods:titleInfo/mods:title">
+                        <xforms:label>Title</xforms:label>
+                    </xforms:input>
+                </div>
+
+
+
+                <xi:include href="oxf:/forms/mods/partials/druid_partial.xml"
+                    xxi:omit-xml-base="true"/>
+                <xi:include href="oxf:/forms/mods/fuller/form/partials/title_info_partial.xml"
+                    xxi:omit-xml-base="true"/>
+                <xi:include href="oxf:/forms/mods/fuller/form/partials/location_partial.xml"
+                    xxi:omit-xml-base="true"/>
+                <xi:include href="oxf:/forms/mods/fuller/form/partials/identifier_partial.xml"
+                    xxi:omit-xml-base="true"/>
+
+
+
+
+            </fr:body>
+        </fr:view>
+    </body>
+</html>

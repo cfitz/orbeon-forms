@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+   <!--
+  Copyright (C) 2010 Orbeon, Inc.
+
+  This program is free software; you can redistribute it and/or modify it under the terms of the
+  GNU Lesser General Public License as published by the Free Software Foundation; either version
+  2.1 of the License, or (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  See the GNU Lesser General Public License for more details.
+
+  The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+  -->
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:xhtml="http://www.w3.org/1999/xhtml"
+    xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xxi="http://orbeon.org/oxf/xml/xinclude"
+    xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+    xmlns:mods="http://www.loc.gov/mods/v3" xmlns:fr="http://orbeon.org/oxf/xml/form-runner"
+    xmlns:dl="http://dl.lib.brown.edu/editor/mods/dl">
+
+    <head>
+
+        <title>Metadata Toolkit</title>
+       
+        <xforms:model id="fr-form-model" xxforms:help-tooltip="false">
+        
+            <xxforms:variable name="suri-uri" select="xxforms:property('oxf.fr.suri.uri')" as="xs:anyURI"/>
+        
+        
+            <xforms:submission id="new-submission" serialize="false" action="{$suri-uri}"
+                method="post" replace="instance" xxforms:instance="suri-instance" xxforms:user="xforms" xxforms:password="lyberteam"/>
+            
+            
+            <xforms:action ev:event="xforms-ready" if="xxforms:instance('fr-parameters-instance')/mode = 'new'">
+                <xforms:send submission="new-submission"/>
+                <xforms:setvalue ref="xxforms:instance('fr-parameters-instance')/document" value="xxforms:instance('suri-instance')/identifier/id"/>
+                <xforms:setvalue ref="xxforms:instance('fr-form-instance')/mods:identifier" value="concat('druid:' , xxforms:instance('suri-instance')/identifier/id)"/>
+            </xforms:action>
+
+
+            <!-- Submission to our service that provides suggestions -->
+            <xforms:submission id="suggest"
+                serialization="none"
+                method="get" action="http://stanford.edu/group/cgi-bin/autosuggest/autosuggest.php?q={instance('suggest-query')}"
+                replace="instance" instance="suggestions"/>
+
+             <!-- Handy Brown date schema -->
+            <xi:include href="oxf:/forms/bookSimple/schema.xsd" xxi:omit-xml-base="true"/>
+
+            <!-- MODS schema -->
+            <xi:include href="oxf:/forms/bookSimple/mods-3-3.xsd" xxi:omit-xml-base="true"/>
+
+            
+            <!-- Instance that contains all the records --> 
+          <xforms:instance id="fr-form-instance" xxforms:validation="lax">
+                <xi:include href="oxf:/forms/bookSimple/dlp/template.xml" xxi:omit-xml-base="true"/>
+            </xforms:instance>
+
+		<!--	 Dummy instance for SURI IDs -->
+            <xforms:instance id="suri-instance">
+                <identifiers xmlns=""/>
+            </xforms:instance>
+
+              <!--Insert Instance -->
+            <xforms:instance id="mods-insert" src="oxf:/forms/bookSimple/dlp/mods-insert.xml"/>
+
+		
+            
+
+            <xforms:instance id="import-instance">
+                <query type="catkey" xmlns:mods="http://www.loc.gov/mods/v3"/>
+            </xforms:instance>
+
+            <!--suggestions -->
+            <xforms:instance id="suggest-query">
+                <query/>
+            </xforms:instance>
+            <!-- Instance with the suggestions we get back from Google -->
+            <xforms:instance id="name-suggestions">
+                <suggestions/>
+            </xforms:instance>
+
+            <xforms:instance id="lcsh-suggestions">
+                <suggestions/>
+            </xforms:instance>
+
+            <xforms:instance id="language-suggestions">
+                <suggestions/>
+            </xforms:instance>
+
+            <!-- Submission to our service that provides suggestions -->
+            <xforms:submission id="name-suggest" serialization="none" method="get"
+                action="http://stanford.edu/group/lyberteam/cgi-bin/autosuggest/autosuggest.php?q={instance('suggest-query')}"
+                replace="instance" instance="name-suggestions"/>
+
+            <xforms:submission id="lcsh-suggest" serialization="none" method="get"
+                action="http://stanford.edu/group/lyberteam/cgi-bin/lcsh/lcsh.php?q={instance('suggest-query')}"
+                replace="instance" instance="lcsh-suggestions"/>
+
+            <xforms:submission id="language-suggest" serialization="none" method="get"
+                action="/lang/query?param={instance('suggest-query')}" replace="instance"
+                instance="language-suggestions"/>
+
+
+
+            <xforms:submission id="import-mods" serialization="none" method="get"
+                action="http://stanford.edu/group/lyberteam/cgi-bin/mods/mods.php?q={instance('import-instance')}"
+                replace="instance" instance="fr-form-instance"/>
+
+ 
+		      <xforms:submission id="import-mods-barcode" serialization="none" method="get"
+                action="http://stanford.edu/group/lyberteam/cgi-bin/mods/mods-barcode.php?q={instance('import-instance')}"
+                replace="instance" instance="fr-form-instance"/>
+		
+		
+
+			  <!-- Instance to control button triggers --> 
+            <xforms:instance id="triggers-instance">
+                <control xmlns="">
+                    <buttons-triggers/>
+                </control>
+            </xforms:instance>
+            <xforms:bind nodeset="instance('triggers-instance')">
+                <xforms:bind id="buttons-triggers"
+                    readonly="xxforms:instance('fr-parameters-instance')/mode != 'new' and xxforms:instance('fr-parameters-instance')/mode != 'edit' "
+                />
+            </xforms:bind>
+
+
+          <!--    Xforms Binds to MODS --> 
+            <xforms:bind id="fr-form-binds" nodeset=".">
+
+                <xforms:bind id="identifier-bind" nodeset="mods:identifier" required="true()"/>
+                <xforms:bind id="identifier-type" nodeset="mods:identifier/@type" required="true()"/>
+                <xforms:bind id="suri-bind" nodeset="mods:identifier[1]" readonly="true()"/>
+                <xforms:bind id="titleInfo" nodeset="mods:titleInfo" required="true()"/>
+                <xforms:bind id="title-bind" nodeset="mods:titleInfo/mods:title" />
+                <xforms:bind id="titletype" nodeset="mods:titleInfo/@type" type="xs:string"/>
+                <xforms:bind id="recordCreationDate" nodeset="mods:recordInfo/mods:recordCreationDate" calculate="now()" readonly="true()"/>
+                <xforms:bind id="catkey-id-bind" nodeset="mods:identifier[@displayLabel='Stanford University Libraries Catalog Key']"  required="true()"/>
+                <xforms:bind id="catkey-id-type-bind" nodeset="mods:identifier[@displayLabel='Stanford University Libraries Catalog Key']/@type" required="true()" readonly="true()"/>
+                <xforms:bind id="catkey-id-displayLabel-bind" nodeset="mods:identifier[@displayLabel='Stanford University Libraries Catalog Key']/@displayLabel" required="true()" readonly="true()"/>
+
+                <xforms:bind id="name-bind" nodeset="mods:name"/>
+                <xforms:bind id="name-type-bind" nodeset="mods:name/@type"/>
+            </xforms:bind>
+
+
+<!--
+             Application Metadata 
+-->            <xforms:instance id="fr-form-metadata" xxforms:readonly="true">
+                <metadata xmlns="">
+                    <application-name>mods</application-name>
+                    <form-name>dlp</form-name>
+                    <title xml:lang="en">BookSimple -- DLP</title>
+                    <description xml:lang="en">MODS Metadata Toolkit</description>
+                    <title xml:lang="fr">MODS Metadata Toolkit</title>
+                    <author>Stanford University Library</author>
+                    <logo mediatype="image/png" filename="banner.gif" size=""
+                        >/apps/fr/style/banner.gif</logo>
+
+                    <logo mediatype="" filename="" size=""/>
+                </metadata>
+            </xforms:instance>
+
+            <xforms:instance id="fr-form-attachments">
+                <attachments xmlns="">
+                    <css mediatype="text/css" filename="" size=""/>
+                     Fix this once we have proper template 
+                    <pdf mediatype="application/pdf" filename="template.pdf" size="8638">/fr/service/resource/crud/orbeon/bookcast/form/template.pdf</pdf>
+                    <pdf mediatype="application/pdf" filename="" size=""/>
+                </attachments>
+            </xforms:instance>
+            
+   <!--          XForms instance containing all the language resources 
+        -->    <xforms:instance id="fr-form-resources">
+                <xi:include href="oxf:/forms/bookSimple/dlp/form/resources.xml" xxi:omit-xml-base="true"
+                />
+            </xforms:instance>
+        </xforms:model>
+    </head>
+    <body>
+
+        <fr:view>
+
+
+            <xforms:label>Metadata Toolkit</xforms:label>
+            <xhtml:img src="/apps/fr/style/sulair-banner.gif"/>
+            <fr:body>
+
+                <!-- XFORMS Repeats have a hard-time showing up in the summary table. This section exposes values to be populated in the 
+                    form's summary table -->
+                <div style="display:none">
+                    <xforms:input class="fr-summary fr-search fr-email-subject"
+                        ref="mods:identifier">
+                        <xforms:label>Identifiers</xforms:label>
+                    </xforms:input>
+                    <xforms:input class="fr-summary fr-search fr-email-subject"
+                        ref="mods:titleInfo/mods:title">
+                        <xforms:label>Title</xforms:label>
+                    </xforms:input>
+                    <xforms:input class="fr-summary fr-search fr-email-subject"
+                        ref="mods:name/mods:namePart">
+                        <xforms:label>Names</xforms:label>
+                    </xforms:input>
+                </div>
+                
+                <xi:include href="oxf:/forms/mods/partials/druid_partial.xml"
+                    xxi:omit-xml-base="true"/>
+                <xi:include href="oxf:/forms/mods/partials/import_partial.xml"
+                    xxi:omit-xml-base="true"/>
+                <xi:include
+                    href="oxf:/forms/mods/partials/identifier_displayLabelTypePullDowns_partial.xml"
+                    xxi:omit-xml-base="true"/>
+                <xi:include href="oxf:/forms/mods/partials/title_info_partial.xml"
+                    xxi:omit-xml-base="true"/>
+                <xi:include href="oxf:/forms/mods/partials/name_partial.xml"
+                    xxi:omit-xml-base="true"/>
+                
+
+            </fr:body>
+            </fr:view>
+    </body>
+</html>

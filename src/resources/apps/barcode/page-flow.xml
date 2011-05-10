@@ -11,9 +11,15 @@
   
     The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
 -->
-<config xmlns="http://www.orbeon.com/oxf/controller">
+<config  xmlns="http://www.orbeon.com/oxf/controller"
+        xmlns:oxf="http://www.orbeon.com/oxf/processors">
 
-    <page path-info="*" view="barcode.xpl"/>
+	<page path-info="/barcode/([^/]+)" matcher="oxf:perl5-matcher"
+          default-submission="input.xml" view="barcode.xpl">
+        <setvalue ref="/*/input" matcher-group="1"/>
+    </page>
+
+    
 
     <epilogue url="oxf:/config/epilogue.xpl"/>
 

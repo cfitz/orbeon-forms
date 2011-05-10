@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Custom titleinfo partial for caricatures form --> 
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:xhtml="http://www.w3.org/1999/xhtml"
+    xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xxi="http://orbeon.org/oxf/xml/xinclude"
+    xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+    xmlns:mods="http://www.loc.gov/mods/v3" xmlns:fr="http://orbeon.org/oxf/xml/form-runner"
+    xmlns:dl="http://dl.lib.brown.edu/editor/mods/dl" xmlns:xlink="http://www.w3.org/1999/xlink">
+
+    <!--              MODS:TITLEINFO  -->
+    <fr:section id="titleInfo-section" bind="fr-form-binds">
+        <xforms:label ref="$form-resources/detail/titles/titleInfo"/>
+        <xforms:help ref="$form-resources/detail/help/titleInfo"/>
+        <xforms:alert ref="$form-resources/detail/alert/titleInfo"/>
+
+        <fr:repeat nodeset="mods:titleInfo" id="titleInfo-repeat"
+            origin="xxforms:instance('mods-insert')/insert[@name = 'titleInfo']/mods:titleInfo">
+            <fr:body>
+
+                <fr:tr>
+                    <fr:td>
+                       
+                            <xforms:input incremental="true" ref="mods:partNumber" style="width:20em;">
+                                <xforms:label ref="$form-resources/detail/titles/partnumber"
+                                    class="forms-hidden"/>
+                                <xforms:alert ref="$form-resources/detail/alerts/partnumber"/>
+                                <xforms:help ref="$form-resources/detail/help/partnumber"/>
+                            </xforms:input>
+                        
+                    </fr:td>
+                    <fr:td>
+                       
+                            <xforms:input incremental="true" ref="mods:partName">
+                                <xforms:label ref="$form-resources/detail/titles/partname"
+                                    class="forms-hidden"/>
+                                <xforms:alert ref="$form-resources/detail/alerts/partname"/>
+                                <xforms:help ref="$form-resources/detail/help/partname"/>
+                            </xforms:input>
+                        
+                    </fr:td>
+                </fr:tr>
+
+            </fr:body>
+
+        </fr:repeat>
+
+    </fr:section>
+
+</html>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Custom location partial for caricatures form --> 
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:xhtml="http://www.w3.org/1999/xhtml"
+    xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xxi="http://orbeon.org/oxf/xml/xinclude"
+    xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+    xmlns:mods="http://www.loc.gov/mods/v3" xmlns:fr="http://orbeon.org/oxf/xml/form-runner"
+    xmlns:dl="http://dl.lib.brown.edu/editor/mods/dl" xmlns:xlink="http://www.w3.org/1999/xlink">
+
+    <!-- MODS:LOCATION -->
+
+    <fr:section id="location" bind="fr-form-binds">
+        <xforms:label ref="$form-resources/detail/titles/location"/>
+        <xforms:help ref="$form-resources/detail/help/location"/>
+
+
+
+        <fr:repeat nodeset="mods:location[position()]" id="location-repeat[position()]"
+            origin="xxforms:instance('mods-insert')/insert[@name = 'location']/child::*"
+            appearance="xxforms:table">
+
+            <fr:body>
+
+                <fr:tr>
+                    <fr:td>
+                      
+                            <xforms:input incremental="true" ref="mods:physicalLocation"
+                                class="dmv-last-name">
+                                <xforms:label ref="$form-resources/detail/labels/physicallocation"/>
+                                <xforms:alert ref="$form-resources/detail/alerts/physicallocation"/>
+                                <xforms:help ref="$form-resources/detail/help/physicallocation"/>
+                            </xforms:input>
+                        
+                    </fr:td>
+
+                </fr:tr>
+            </fr:body>
+        </fr:repeat>
+
+
+
+
+    </fr:section>
+</html>

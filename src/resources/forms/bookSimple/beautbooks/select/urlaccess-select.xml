@@ -1,0 +1,23 @@
+
+<instance>
+    <section>
+    <item>
+        <label>-- Select One --</label>
+        <value></value>
+    </item>
+    </section>
+    <section>
+    <item>
+        <label>preview</label>
+        <value>preview</value>    
+    </item> 
+    <item>
+        <label>raw object</label>
+        <value>raw object</value>    
+    </item>
+    <item>
+        <label>object in context</label>
+        <value>object in context</value>    
+    </item>
+        </section>
+    </instance>

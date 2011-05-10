@@ -1,0 +1,673 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Copyright (C) 2010 Orbeon, Inc.
+    
+    This program is free software; you can redistribute it and/or modify it under the terms of the
+    GNU Lesser General Public License as published by the Free Software Foundation; either version
+    2.1 of the License, or (at your option) any later version.
+    
+    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+    without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the GNU Lesser General Public License for more details.
+    
+    The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:xhtml="http://www.w3.org/1999/xhtml"
+    xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xxi="http://orbeon.org/oxf/xml/xinclude"
+    xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+    xmlns:mods="http://www.loc.gov/mods/v3" xmlns:fr="http://orbeon.org/oxf/xml/form-runner"
+    xmlns:dl="http://dl.lib.brown.edu/editor/mods/dl" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:sparql="http://www.w3.org/2005/sparql-results#">
+
+    <head>
+
+        <title>Metadata Toolkit</title>
+
+        <xforms:model id="fr-form-model" xxforms:help-tooltip="false">
+
+            <!-- BOILER PLATE DLSS SURI DRUID service -->
+            <!-- Varaible to the SURI URL that mints DRUIDS. THis is set in the config/properties-form-runner.xml -->
+            <xxforms:variable name="suri-uri" select="xxforms:property('oxf.fr.suri.uri')"
+                as="xs:anyURI"/>
+
+            <!-- This submits the request to SURI -->
+            <xforms:submission id="new-submission" serialize="false" action="{$suri-uri}"
+                method="post" replace="instance" xxforms:instance="suri-instance"
+                xxforms:user="xforms" xxforms:password="lyberteam"/>
+
+            <!-- This puts the returned result into the XML document -->
+            <!-- Need to ask Ben where the SURI should be stored in the TEI document -->
+            <xforms:action ev:event="xforms-ready"
+                if="xxforms:instance('fr-parameters-instance')/mode = 'new'">
+                <xforms:send submission="new-submission"/>
+                <xforms:setvalue ref="xxforms:instance('fr-parameters-instance')/document"
+                    value="xxforms:instance('suri-instance')/identifier/id"/>
+                <xforms:setvalue ref="xxforms:instance('fr-form-instance')/msIdentifier/idno"
+                    value="concat('druid:' , xxforms:instance('suri-instance')/identifier/id)"/>
+            </xforms:action>
+
+            <!-- Handy Brown date schema. -->
+            <xi:include href="oxf:/forms/tei/schema.xsd" xxi:omit-xml-base="true"/>
+
+            <!-- TEI schema -->
+            <!-- Need to ask ben where the scema is located 
+            <xi:include href="oxf:/forms/mods/mods-3-3.xsd" xxi:omit-xml-base="true"/>
+            -->
+
+            <!-- This is the default basic skeleton for your form. Any nodes you want to be present, or
+        default values, add to this xml file.                                                   -->
+            <xforms:instance id="fr-form-instance" xxforms:validation="lax">
+                <xi:include href="oxf:/forms/tei/ms/template.xml" xxi:omit-xml-base="true"/>
+            </xforms:instance>
+
+            <!-- Dummy instance for SURI IDs -->
+            <xforms:instance id="suri-instance">
+                <identifiers xmlns=""/>
+            </xforms:instance>
+
+            <!--  Insert Instance. This is used to add repeating nodes into the document -->
+            <xforms:instance id="tei-insert" src="oxf:/forms/tei/ms/tei-insert.xml"/>
+
+            <!--  Instance to control button triggers. This is orbeon form runner boilerplate  -->
+            <xforms:instance id="triggers-instance">
+                <control xmlns="">
+                    <buttons-triggers/>
+                </control>
+            </xforms:instance>
+            <xforms:bind nodeset="instance('triggers-instance')">
+                <xforms:bind id="buttons-triggers"
+                    readonly="xxforms:instance('fr-parameters-instance')/mode != 'new' and xxforms:instance('fr-parameters-instance')/mode != 'edit' "
+                />
+            </xforms:bind>
+
+            <!-- Form Binds -->
+            <!-- This is where you really define what your controller which is applied to your xml record. 
+                For example, if you want a field to only contain dates, you would bind that xml node to a date-specific 
+                definition. Or if a field is required to make the document valid, you define that here. XML nodes don't 
+                specificly need a bind to be in the model ... they will just default to a open text box. 
+                
+                Here are some examples: (from MODS)
+                <xforms:bind id="fr-form-binds" nodeset="."> 
+     (require field)   <xforms:bind id="identifier-bind" nodeset="mods:identifier" required="true()"/>
+     (readonly/uneditable field) <xforms:bind id="suri-bind" nodeset="mods:identifier[@displayLabel='SU DRUID']" readonly="true()"/>
+     (bound to the Brown schema date defination) <xforms:bind nodeset="mods:originInfo/mods:copyrightDate" type="dl:date"/>
+               </xforms:bind>
+               -->
+
+            <xforms:bind id="fr-form-binds" nodeset=".">
+
+
+                <!-- We don't want druids to be editable -->
+                <xforms:bind id="identifier-bind" nodeset="msIdentifier/idno" required="true()"
+                    readonly="true()"/>
+
+            </xforms:bind>
+
+
+            <!-- Application Metadata -->
+            <xforms:instance id="fr-form-metadata" xxforms:readonly="true">
+                <metadata xmlns="">
+                    <application-name>tei</application-name>
+                    <form-name>ms</form-name>
+                    <title xml:lang="en">TEI Manuscripts</title>
+                    <description xml:lang="en">TEI Manuscripts</description>
+                    <title xml:lang="fr">TEI Metadata Toolkit </title>
+                    <author>Stanford University Library</author>
+                    <logo mediatype="image/png" filename="banner.gif" size=""
+                        >/apps/fr/style/banner.gif</logo>
+
+                    <logo mediatype="" filename="" size=""/>
+                </metadata>
+            </xforms:instance>
+
+            <!-- This is form runner boilerplate to make the view PDF work -->
+            <xforms:instance id="fr-form-attachments">
+                <attachments xmlns="">
+                    <css mediatype="text/css" filename="" size=""/>
+                    <!-- Fix this once we have proper template -->
+                    <!--<pdf mediatype="application/pdf" filename="template.pdf" size="8638">/fr/service/resource/crud/orbeon/bookcast/form/template.pdf</pdf>-->
+                    <pdf mediatype="application/pdf" filename="" size=""/>
+                </attachments>
+            </xforms:instance>
+
+
+            <!-- XForms instance containing all the language resources -->
+            <!-- This form does not use these values much and instead hardcodes most of 
+                the values into the form. However, a few values were added to the resources.xml
+                for form running to properly function -->
+            <xforms:instance id="fr-form-resources">
+                <xi:include href="oxf:/forms/tei/ms/form/resources.xml" xxi:omit-xml-base="true"/>
+            </xforms:instance>
+        </xforms:model>
+    </head>
+
+    <!-- Now we start the "view" of the form -->
+    <body>
+
+        <!-- Form Runner uses it's own tags that are prefixes with "fr". It's complicated, but its mostly just a wrapper.
+              Replace the html tables with the fr:grid and add fr: prefix to your td's and tr's -->
+        <fr:view>
+            <xforms:label>Metadata Toolkit</xforms:label>
+            <xhtml:img src="/apps/fr/style/sulair-banner.gif"/>
+            <fr:body>
+
+                <!-- XFORMS Repeats have a hard-time showing up in the summary table. This section exposes values to be populated in the 
+                    form's summary table --> 
+                <div style="display:none" >
+                    <xforms:input class="fr-summary fr-search fr-email-subject"  ref="msIdentifier/idno">
+                        <xforms:label>Druid</xforms:label>
+                    </xforms:input>
+                </div>
+                
+
+
+                <!-- BEGIN DRUID -->
+				<fr:section id="druid-section" bind="fr-form-binds">
+					<xforms:label ref="$form-resources/detail/titles/druid"/>
+					<xforms:help ref="$form-resources/detail/help/druid"/>
+					<div class="repeat-container">
+						<div class="repeat-container-body">
+							<div class="repeat-container-item">
+								<div class="item-row">
+									<xforms:group ref="msIdentifier">
+                                        <xforms:group ref="idno">
+										<div class="item-cell bordered">
+											<xforms:output value="."/>
+										</div>
+										<div class="item-cell barcode">
+											<xforms:output mediatype="text/html"
+												value="concat('&lt;img', ' class=&#34;mods-barcode&#34;', ' src=&#34;/barcode/', replace(., 'druid:', '') ,'&#34; /&gt;')"
+											/>
+										</div>
+										<div style="clear:both"/>
+                                            </xforms:group>
+									</xforms:group>
+								</div>
+							</div>
+						</div>
+					</div>
+				</fr:section>
+				<!-- END DRUID -->
+
+                <!-- mdIdentifier -->
+                <fr:section id="manuscript-identifier" bind="fr-form-binds">
+
+                    <!--  These are pulled from resources.xml -->
+                    <xforms:label ref="$form-resources/detail/titles/identifier"/>
+                    <xforms:alert ref="$form-resources/detail/alerts/identifier"/>
+                    <xforms:help ref="$form-resources/detail/help/identifier"/>
+
+
+                    <xforms:group ref="msIdentifier">
+                        <div class="repeat-container">
+                            <div class="repeat-container-body">
+                                <div class="repeat-container-item">
+                                    <div class="item-row">
+                                        <xforms:input ref="country">
+                                            <xforms:label>Country: </xforms:label>
+                                        </xforms:input>
+
+                                        <xforms:input ref="region">
+                                            <xforms:label>Region: </xforms:label>
+                                        </xforms:input>
+
+                                        <xforms:input ref="settlement">
+                                            <xforms:label>Settlement: </xforms:label>
+                                        </xforms:input>
+                                    </div>
+
+                                    <div class="item-row">
+                                        <xforms:input ref="institution">
+                                            <xforms:label>Institution: </xforms:label>
+                                        </xforms:input>
+
+                                        <xforms:input ref="repository">
+                                            <xforms:label>Repository: </xforms:label>
+                                        </xforms:input>
+                                    </div>
+                                    <div class="item-row">
+                                        <xforms:input ref="collection">
+                                            <xforms:label>Collection: </xforms:label>
+                                        </xforms:input>
+                                    </div>
+                                    <div class="item-row">
+                                        <fr:optional-element origin="xxforms:instance('tei-insert')/msBox" ref="msBox"
+                                            nodeset="msIdentifier">
+                                            <xforms:output
+                                                ref="$form-resources/detail/titles/addBox"
+                                                class="forms-hidden"/>    
+                                            <xforms:input ref="msBox">
+                                                <xforms:label ref="$form-resources/detail/titles/box" class="forms-hidden"/>
+                                            </xforms:input>
+                                        </fr:optional-element>
+                                        <fr:optional-element ref="msFolder" origin="xxforms:instance('tei-insert')/msFolder"
+                                            nodeset="msIdentifier">
+                                            <xforms:output   ref="$form-resources/detail/titles/addFolder"
+                                                class="forms-hidden"/>    
+                                            <xforms:input ref="msFolder">
+                                                <xforms:label ref="$form-resources/detail/titles/folder" class="forms-hidden"/>
+                                            </xforms:input>
+                                        </fr:optional-element>
+                                        <fr:optional-element ref="msItemNo" origin="xxforms:instance('tei-insert')/msItemNo"
+                                            nodeset="msIdentifier">
+                                            <xforms:output ref="$form-resources/detail/titles/addItemNo"
+                                                class="forms-hidden"/>     
+                                            <xforms:input ref="msItemNo">
+                                                <xforms:label ref="$form-resources/detail/titles/item" class="forms-hidden"/>
+                                            </xforms:input>
+                                        </fr:optional-element>
+                                           
+                                       </div>
+                                    <div class="item-row">
+                                        <xforms:input ref="idno">
+                                            <xforms:label>ID Number: </xforms:label>
+                                        </xforms:input>
+
+                                        <xforms:input ref="altIdentifier">
+                                            <xforms:label>Alternate Identifier: </xforms:label>
+                                        </xforms:input>
+                                    </div>
+                                    <div class="item-row">
+                                        <xforms:input ref="msName">
+                                            <xforms:label>Manuscript Name: </xforms:label>
+                                        </xforms:input>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </xforms:group>
+                </fr:section>
+
+                <!-- manuscript-title / head -->
+                <fr:section id="manuscript-title" bind="fr-form-binds">
+
+
+                    <xforms:label ref="$form-resources/detail/titles/title"/>
+                    <xforms:alert ref="$form-resources/detail/alerts/title"/>
+                    <xforms:help ref="$form-resources/detail/help/title"/>
+
+
+
+                    <xforms:group ref=".">
+                        <div class="repeat-container">
+                            <div class="repeat-container-body">
+                                <div class="repeat-container-item">
+                                    <div class="item-row">
+                                        <xforms:textarea ref="head" class="fr-summary fr-search fr-email-subject" appearance="xxforms:autosize">
+                                            <xforms:label>General Descriptive Title: </xforms:label>
+                                        </xforms:textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </xforms:group>
+                </fr:section>
+
+                <!-- intellectual-content -->
+                <fr:section id="intellectual-content" bind="fr-form-binds">
+
+                    <xforms:label ref="$form-resources/detail/titles/intellectual-content"/>
+                    <xforms:alert ref="$form-resources/detail/alerts/intellectual-content"/>
+                    <xforms:help ref="$form-resources/detail/help/intellectual-content"/>
+
+
+
+                    <xforms:group ref="msContents">
+
+                        <div class="repeat-container">
+                            <div class="repeat-container-body">
+                                <div class="repeat-container-item">
+                                    <div class="item-row">
+                                        <xforms:textarea ref="summary" appearance="xxforms:autosize">
+                                            <xforms:label>Summary of contents: </xforms:label>
+                                        </xforms:textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                        <!-- You can use the fr:repeat instead of the xforms repeat. The values will be pulled from the 
+                       insert.xml file. -->
+                        <div class="repeat-container">
+                            <div class="repeat-container-header">
+                                <span id="label">Items:</span>
+                                <xforms:group ref=".">
+                                    <xforms:action ev:event="DOMActivate">
+                                        <xforms:insert nodeset="msItem" position="last()"
+                                            origin="xxforms:instance('tei-insert')/insert[@name = 'msItem']/msItem"/>
+                                        <xforms:setvalue ref="msItem[last()]/itemNo"
+                                            value="concat('', ../index('msItem-repeat'))"/>
+                                    </xforms:action>
+                                    <xforms:trigger ref="." bind="buttons-triggers">
+                                        <xforms:label>
+                                            <xforms:label>Add Another Item</xforms:label>
+                                        </xforms:label>
+
+                                    </xforms:trigger>
+                                </xforms:group>
+
+                            </div>
+                            <div class="repeat-container-body">
+                                <xforms:repeat nodeset="./msItem[position()]" id="msItem-repeat"
+                                    appearance="xxforms:table">
+                                    <div class="repeat-container-item">
+                                        <xforms:group ref=".">
+
+
+                                            <div class="item-row">
+                                                <xforms:input ref="./itemNo">
+                                                  <xforms:label>Item Number: </xforms:label>
+                                                </xforms:input>
+
+
+                                                <xforms:select ref="defective" appearance="full">
+                                                  <xforms:choices>
+                                                  <xforms:item>
+                                                  <xforms:label>Fragment</xforms:label>
+                                                  <xforms:value>true</xforms:value>
+                                                  </xforms:item>
+                                                  </xforms:choices>
+                                                </xforms:select>
+                                            </div>
+                                            <div class="item-row">
+                                                <xforms:input ref="locus">
+                                                  <xforms:label>Locus: </xforms:label>
+                                                </xforms:input>
+
+                                                <xforms:input ref="author">
+                                                  <xforms:label>Author: </xforms:label>
+                                                </xforms:input>
+
+                                                <xforms:input ref="title">
+                                                  <xforms:label>Item Title: </xforms:label>
+                                                </xforms:input>
+                                            </div>
+                                            <div class="item-row">
+                                                <xforms:input ref="rubric">
+                                                  <xforms:label>Rubric: </xforms:label>
+                                                </xforms:input>
+
+                                                <xforms:input ref="incipit">
+                                                  <xforms:label>Starting Text (or Incipit):
+                                                  </xforms:label>
+                                                </xforms:input>
+
+                                                <xforms:input ref="explicit">
+                                                  <xforms:label>Ending Text (or Explicit):
+                                                  </xforms:label>
+                                                </xforms:input>
+                                            </div>
+                                            <div class="item-row">
+                                                <xforms:textarea ref="decoNote"
+                                                  appearance="xxforms:autosize">
+                                                  <xforms:label>Item Decoration: </xforms:label>
+                                                </xforms:textarea>
+                                            </div>
+                                            <div class="item-row">
+                                                <xforms:textarea ref="note"
+                                                  appearance="xxforms:autosize">
+                                                  <xforms:label>Other Notes: </xforms:label>
+                                                </xforms:textarea>
+                                            </div>
+                                            <div class="item-row">
+                                                <xforms:input ref="textLang">
+                                                  <xforms:label>Item Language: </xforms:label>
+                                                </xforms:input>
+                                            </div>
+                                        </xforms:group>
+                                    </div>
+
+                                </xforms:repeat>
+                            </div>
+                        </div>
+                    </xforms:group>
+                </fr:section>
+
+
+
+
+                <fr:section id="physcial-description" bind="fr-form-binds">
+
+                    <xforms:label ref="$form-resources/detail/titles/physcial-description"/>
+                    <xforms:alert ref="$form-resources/detail/alerts/physcial-description"/>
+                    <xforms:help ref="$form-resources/detail/help/physcial-description"/>
+
+
+
+                    <xforms:group ref="physDesc">
+                        <div class="repeat-container">
+
+                            <div class="repeat-container-header">
+                                <span id="label">Object Description:</span>
+                            </div>
+                            <div class="repeat-container-body">
+
+                                <xforms:group ref="objectDesc">
+
+
+
+
+                                    <div class="repeat-container-item">
+                                        <xforms:group ref="supportDesc">
+                                            <div class="item-row">
+                                                <xforms:select1 ref="support/p" appearance="minimal">
+                                                  <xforms:label>Support Material: </xforms:label>
+                                                  <xforms:item>
+                                                  <xforms:label>Vellum</xforms:label>
+                                                  <xforms:value>vellum</xforms:value>
+                                                  </xforms:item>
+                                                  <xforms:item>
+                                                  <xforms:label>Paper</xforms:label>
+                                                  <xforms:value>paper</xforms:value>
+                                                  </xforms:item>
+                                                </xforms:select1>
+
+                                                <xforms:input ref="extent/p">
+                                                  <xforms:label>Extent: </xforms:label>
+                                                </xforms:input>
+
+                                            </div>
+                                            <div class="item-row">
+                                                <xforms:input ref="extent/dimensions/height">
+                                                  <xforms:label>Height: </xforms:label>
+                                                </xforms:input>
+
+                                                <xforms:input ref="extent/dimensions/width">
+                                                  <xforms:label>Width: </xforms:label>
+                                                </xforms:input>
+                                            </div>
+                                            <div class="item-row">
+                                                <xforms:textarea ref="collation/p"
+                                                  appearance="xxforms:autosize">
+                                                  <xforms:label>Collation Statement: </xforms:label>
+                                                </xforms:textarea>
+                                            </div>
+                                            <div class="item-row">
+                                                <xforms:textarea ref="foliation/p"
+                                                  appearance="xxforms:autosize">
+                                                  <xforms:label>Foliation Description:
+                                                  </xforms:label>
+                                                </xforms:textarea>
+                                            </div>
+                                            <div class="item-row">
+                                                <xforms:textarea ref="condition/p"
+                                                  appearance="xxforms:autosize">
+                                                  <xforms:label>Condition: </xforms:label>
+                                                </xforms:textarea>
+                                            </div>
+
+
+                                        </xforms:group>
+
+                                    </div>
+
+
+                                </xforms:group>
+                                <!-- objectdesc -->
+
+
+
+                            </div>
+                            <!-- container-body -->
+                        </div>
+                        <!-- repeat-container -->
+                        <div class="repeat-container">
+                            <div class="repeat-container-body">
+                                <div class="repeat-container-item">
+                                    <div class="item-row">
+                                        <xforms:group ref="handDesc">
+                                            <xforms:input ref="p">
+                                                <xforms:label>Hand Description: </xforms:label>
+                                            </xforms:input>
+
+
+                                        </xforms:group>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="repeat-container">
+                            <div class="repeat-container-body">
+                                
+                                
+                                <div class="repeat-container-item">
+                                    <div class="item-row">
+                                        <xforms:group ref="musicNotation">
+                                            <xforms:textarea ref="p" appearance="xxforms:autosize">
+                                                <xforms:label>Music Notation: </xforms:label>
+                                            </xforms:textarea>
+                                            
+                                        </xforms:group>
+                                        
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="repeat-container">
+                            <div class="repeat-container-body">
+                                <div class="repeat-container-item">
+                                    <div class="item-row">
+
+                                        <xforms:group ref="decoDesc">
+
+                                            <xforms:input ref="p">
+                                                <xforms:label>Decoration Description:
+                                                </xforms:label>
+                                            </xforms:input>
+
+                                        </xforms:group>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                       
+
+                        <div class="repeat-container">
+                            <div class="repeat-container-body">
+                                <div class="repeat-container-item">
+                                    <div class="item-row">
+
+                                        <xforms:group ref="additions">
+                                            <xforms:textarea ref="p" appearance="xxforms:autosize">
+                                                <xforms:label>Additional Material: </xforms:label>
+                                            </xforms:textarea>
+                                        </xforms:group>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- repeat-body -->
+                        </div>
+                        <!-- repeat-container  -->
+                    </xforms:group>
+                    <!-- phydesc -->
+
+                </fr:section>
+
+
+                <fr:section id="history" bind="fr-form-binds">
+
+                    <xforms:label ref="$form-resources/detail/titles/history"/>
+                    <xforms:alert ref="$form-resources/detail/alerts/history"/>
+                    <xforms:help ref="$form-resources/detail/help/history"/>
+
+                    <div class="repeat-container">
+                        <div class="repeat-container-body">
+                            <div class="repeat-container-item">
+                                <xforms:group ref="history">
+                                    <div class="item-row">
+                                        <xforms:input ref="origin/p/origPlace">
+                                            <xforms:label>Place of Origin: </xforms:label>
+                                        </xforms:input>
+                                    </div>
+                                    <div class="item-row">
+
+                                        <xforms:input ref="origin/p/origDate/notBefore">
+                                            <xforms:label>Date of Origin (not before):
+                                            </xforms:label>
+                                        </xforms:input>
+
+                                        <xforms:input ref="origin/p/origDate/notAfter">
+                                            <xforms:label>Date of Origin (not After):
+                                            </xforms:label>
+                                        </xforms:input>
+                                    </div>
+                                    <div class="item-row">
+                                        <xforms:textarea ref="provenance/p"
+                                            appearance="xxforms:autosize">
+                                            <xforms:label>Provenance: </xforms:label>
+                                        </xforms:textarea>
+                                    </div>
+
+                                    <div class="item-row">
+                                        <xforms:textarea ref="acquisition/p"
+                                            appearance="xxforms:autosize">
+                                            <xforms:label>Acquisition Information: </xforms:label>
+                                        </xforms:textarea>
+                                    </div>
+
+
+                                </xforms:group>
+                            </div>
+                        </div>
+                    </div>
+                </fr:section>
+
+
+                <fr:section id="additional" bind="fr-form-binds">
+
+                    <xforms:label ref="$form-resources/detail/titles/additional"/>
+                    <xforms:alert ref="$form-resources/detail/alerts/additional"/>
+                    <xforms:help ref="$form-resources/detail/help/additional"/>
+
+                    <div class="repeat-container">
+                        <div class="repeat-container-body">
+                            <div class="repeat-container-item">
+
+
+                                <xforms:group ref="additional">
+                                    <div class="item-row">
+                                        <xforms:textarea ref="listBibl/bibl"
+                                            appearance="xxforms:autosize">
+                                            <xforms:label>For further reference: </xforms:label>
+                                        </xforms:textarea>
+                                    </div>
+                                </xforms:group>
+                            </div>
+                        </div>
+                    </div>
+                </fr:section>
+
+            </fr:body>
+        </fr:view>
+
+    </body>
+
+
+</html>

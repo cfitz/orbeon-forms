@@ -1,0 +1,14 @@
+<instance> 
+    <section>
+    <item>
+        <label>-- Select One --</label>
+        <value></value>
+    </item>
+    </section>
+    <section>
+    <item>
+        <label>TIFF image</label>
+        <value>image/tiff</value>    
+    </item>
+    </section>
+</instance>
