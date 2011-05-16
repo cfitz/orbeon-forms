@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <mods:mods          xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
-                    xmlns:mods="http://www.loc.gov/mods/v3"
-                    xmlns:xforms="http://www.w3.org/2002/xforms">       
+    xmlns:mods="http://www.loc.gov/mods/v3"
+    xmlns:xforms="http://www.w3.org/2002/xforms">       
     <mods:identifier type="local" displayLabel="SU DRUID">1234</mods:identifier>
-     <mods:identifier type="local" displayLabel="book_number"></mods:identifier>    
+    <mods:identifier type="local" displayLabel="book_number"></mods:identifier>    
     <mods:titleInfo type='main'>        
         <mods:nonSort />
         <mods:title />
@@ -16,9 +16,9 @@
     <mods:originInfo>
         <mods:place><mods:placeTerm type="text"></mods:placeTerm></mods:place>
         <mods:dateCreated encoding="w3cdtf" keyDate="yes" qualifier="" />
-       
+        
     </mods:originInfo> 
-  <mods:name type="personal" authority="local">
+    <mods:name type="personal" authority="local">
         <mods:namePart type=""/>
         <mods:role>
             <mods:roleTerm type="text" authority="marcrelator"></mods:roleTerm>
@@ -26,26 +26,35 @@
     </mods:name>    
     <mods:genre></mods:genre>  
     <mods:physicalDescription>
-    		<mods:form  authority="marcform"/>
-    		<mods:internetMediaType>image/tiff</mods:internetMediaType>
-    		<mods:extent></mods:extent>
-    		<mods:digitalOrigin>digitized other analog</mods:digitalOrigin> 
+        <mods:form  authority="marcform"/>
+        <mods:internetMediaType>image/tiff</mods:internetMediaType>
+        <mods:extent></mods:extent>
+        <mods:digitalOrigin>digitized other analog</mods:digitalOrigin> 
     </mods:physicalDescription>  
     <mods:location>
-    	<mods:physicalLocation></mods:physicalLocation>
-    	<mods:url usage="primary display" access=""></mods:url>
-    </mods:location>    
-    <mods:accessCondition type="useAndReproduction" ></mods:accessCondition>   
+        <mods:physicalLocation></mods:physicalLocation>
+        <mods:url usage="primary display" access=""></mods:url>
+    </mods:location>      
     <mods:subject authority="keyword"><mods:topic/></mods:subject>
     <mods:recordInfo>
-    <mods:recordContentSource>Lyberteam Metadata ToolKit</mods:recordContentSource>
-    <mods:recordCreationDate encoding="iso8601"></mods:recordCreationDate>
+        <mods:recordContentSource>Lyberteam Metadata ToolKit</mods:recordContentSource>
+        <mods:recordCreationDate encoding="iso8601"></mods:recordCreationDate>
     </mods:recordInfo>
-    <mods:relatedItem type="host">
-    <mods:titleInfo><mods:title type=''>McLaughlin Map Collection</mods:title><mods:subTitle/></mods:titleInfo>
-    <mods:typeOfResource collection="yes"/>
-    <mods:location><mods:physicalLocation>Department of Special Collections. Stanford University Libraries.</mods:physicalLocation></mods:location>
-    <mods:originInfo><mods:dateIssued point="start"></mods:dateIssued><mods:dateIssued point="end"></mods:dateIssued></mods:originInfo>
-    <mods:recordInfo><mods:recordIdentifier source="Symphony Catalog Key"></mods:recordIdentifier></mods:recordInfo>
-    </mods:relatedItem>
+    <mods:accessCondition displayLabel="Copyright Stanford University. Stanford, CA 94305. (650) 723-2300." type="useAndReproduction">
+        Stanford University Libraries and Academic Information Resources - Terms of
+        Use SULAIR Web sites are subject to Stanford University's standard Terms of
+        Use (See http://www.stanford.edu/home/atoz/terms.html) These terms include a
+        limited personal, non-exclusive, non-transferable license to access and use
+        the sites, and to download - where permitted - material for personal,
+        non-commercial, non-display use only. Please contact the University
+        Librarian to request permission to use SULAIR Web sites and contents beyond
+        the scope of the above license, including but not limited to republication
+        to a group or republishing the Web site or parts of the Web site. SULAIR
+        provides access to a variety of external databases and resources, which
+        sites are governed by their own Terms of Use, as well as contractual access
+        restrictions. The Terms of Use on these external sites always govern the
+        data available there. Please consult with library staff if you have
+        questions about data access and availability.
+    </mods:accessCondition>
+    <mods:genre>Early Maps</mods:genre><mods:genre>Digital Maps</mods:genre>
 </mods:mods>

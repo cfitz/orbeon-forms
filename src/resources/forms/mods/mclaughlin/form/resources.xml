@@ -91,7 +91,7 @@
                 <namePart>Name Parts</namePart>
                 <namePartType>Type</namePartType>
                 <seriesInfo>Series Information</seriesInfo>
-                <relatedItemType>Type</relatedItemType>
+
                 <relatedItemSubtitle>Box or Drawer Name</relatedItemSubtitle>
                 <relatedItemPartName>Folder Name</relatedItemPartName>
                 <relatedItemPartNumber>Folder Number</relatedItemPartNumber>
@@ -121,7 +121,6 @@
                 <manuscript>Manuscript</manuscript>
                 <druid>Druid</druid>
                 <namelink>Name Link</namelink>
-                <viewrecord>View Record</viewrecord>
             </titles>
 
             <!-- Triggers labels -->
@@ -615,6 +614,46 @@
                     </section>
                 </instance>
             </identifiertype>
+            <identifierDisplayLabels>
+                <instance>
+                    <section>
+                        <item>
+                            <label>-- Select One --</label>
+                            <value/>
+                        </item>
+                    </section>
+                    <section>
+                        <item>
+                            <label>Original McLaughlin Book Number (1995 edition)</label>
+                            <value>Original McLaughlin Book Number (1995 edition)</value>
+                        </item>
+                        <item>
+                            <label>Updated McLaughlin Book Number</label>
+                            <value>Updated McLaughlin Book Number</value>
+                        </item>
+                        <item>
+                            <label>Call Number</label>
+                            <value>call_number</value>
+                        </item>
+                        <item>
+                            <label>FileMaker Pro Record Number</label>
+                            <value>FileMaker Pro Record Number</value>
+                        </item>
+                        <item>
+                            <label>Post publication map number</label>
+                            <value>Post publication map number</value>
+                        </item>
+                        <item>
+                            <label>Stanford University DRUID</label>
+                            <value>SU DRUID</value>
+                        </item>
+                    </section>
+
+
+                </instance>
+
+
+            </identifierDisplayLabels>
             <titletype>
                 <instance>
                     <section>
@@ -1983,21 +2022,27 @@
                     </section>
                     <section>
                         <item>
-                            <label>Approximate</label>
+                            <label>Exact</label>
+                            <value/>
+                        </item>
+                    </section>
+                    <section>
+                        <item>
+                            <label>Approximate (ca., date range, dashed date)</label>
                             <value>approximate</value>
                         </item>
                     </section>
                     <section>
 
                         <item>
-                            <label>Inferred</label>
+                            <label>Inferred (firm date given in brackets)</label>
                             <value>inferred</value>
                         </item>
                     </section>
                     <section>
 
                         <item>
-                            <label>Questionable</label>
+                            <label>Questionable (question mark at end of date)</label>
                             <value>questionable</value>
                         </item>
                     </section>
@@ -2280,42 +2325,7 @@
                     </section>
                 </instance>
             </genre>
-            <identifierDisplayLabels>
-                <instance>
-                    <section>
-                        <item>
-                            <label>-- Select One --</label>
-                            <value/>
-                        </item>
-                    </section>
-                    <section>
-                        <item>
-                            <label>Book Number</label>
-                            <value>book_number</value>
-                        </item>
-                        <item>
-                            <label>Entry Number</label>
-                            <value>entry_number</value>
-                        </item>
-                        <item>
-                            <label>Call Number</label>
-                            <value>call_number</value>
-                        </item>
-                        <item>
-                            <label>Record Number</label>
-                            <value>record_number</value>
-                        </item>
-                        <item>
-                            <label>SU DRUID</label>
-                            <value>SU DRUID</value>
-                        </item>
-                    </section>
 
-
-                </instance>
-
-
-            </identifierDisplayLabels>
             <coordinates>
                 <instance>
                     <section>
@@ -2437,24 +2447,84 @@
                     </section>
                     <section>
                         <item>
-                            <label>State Note</label>
-                            <value>state_note</value>
+                            <label>General Notes</label>
+                            <value>content</value>
                         </item>
                         <item>
-                            <label>Reference Note</label>
-                            <value>reference</value>
-                        </item>
-                        <item>
-                            <label>Publication Note</label>
-                            <value>publications</value>
-                        </item>
-                        <item>
-                            <label>Language Note</label>
+                            <label>Language</label>
                             <value>language</value>
                         </item>
                         <item>
-                            <label>General Note</label>
-                            <value>content</value>
+                            <label>Publication</label>
+                            <value>publications</value>
+                        </item>
+                        <item>
+                            <label>Reference</label>
+                            <value>reference</value>
+                        </item>
+                        <item>
+                            <label>State</label>
+                            <value>state_note</value>
+                        </item>
+                        <item>
+                            <label>State 1</label>
+                            <value>state 1</value>
+                        </item>
+                        <item>
+                            <label>State 2</label>
+                            <value>state 2</value>
+                        </item>
+                        <item>
+                            <label>State 3</label>
+                            <value>state 3</value>
+                        </item>
+                        <item>
+                            <label>State 4</label>
+                            <value>state 4</value>
+                        </item>
+                        <item>
+                            <label>State 5</label>
+                            <value>state 5</value>
+                        </item>
+                        <item>
+                            <label>State 6</label>
+                            <value>state 6</value>
+                        </item>
+                        <item>
+                            <label>State 7</label>
+                            <value>state 7</value>
+                        </item>
+                        <item>
+                            <label>State 8</label>
+                            <value>state 8</value>
+                        </item>
+                        <item>
+                            <label>State 9</label>
+                            <value>state 9</value>
+                        </item>
+                        <item>
+                            <label>State 10</label>
+                            <value>state 10</value>
+                        </item>
+                        <item>
+                            <label>State 11</label>
+                            <value>state 11</value>
+                        </item>
+                        <item>
+                            <label>State 12</label>
+                            <value>state 12</value>
+                        </item>
+                        <item>
+                            <label>State 13</label>
+                            <value>state 13</value>
+                        </item>
+                        <item>
+                            <label>State 14</label>
+                            <value>state 14</value>
+                        </item>
+                        <item>
+                            <label>State 15</label>
+                            <value>state 15</value>
                         </item>
                     </section>
                 </instance>
