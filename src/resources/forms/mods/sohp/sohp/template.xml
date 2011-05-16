@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mods:mods     xmlns:xxforms="http://orbeon.org/oxf/xml/xforms" xmlns:mods="http://www.loc.gov/mods/v3"
+    xmlns:xforms="http://www.w3.org/2002/xforms">       
+    
+    
+    <mods:titleInfo>        
+        <mods:nonSort />
+        <mods:title />
+        <mods:subTitle />
+        <mods:partNumber />
+        <mods:partName /> 
+    </mods:titleInfo> 
+    <mods:originInfo>
+        <mods:place><mods:placeTerm type="text">Stanford, CA</mods:placeTerm></mods:place>
+        <mods:publisher>Stanford University Archives</mods:publisher>
+        <mods:dateCreated encoding="w3cdtf" keyDate="yes" qualifier="" />
+       </mods:originInfo> 
+  <mods:recordInfo>
+    <mods:recordContentSource>Lyberteam Metadata ToolKit</mods:recordContentSource> 
+    <mods:recordIdentifier source="Suri UUID"></mods:recordIdentifier>  
+    <mods:recordCreationDate encoding="iso8601"></mods:recordCreationDate>
+    </mods:recordInfo>
+   
+</mods:mods>
