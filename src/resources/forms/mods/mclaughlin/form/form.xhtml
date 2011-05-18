@@ -121,7 +121,7 @@
 				<xforms:bind
 					nodeset="mods:titleInfo/child::*[position()=1 and contains(name(), 'title')]"
 					required="true()" type="xs:string"/>
-
+				
 				<xforms:bind id="title-bind" nodeset="mods:titleInfo/mods:title" required="true()"/>
 				<xforms:bind id="titletype" nodeset="mods:titleInfo/@type" type="xs:string"/>
 				<xforms:bind id="name-bind" nodeset="mods:name"/>
@@ -142,6 +142,8 @@
 
 
 				<xforms:bind nodeset="mods:relatedItem/mods:identifier"/>
+				
+				<xforms:bind id='relatedItemHost' nodeset="mods:relatedItem[@type = 'host']" readonly="true()" />
 				<xforms:bind nodeset="mods:relatedItem/@type"/>
 				<xforms:bind nodeset="mods:relatedItem/@displayLabel"/>
 				<xforms:bind nodeset="mods:relatedItem/@xlink:href"
@@ -227,7 +229,7 @@
 				<xi:include href="oxf:/forms/mods/partials/identifier_partial.xml"
 					xxi:omit-xml-base="true"/>
 
-				<xi:include href="oxf:/forms/mods/mapSimple/form/partials/related_item_partial.xml"
+				<xi:include href="oxf:/forms/mods/partials/related_item_partial.xml"
 					xxi:omit-xml-base="true"/>
 
 				<xi:include href="oxf:/forms/mods/partials/title_info_partial.xml"
