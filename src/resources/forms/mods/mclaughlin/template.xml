@@ -57,4 +57,94 @@
         questions about data access and availability.
     </mods:accessCondition>
     <mods:genre>Early Maps</mods:genre><mods:genre>Digital Maps</mods:genre>
+    <mods:relatedItem type="host">
+        <mods:titleInfo>
+            <mods:nonSort>The</mods:nonSort>
+            <mods:title>mapping of California as an island</mods:title>
+            <mods:subTitle>an illustrated checklist</mods:subTitle>
+        </mods:titleInfo>
+        <mods:titleInfo type="alternative">
+            
+            <mods:title>California as an island</mods:title>
+        </mods:titleInfo>
+        <mods:name type="personal">
+            <mods:namePart>McLaughlin, Glen</mods:namePart>
+            <mods:namePart type="date">1934-</mods:namePart>
+            <mods:role>
+                <mods:roleTerm authority="marcrelator" type="text">creator</mods:roleTerm>
+                
+            </mods:role>
+        </mods:name>
+        <mods:name type="personal">
+            <mods:namePart>Mayo, Nancy H.</mods:namePart>
+        </mods:name>
+        <mods:name type="corporate">
+            <mods:namePart>California Map Society</mods:namePart>
+        </mods:name>
+        
+        <mods:typeOfResource>text</mods:typeOfResource>
+        <mods:genre authority="marcgt">bibliography</mods:genre>
+        <mods:originInfo>
+            <mods:place>
+                <mods:placeTerm type="code" authority="marccountry">cau</mods:placeTerm>
+            </mods:place>
+            <mods:place>
+                
+                <mods:placeTerm type="text">[Saratoga, CA]</mods:placeTerm>
+            </mods:place>
+            <mods:publisher>California Map Society</mods:publisher>
+            <mods:dateIssued>c1995</mods:dateIssued>
+            <mods:dateIssued encoding="marc" keyDate="yes">1995</mods:dateIssued>
+            <mods:edition>1st ed.</mods:edition>
+            
+            <mods:issuance>monographic</mods:issuance>
+        </mods:originInfo>
+        <mods:physicalDescription>
+            <mods:form authority="marcform">print</mods:form>
+            
+            <mods:extent>xvi, 134, [7] p. : ill., maps ; 28 cm.</mods:extent>
+        </mods:physicalDescription>
+        <mods:note displayLabel="statement of responsibility">Glen McLaughlin with Nancy H. Mayo.</mods:note>
+        <mods:note>Includes bibliographical references (p. xv-xvi) and indexes.</mods:note>
+        <mods:subject>
+            <mods:geographicCode authority="marcgac">n-us-ca</mods:geographicCode>
+        </mods:subject>
+        
+        <mods:subject authority="lcsh">
+            <mods:topic>Cartography</mods:topic>
+            <mods:geographic>California</mods:geographic>
+            <mods:topic>History</mods:topic>
+            <mods:genre>Sources</mods:genre>
+        </mods:subject>
+        <mods:subject authority="lcsh">
+            
+            <mods:geographic>California</mods:geographic>
+            <mods:topic>Maps</mods:topic>
+            <mods:topic>Early works to 1800</mods:topic>
+            <mods:genre>Bibliography</mods:genre>
+            <mods:genre>Catalogs</mods:genre>
+        </mods:subject>
+        
+        <mods:classification authority="lcc">GA413 .M38 1995</mods:classification>
+        <mods:classification authority="ddc" edition="21">912.794</mods:classification>
+        <mods:identifier type="local" displayLabel="Symphony Catalog Key">3306259</mods:identifier> 
+        
+        <mods:identifier type="isbn" invalid="yes">01888126000</mods:identifier>
+        <mods:identifier type="lccn">97119748</mods:identifier>
+        <mods:identifier type="uri">http://collections.stanford.edu/bookreader-public/view.jsp?id=00021264#1</mods:identifier>
+        <mods:location>
+            <mods:url usage="primary display">http://collections.stanford.edu/bookreader-public/view.jsp?id=00021264#1</mods:url>
+        </mods:location>
+        
+       
+        
+        <mods:recordInfo>
+            
+            <mods:descriptionStandard>aacr2</mods:descriptionStandard>
+            <mods:recordContentSource authority="marcorg">DNA</mods:recordContentSource>
+            <mods:recordCreationDate encoding="marc">960319</mods:recordCreationDate>
+            <mods:recordIdentifier>a3306259</mods:recordIdentifier>
+        </mods:recordInfo>
+        
+    </mods:relatedItem>
 </mods:mods>

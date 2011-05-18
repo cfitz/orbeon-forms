@@ -91,7 +91,8 @@
                 <namePart>Name Parts</namePart>
                 <namePartType>Type</namePartType>
                 <seriesInfo>Series Information</seriesInfo>
-
+                <relatedItemTitle>Related Item Title</relatedItemTitle>
+                <relatedItemType>Related Item Type</relatedItemType>
                 <relatedItemSubtitle>Box or Drawer Name</relatedItemSubtitle>
                 <relatedItemPartName>Folder Name</relatedItemPartName>
                 <relatedItemPartNumber>Folder Number</relatedItemPartNumber>
@@ -1692,6 +1693,10 @@
                             <value>bookseller</value>
                         </item>
                         <item>
+                            <label>Cartographer</label>
+                            <value>cartographer</value>
+                        </item>
+                        <item>
                             <label>Censor</label>
                             <value>censor</value>
                         </item>
@@ -2152,11 +2157,11 @@
                         </item>
                         <item>
                             <label>Digital maps</label>
-                            <value>Digital maps</value>
+                            <value>Digital Maps</value>
                         </item>
                         <item>
                             <label>Early maps</label>
-                            <value>Early maps</value>
+                            <value>Early Maps</value>
                         </item>
                         <item>
                             <label>Fire insurance maps</label>
@@ -2212,7 +2217,7 @@
                         </item>
                         <item>
                             <label>Maps</label>
-                            <value>Maps</value>
+                            <value>map</value>
                         </item>
                         <item>
                             <label>Meteorological charts</label>
@@ -2277,6 +2282,10 @@
                         <item>
                             <label>Road maps</label>
                             <value>Road maps</value>
+                        </item>
+                        <item>
+                            <label>Separate Map</label>
+                            <value>Separate Map</value>
                         </item>
                         <item>
                             <label>Statistical maps</label>
