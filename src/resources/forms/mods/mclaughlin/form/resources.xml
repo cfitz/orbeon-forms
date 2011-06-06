@@ -2472,6 +2472,10 @@
                             <value>reference</value>
                         </item>
                         <item>
+                            <label>Statement Of Responsibility</label>
+                            <value>statement_of_responsibility</value>
+                        </item>
+                        <item>
                             <label>State</label>
                             <value>state_note</value>
                         </item>
