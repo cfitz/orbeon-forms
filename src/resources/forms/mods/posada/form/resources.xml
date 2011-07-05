@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Copyright (C) 2006 Orbeon, Inc.
+  Copyright (C) 2010 Orbeon, Inc.
 
-    This program is free software; you can redistribute it and/or modify it under the terms of the
-    GNU Lesser General Public License as published by the Free Software Foundation; either version
-    2.1 of the License, or (at your option) any later version.
+  This program is free software; you can redistribute it and/or modify it under the terms of the
+  GNU Lesser General Public License as published by the Free Software Foundation; either version
+  2.1 of the License, or (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-    without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See the GNU Lesser General Public License for more details.
+  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  See the GNU Lesser General Public License for more details.
 
-    The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
--->
+  The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
+  -->
 <resources xmlns="" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xxi="http://orbeon.org/oxf/xml/xinclude"   xmlns:mods="http://www.loc.gov/mods/v3">
     <resource xml:lang="en">
 
@@ -35,12 +35,12 @@
         </summary>
 
 
-<!-- Resources that appear on the form -->
+<!-- Resources that appear on the form --> 
         <detail>
             <titles>
                 <druid>Druid</druid>
-                <detail-title>MODS Demo</detail-title>
-                <titleInfo>Title Information</titleInfo>
+                <detail-title>Archive Simple</detail-title>
+                <titleInfo>Container Information</titleInfo>
                 <originInfo>Origin Information</originInfo>
                 <date-type>Date Type</date-type>
                 <qualifier>Qualifier</qualifier>
@@ -60,13 +60,13 @@
                 <name>Name</name>
                 <nameParts>Person or Organization Name</nameParts>
                 <namePart/>
+                <displayLabel>Display Label</displayLabel>
                 <nametype>Name Type</nametype>
                 <nameauthority>Name Authority</nameauthority>
                 <namerole>Name Role</namerole>
                 <roleTerm>Role Term</roleTerm>
                 <genre>Genre</genre>
                 <physicaldescription>Physical Description</physicaldescription>
-                <physicalNote>Physical Note</physicalNote>
                 <internetmediatype>Internet Media Type</internetmediatype>
                 <extent>Extent</extent>
                 <digitalorigin>Digital Origin</digitalorigin>
@@ -75,7 +75,7 @@
                 <physicallocation>Physical Location</physicallocation>
                 <accesscondition>Access Condition</accesscondition>
                 <abstract>Abstract</abstract>
-                <subject>LC Subject Heading</subject>
+                <subject>Subject</subject>
                 <subjectDate>Subject - Temporal</subjectDate>
                 <subjectTopic>Subject - Topic</subjectTopic>
                 <subjectGenre>Subject - Genre</subjectGenre>
@@ -95,20 +95,17 @@
                 <relatedItemSubtitle>Box or Drawer Name</relatedItemSubtitle>
                 <relatedItemPartName>Folder Name</relatedItemPartName>
                 <relatedItemPartNumber>Folder Number</relatedItemPartNumber>
-
-                <title>FAF Title</title>
+       
+                <title>Document Title</title>
                 <titletype>Title Type</titletype>
-				<notetype>Note Type</notetype>
                 <subtitle>Subtitle</subtitle>
                 <nonSort>Non-Sorting Characters</nonSort>
-                <partnumber>Item Part Number</partnumber>
-                <partname>Name Of Part</partname>
+                <partnumber>Box Number</partnumber>
+                <partname>Folder or Volume Number</partname>
                 <nameauthority>Name Authority</nameauthority>
                 <removeidentifier>Remove Identifier</removeidentifier>
                 <identifiertype>Type Of Identifier</identifiertype>
-                <displayLabel>Display Label</displayLabel>
-                <genreauthority>Genre Authority</genreauthority>
-                <authority>Authority</authority>
+                <note>Note</note>
                 <namePart>Name Part</namePart>
                 <nametype>Name Type</nametype>
                 <roleTerm>Role Term</roleTerm>
@@ -118,21 +115,14 @@
                 <relatedItemSubtitle>Box or Drawer Name</relatedItemSubtitle>
                 <relatedItemPartName>Folder Name</relatedItemPartName>
                 <relatedItemPartNumber>Folder Number</relatedItemPartNumber>
-            	<import>Import</import>
-				<language>Language</language>
-				<languageSuggest>LC Language Lookup</languageSuggest>
-
-				<manuscript>Manuscript</manuscript>
-                <point>Range Point</point>
-                <stateInfo>State Information</stateInfo>
-                <stateStatus>Status</stateStatus>
+            
             </titles>
 
             <!-- Triggers labels -->
             <labels>
-                <label>Label</label>
-                 <identifiertype>Type Of Identifier</identifiertype>
+                <identifiertype>Type Of Identifier</identifiertype>
                 <displayLabel>Display Label</displayLabel>
+                <label>Label</label>
                 <type>Type</type>
                 <yes>Yes</yes>
                 <no>No</no>
@@ -141,7 +131,6 @@
                 <remove-place>Remove Place</remove-place>
                 <originInfosave>Save</originInfosave>
                 <addcreationDate>Creation Date</addcreationDate>
-                <addcreationDates>Creation Date Range</addcreationDates>
                 <addcopyrightDate>Copyright Date</addcopyrightDate>
                 <adddateIssued>Date Issued</adddateIssued>
                 <adddateOther>Acquisition Date</adddateOther>
@@ -160,47 +149,36 @@
                 <location>Location</location>
                 <url>URL</url>
                 <physicallocation>Physical Location</physicallocation>
-                <physicalNote>Physical Note</physicalNote>
                 <urlaccess>URL Access</urlaccess>
                 <physicallocation>Physical Location</physicallocation>
                 <accesscondition>Access Condition</accesscondition>
                 <abstract>Abstract</abstract>
-                <subject>LC Subject Heading</subject>
+                <subject>Subject</subject>
                 <addSubjectDate>Date</addSubjectDate>
-                <addSubjectDates>Date Range</addSubjectDates>
                 <addSubjectTopic>Topic</addSubjectTopic>
                 <addSubjectGenre>Genre</addSubjectGenre>
                 <addSubjectName>Name</addSubjectName>
                 <addSubjectTitleInfo>Title</addSubjectTitleInfo>
                 <addGeographic>Geographic</addGeographic>
                 <addCartographics>Cartographics</addCartographics>
-				<notetype>Note Type</notetype>
-                <notetype>Note</notetype>
+
                 <!-- Other controls labels -->
                 <origintype>
                     <copyright state="copyright">Copyright</copyright>
                     <creation>Creation</creation>
                     <publication>Publication</publication>
                 </origintype>
-            	<import>Import MODS Record From Catalog Key</import>
-                <import-barcode>Import MODS Record From Barcode</import-barcode>
-				<language>Language</language>
-				<languageSuggest>LC Language Lookup</languageSuggest>
-				<manuscript>Manuscript</manuscript>
-                <stateInfo>State Information</stateInfo>
-                <stateStatus>Status</stateStatus>
             </labels>
 
             <alerts>
                 <identifier>Identifier field cannot be empty.</identifier>
                 <identifiertype>Choose an identifier type.</identifiertype>
-                <displayLabel>All local identifiers should have a display label to qualify the identifier.</displayLabel>
-                <title>Take title from cassette label, but correct misspellings and spell out abbreviated words.  Omit initial articles from this field (a, an, the for English) and instead put them in the Non-Sorting Characters field.</title>
-                <nonSort>In this field put initial articles (a, an, the for English) which are the first word of the Title. </nonSort>
-                <titletype> Leave blank for the main title.  If there is a spoken title or other variant that is different from the main title, add another Title Information field and record that as a Title type Alternative. </titletype>
+                <title>All records must have at least one title</title>
+                <titletype>Please select a title type.</titletype>
                 <titleInfo>Title field cannot be empty.</titleInfo>
-                <partnumber>Only use if the lecture is numbered as part of a series of different lectures with the same title.  Do not use for the different parts of the same lecture (as in tape 1, side 1 etc.)</partnumber>
-                <typeofresource>Please select a type of resource.</typeofresource>
+                <partnumber>Box Number is required.</partnumber>
+		<partname>Folder or Volume Number is required.</partname>
+		   <typeofresource>Please select a type of resource.</typeofresource>
                 <date>Dates must be in YYYY-MM-DD format.</date>
                 <digitalorigin>Choose a digital origin</digitalorigin>
                 <physicaldescription>All records must contain one Physical Description element</physicaldescription>
@@ -210,8 +188,6 @@
                 <seriesInfo>Series Information</seriesInfo>
                 <relatedItemTitle>Series Type</relatedItemTitle>
                 <relatedItemSubtitle>Box or Drawer</relatedItemSubtitle>
-                  <genreauthority>Genre Authority</genreauthority>
-                <authority>Authority</authority>
             </alerts>
 
             <help>
@@ -222,10 +198,7 @@
                 <identifiertype>Required. All occurrences of the identifier element must contain the
                     type attribute to indicate the type of the identifier. If a local identifier is
                     used, it should be indicated as such using the local value.</identifiertype>
-                <displayLabel>Identifiers marked as "local" should have a qualifer to describe the identifer type.</displayLabel>
-                <title>Take title from cassette label, but correct misspellings and spell out abbreviated words.
-                    Omit initial articles from this field (a, an, the for English) and instead
-                    put them in the Non-Sorting Characters field.</title>
+                <title>Title Help Needed</title>
                 <titletype>All additional titles must designate a type.</titletype>
                 <titleInfo>The DLF/Aquifer Implementation Guidelines for Shareable MODS Records
                     require the use in all records of at least one titleInfo element with one title
@@ -264,12 +237,16 @@
                     case of a digitized photograph, typeOfResource would apply to the analog
                     original; in born-digital materials, it would apply to the original digital
                     format.</typeofresource>
-                <date>If the date is not given on the cassette label or spoken on the tape, attempt to estimate a date,
-                    or google the title in an attempt to see when the program was given.
-                    A range of dates such as a decade may be given by clicking the second 
-                    “Creation Date button and putting the earliest date in the Start, and latest name in the end.   </date>
-                <qualifier>Only add a qualifier if the exact date is not given and a date was
-                    inferred, approximate, or questionable.</qualifier>
+                <date>The guidelines recommend recording each date in a structured form rather than
+                    a textual form. When a date is uncertain or cataloger-supplied, indicate this
+                    through the use of the qualifier field rather than inserting characters such as
+                    "ca.", brackets or a question mark as part of the date string. When only a
+                    decade is known, enter a date range for the entire decade and mark the date as
+                    questionable. When only a century is known, enter a date range for the entire
+                    century and mark the date as questionable.</date>
+                <qualifier>Best practice is to use this attribute with the appropriate value when a
+                    date is approximate, inferred, or questionable, rather than inserting characters
+                    such as "ca.", brackets or a question mark within the date string.</qualifier>
                 <place>Record in place names associated with the creation or issuance of a resource.
                     Place should be omitted if no information about the originating place of the
                     resource is known.</place>
@@ -279,32 +256,31 @@
                     digitizing and delivering online a previously published resource should be
                     included in note, rather than in publisher.</publisher>
                 <originInfo>OriginInfo Help Needed</originInfo>
-                <subject>Use LC subject headings when a subject can be ascertained.
-                    Where a topical LC subject is subdivided by a topic, as in “Motion pictures—Production and direction,”
-                    put both in a single Topic field, divided by two hypens with no spaces before or after.
-                    Headings or subdivisions for geographic places, personal or corporate names,
-                    or dates should be put in the appropriate subject subfields as indicated on the buttons.
-                    For geographic places that are cities, input in the format State—City (for US or Canadian provinces)
-                    or Country—City (for non-US places) </subject>
+                <subject>Subject Help Needed</subject>
                 <edition>The edition element is used to provide an edition statement for a published
                     work. Descriptive standards such as AACR2 and DACS may be used to determine if
                     an edition statement should be recorded and in what format. If no edition
                     statement applies to the resource, do not include the edition element.</edition>
-                <name>For personal names, input as Last name, First name, as in Smith, John.
-                    Do not put in a Name Type for this.  If  a name has associated life dates or a term of address,
-                    add another Name Part field.  Put the name in the Name Part field that has no associated Name Type,
-                    and put the date or term of address in the one with the Name Type,
-                    and choose the appropriate type (usually “date”).</name>
+                <name>The DLF/Aquifer Implementation Guidelines for Shareable MODS Records recommend
+                    the use of at least one name element to describe the creator of the intellectual
+                    content of the resource, if available. Include as many name elements for
+                    contributors as are readily available. For textual materials, include the names
+                    of all known authors, translators, and/or editors. For images, include the name
+                    of the creator of the original intellectual content (photographer, painter,
+                    architect, etc.) and the name of anyone capturing that content in a new medium
+                    (for a photograph of a building, include both the architect and the
+                    photographer). If the creator is unknown or anonymous, do not include "unknown,"
+                    "anonymous," or a similar indication in the MODS records for aggregation.</name>
                 <nametype>Indicates the type of name.</nametype>
-                <nameauthority>Use Local unless the Library of Congress NAF file is checked.</nameauthority>
+                <nameauthority>The indicates the authority for the name element. Use "local" if it
+                    is not a LCSH record</nameauthority>
                 <namerole>Use this subelement to actually contain the coded or textual description.
                     At the time the guidelines are published there is only one: the MARC Value List
                     for Relators and Roles.</namerole>
                 <genre>The genre element is recommended in these guidelines and should be used to
                     characterize the content of the digital resource rather than the digital
-                    resource itself.</genre>
-                  <genreauthority>Genre Authority Help</genreauthority>
-                  <authority> Authority Help</authority>
+                    resource itself. Currently, these values are from the Getty's Art and
+                    Architecture Thesaurus.</genre>
                 <form>This subelement specifies the physical form or medium of the material for a
                     resource. This list include values from Source Codes for Forms (smd) maintained
                     by the Library of Congress.</form>
@@ -462,52 +438,12 @@
                     </section>
                 </instance>
             </identifiertype>
-            <displayLabel>
+            <titletype>
                 <instance>
                     <section>
                         <item>
-                            <label>--Select One--</label>
-                        </item>
-                    </section>
-                <section>
-                    <label>Selection One</label>
-                    <item>
-                        <label>SU DRUID</label>
-                        <value>SU DRUID</value>
-                    </item>
-                    <item>
-                        <value>Film Arts Foundation ID</value>
-                        <label>Film Arts Foundation ID</label>
-                    </item>
-                    <item>
-                        <label>Item Number</label>
-                        <value>Item Number</value>
-                    </item>
-                    <item>
-                        <label>Stanford University Libraries Barcode</label>
-                        <value>Stanford University Libraries Barcode</value>
-                    </item>
-                    <item>
-                        <label>Stanford University Libraries Catalog Key</label>
-                        <value>Stanford University Libraries Catalog Key</value>
-                    </item>
-                    <item>
-                        <label>Stanford University Libraries Collection ID</label>
-                        <value>Stanford University Libraries Collection ID</value>
-                    </item>
-                    <item>
-                        <label>Stanford University Archives ID</label>
-                        <value>Stanford University Archives ID</value>
-                    </item>
-                </section>
-                      </instance>
-            </displayLabel>
-             <titletype>
-                <instance>
-                    <section>
-                        <item>
-                            <label></label>
-                            <value></value>
+                            <label>Main</label>
+                            <value>main</value>
                         </item>
                         <item>
                             <label>Abbreviated</label>
@@ -528,6 +464,42 @@
                     </section>
                 </instance>
             </titletype>
+            <displayLabel>
+                <instance>
+                    <section>
+                        <item>
+                            <label>--Select One--</label>
+                        </item>
+                    </section>
+                    <section>
+                        <label>Selection One</label>
+                        <item>
+                            <label>SU DRUID</label>
+                            <value>SU DRUID</value>
+                        </item>
+                        <item>
+                            <label>Item Number</label>
+                            <value>Item Number</value>
+                        </item>
+                        <item>
+                            <label>Stanford University Libraries Barcode</label>
+                            <value>Stanford University Libraries Barcode</value>
+                        </item>
+                        <item>
+                            <label>Stanford University Libraries Catalog Key</label>
+                            <value>Stanford University Libraries Catalog Key</value>
+                        </item>
+                        <item>
+                            <label>Stanford University Libraries Collection ID</label>
+                            <value>Stanford University Libraries Collection ID</value>
+                        </item>
+                        <item>
+                            <label>Stanford University Archives Id</label>
+                            <value>Stanford University Archives Id</value>
+                        </item>
+                    </section>
+                </instance>
+            </displayLabel>
             <nametype>
                 <instance>
                     <section>
@@ -536,8 +508,8 @@
                             <value/>
                         </item>
                         <item>
-                            <label>Conference</label>
-                            <value>conference</value>
+                            <label>Organization</label>
+                            <value>organization</value>
                         </item>
                         <item>
                             <label>Corporate</label>
@@ -552,10 +524,20 @@
             </nametype>
             <nameauthority>
                 <instance>
+                    <section>
                         <item>
-                            <label>NAF</label>
-                            <value>naf</value>
+                            <label>-- Select One --</label>
+                            <value/>
                         </item>
+                        <item>
+                            <label>Local</label>
+                            <value>local</value>
+                        </item>
+                        <item>
+                            <label>LCSH</label>
+                            <value>lcsh</value>
+                        </item>
+                    </section>
                 </instance>
             </nameauthority>
 
@@ -567,30 +549,37 @@
                         	<value></value>
                         </item>
                         <item>
-                            <label>Speaker</label>
-                            <value>speaker</value>
+                            <label>Composer</label>
+                            <value>composer</value>
                         </item>
                         <item>
-                            <label>Producer</label>
-                            <value>producer</value>
+                            <label>Engraver</label>
+                            <value>engraver</value>
+                        </item>
+                        <item>
+                            <label>Artists</label>
+                            <value>artists</value>
+                        </item>
+                        <item>
+                            <label>Lyricist</label>
+                            <value>lyricist</value>
+                        </item>
+                        <item>
+                            <label>Author</label>
+                            <value>author</value>
+                        </item>
+                        <item>
+                            <label>Lebretist</label>
+                            <value>lebretist</value>
+                        </item>
+                        <item>
+                            <label>Dedicatee</label>
+                            <value>dedicatee</value>
                         </item>
                     </section>
                 </instance>
             </roletype>
-            <statestatus>
-                <instance>
-                    <section>
-                        <item>
-                            <label>-- Select One --</label>
-                            <value></value>
-                        </item>
-                        <item>
-                            <label>Completed</label>
-                        <value>completed</value>
-                         </item>
-                    </section>
-                </instance>
-            </statestatus>
+
             <nameparttype>
                 <instance>
                     <section>
@@ -617,30 +606,7 @@
                     </section>
                 </instance>
             </nameparttype>
-             <notetype>
-                 <instance>
-                     <section>
-                         <item>
-                             <label>-- Select One --</label>
-                             <value/>
-                         </item>
-                     </section>
-                     <section>
-                         <item></item>
-                     </section>
-                 </instance>
-             </notetype>
-            <point>
-                <instance>
-                    <section>
-                        <item><label>None</label></item>
-                    </section>
-                    <section>
-                        <item><label>Start Point</label><value>start</value></item>
-                        <item><label>End Point</label><value>end</value></item>
-                    </section>
-                </instance>
-            </point>
+
             <typeofresource>
                 <instance>
                     <section>
@@ -653,31 +619,6 @@
                         <item>
                             <label>Text</label>
                             <value>text</value>
-                        </item>
-                        <item>
-                            <label>Cartographic</label>
-                            <value>cartographic</value>
-                        </item>
-                        <item>
-                            <label>Sound Recording - Musical</label>
-                            <value>sound recording - musical</value>
-                        </item>
-                        <item>
-                            <label>Sound Recording - Nonmusical</label>
-                            <value>sound recording - nonmusical</value>
-                        </item>
-                        <item>
-                            <label>Moving Image</label>
-                            <value>moving image</value>
-                        </item>
-                        <item>
-                            <label>Three Dimensional Object</label>
-                            <value>three dimensional object</value>
-                        </item>
-                        <item>
-                            <label>Software, Multimedia</label>
-                            <value>software, multimedia</value>
-
                         </item>
                         <item>
                             <label>Notated Music</label>
@@ -755,108 +696,13 @@
                     </section>
                     <section>
                         <item>
-                            <label>Biographical radio programs</label>
-                            <value>Biographical radio programs</value>
-                        </item>
-                          <item>
-                            <label>Book review radio programs</label>
-                            <value>Book review radio programs</value>
-                        </item>
-                        <item>
-                            <label>Community affairs radio programs</label>
-                            <value>Community affairs radio programs</value>
-                        </item>
-                        <item>
-                            <label>Documentary radio programs</label>
-                            <value>Documentary radio programs</value>
-                        </item>
-                        <item>
-                            <label>Educational radio programs</label>
-                            <value>Educational radio programs</value>
-                        </item>
-                        <item>
-                            <label>Fiction radio programs</label>
-                            <value>Fiction radio programs</value>
-                        </item>
-                        <item>
-                            <label>Interviews (Sound recordings)</label>
-                            <value>Interviews (Sound recordings)</value>
-                        </item>
-                        <item>
-                            <label>Literary readings (Radio programs)</label>
-                            <value>Literary readings (Radio programs)</value>
-                        </item>
-                        <item>
-                            <label>Literary readings (Sound recordings)</label>
-                            <value>Literary readings (Sound recordings)</value>
-                        </item>
-                        <item>
-                            <label>Live sound recordings</label>
-                            <value>Live sound recordings</value>
-                        </item>
-                        <item>
-                            <label>Nonfiction radio programs</label>
-                            <value>Nonfiction radio programs</value>
-                        </item>
-                        <item>
-                            <label>Oral histories</label>
-                            <value>Oral histories</value>
-                        </item>
-                        <item>
-                            <label>Public affairs radio programs</label>
-                            <value>Public affairs radio programs</value>
-                        </item>
-                        <item>
-                            <label>Radio interviews</label>
-                            <value>Radio interviews</value>
-                        </item>
-                        <item>
-                            <label>Radio news bulletins</label>
-                            <value>Radio news bulletins</value>
-                        </item>
-                        <item>
-                            <label>Radio news programs</label>
-                            <value>Radio news programs</value>
-                        </item>
-                        <item>
-                            <label>Radio panel discussions</label>
-                            <value>Radio panel discussions</value>
-                        </item>
-                        <item>
-                            <label>Radio speeches</label>
-                            <value>Radio speeches</value>
-                        </item>
-                        <item>
-                            <label>Speeches (Sound recordings)</label>
-                            <value>Speeches (Sound recordings)</value>
+                            <label>Map</label>
+                            <value>map</value>
                         </item>
                     </section>
                 </instance>
             </genre>
-              <genreauthority>
-                  <instance>
-                      <section>
-                          <item>
-                               <label>-- Select One --</label>
-                            <value/>
-                          </item>
-                      </section>
-                      <section>
-                          <item>
-                              <label>LCSH</label>
-                              <value>lcsh</value>
-                          </item>
-                          <item>
-                              <label>AAT</label>
-                              <value>aat</value>
-                          </item>
-                          <item>
-                              <label>LOCAL</label>
-                              <value>local</value>
-                          </item>
-                      </section>
-                  </instance>
-                 </genreauthority>
+
             <form>
                 <instance>
                     <section>
@@ -899,8 +745,8 @@
                     </section>
                     <section>
                         <item>
-                            <label>MPEG</label>
-                            <value>audio/mpeg</value>
+                            <label>TIFF image</label>
+                            <value>image/tiff</value>
                         </item>
                     </section>
                 </instance>
@@ -998,66 +844,6 @@
                     </section>
                 </instance>
             </relatedItemTitle>
-			<placetype>
-				<instance>
-					<section>
-						<item>
-                            <label>--Select One--</label>
-                        </item>
-                    </section>
-					<section>
-						<item>
-							<label>Code</label>
-							<value>code</value>
-						</item>
-						<item>
-							<label>Text</label>
-							<value>text</value>
-						</item>
-					</section>
-				</instance>
-			</placetype>
-			<language>
-				<instance>
-					 <section>
-	                        <item>
-	                            <label>-- Select One --</label>
-	                            <value/>
-	                        </item>
-	                    </section>
-					<section>
-					<item><label>Czech</label>
-					<value>chz</value>
-					</item>
-					<item>
-                     <label>English</label>
-					<value>eng</value>
-					</item>
-					<item><label>French</label>
-					<value>fre</value>
-					</item>
-					<item><label>German</label>
-					<value>ger</value>
-					</item>
-					<item><label>Italian</label>
-					<value>ita</value>
-					</item>
-					<item><label>Latin</label>
-					<value>lat</value>
-					</item>
-					<item><label>Russian</label>
-					<value>rus</value>
-					</item>
-					<item><label>Scots</label>
-					<value>sco</value>
-					</item>
-					<item><label>Spanish</label>
-					<value>spa</value>
-					</item>
-				</section>
-				</instance>
-			</language>
         </lists>
-
     </resource>
 </resources>

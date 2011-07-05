@@ -13,7 +13,7 @@
 
   The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
   -->
-<instance xmlns:mods="http://www.loc.gov/mods/v3" point=" " type=" "> 
+<instance xmlns:mods="http://www.loc.gov/mods/v3" point=" " type=" "  xmlns:state="http://stanford.edu/"  > 
  <insert name="identifierdruid">
   <mods:identifier type="local" displayLabel="SU DRUID"/>
  </insert>
@@ -193,6 +193,11 @@
  </insert>
  <insert name="typeOfResource">
   <mods:typeOfResource/>
+ </insert>
+ <insert name="extension">
+  <mods:extension>
+   <state:status></state:status>
+  </mods:extension>
  </insert>
 
 </instance>

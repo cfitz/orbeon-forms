@@ -74,6 +74,17 @@
                                 </xforms:group>
                             </div>
                         </div>
+                        <div class="item-row show-title">
+                            <xforms:textarea incremental="true"
+                                ref="following-sibling::mods:relatedItem[@type='series']/mods:titleInfo/mods:title" appearance="xxforms:autosize">
+                                <xforms:label
+                                    ref="$form-resources/detail/titles/relatedItemTitle"/>
+                                <xforms:help
+                                    ref="$form-resources/detail/help/relatedItemTitle"/>
+                                <xforms:alert
+                                    ref="$form-resources/detail/alerts/relatedItemTitle"/>
+                            </xforms:textarea>
+                        </div>
                     </fr:td>
                 </fr:tr>
 

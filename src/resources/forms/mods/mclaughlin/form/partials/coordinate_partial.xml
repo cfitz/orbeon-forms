@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:xhtml="http://www.w3.org/1999/xhtml"
+    xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xxi="http://orbeon.org/oxf/xml/xinclude"
+    xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+    xmlns:mods="http://www.loc.gov/mods/v3" xmlns:fr="http://orbeon.org/oxf/xml/form-runner"
+    xmlns:dl="http://dl.lib.brown.edu/editor/mods/dl" xmlns:xlink="http://www.w3.org/1999/xlink">
+
+<!-- START COORDINATE -->
+
+<fr:section id="coordinates" bind="fr-form-binds">
+    <xforms:label ref="$form-resources/detail/titles/coordinates"/>
+    <xforms:help ref="$form-resources/detail/help/coordinates"/>
+         
+                <fr:repeat
+                    nodeset="mods:subject[position()][child::node()[ name() = 'mods:cartographics']]"
+                    id="cartographics-repeat[position()]"
+                    origin="xxforms:instance('mods-insert')/insert[@name = 'subjectcartographics']/child::*"
+                    appearance="xxforms:table">
+                    <fr:body>
+                        
+                        <fr:tr>
+                            <fr:td>
+                                <div class="button-row">
+                                    <!--ADD authority-->
+                                    <div class="item-cell">
+                                        <xforms:group ref=".">
+                                            <xforms:insert ev:event="DOMActivate" context="."
+                                                origin="instance('mods-insert')/insert[@name =  'subject']/mods:subject/@authority"/>
+                                            <fr:button bind="buttons-triggers">
+                                                <xforms:label>
+                                                    <img src="/apps/fr/style/images/silk/add.png"
+                                                        alt="Add"/>
+                                                    <span class="label">Authority</span>
+                                                </xforms:label></fr:button>
+                                        </xforms:group>
+                                    </div>
+                                </div>
+                                <!-- END BUTTON -->
+                                <!-- Authority -->
+                                <div class="item-row">
+                                    <div class="item-cell">
+                                        <xforms:select1 ref="@authority"
+                                            id="coordinates-authority-select"
+                                            class="drop-down">
+                                            <xforms:label
+                                                ref="$form-resources/detail/titles/authority"/>
+                                            <xforms:alert
+                                                ref="$form-resources/detail/alerts/authority"/>
+                                            <xforms:help
+                                                ref="$form-resources/detail/help/authority"/>
+                                            <xforms:itemset
+                                                nodeset="$form-resources/lists/authority/instance//(section|item)">
+                                                <xforms:label ref="label"/>
+                                                <xforms:value ref="value"/>
+                                            </xforms:itemset>
+                                        </xforms:select1>
+                                    </div>
+                                </div>
+                                <!-- START SUBJECT CARTO -->
+                                <xforms:repeat
+                                    nodeset="mods:cartographics[position()]"
+                                    id="coordinate-cartographics">
+                                    <div class="item-row show-title">
+                                        <div class="repeat-container">
+                                            <div class="repeat-container-item">
+                                                <div class="item-row">
+                                                    <div class="repeat-remove">
+                                                        <xforms:group ref=".">
+                                                            <xforms:delete ev:event="DOMActivate" context="."
+                                                                nodeset=".[position()]"/>
+                                                            <xforms:trigger appearance="minimal" ref=".">
+                                                                <xforms:label>
+                                                                    <img src="/apps/fr/style/remove.gif"
+                                                                        alt="Remove Cartographics"/>
+                                                                </xforms:label>
+                                                            </xforms:trigger>
+                                                        </xforms:group>
+                                                    </div>
+                                                    <div class="item-cell">
+                                                        <xforms:select1 ref="mods:coordinates">
+                                                            <xforms:label
+                                                                ref="$form-resources/detail/titles/coordinates"/>
+                                                            <xforms:alert
+                                                                ref="$form-resources/detail/alerts/coordinates"/>
+                                                            <xforms:help
+                                                                ref="$form-resources/detail/help/coordinates"/>
+                                                            <xforms:itemset
+                                                                nodeset="$form-resources/lists/coordinates/instance//(section|item)">
+                                                                <xforms:label ref="label"/>
+                                                                <xforms:value ref="value"/>
+                                                            </xforms:itemset>
+                                                        </xforms:select1>
+                                                    </div>
+                                                    <div class="item-cell">
+                                                        <xforms:input incremental="true" ref="mods:scale">
+                                                            <xforms:label
+                                                                ref="$form-resources/detail/titles/scale"/>
+                                                            <xforms:alert
+                                                                ref="$form-resources/detail/alerts/scale"/>
+                                                            <xforms:help
+                                                                ref="$form-resources/detail/help/scale"/>
+                                                        </xforms:input>
+                                                    </div>
+                                                    <div class="item-cell">
+                                                        <xforms:input incremental="true"
+                                                            ref="mods:projection">
+                                                            <xforms:label
+                                                                ref="$form-resources/detail/titles/projection"/>
+                                                            <xforms:alert
+                                                                ref="$form-resources/detail/alerts/projection"/>
+                                                            <xforms:help
+                                                                ref="$form-resources/detail/help/projection"/>
+                                                        </xforms:input>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </xforms:repeat>
+                            </fr:td>
+                        </fr:tr>
+                    </fr:body>
+                </fr:repeat>
+</fr:section>
+<!-- END COORDINATE DATA -->
+    
+ </html>

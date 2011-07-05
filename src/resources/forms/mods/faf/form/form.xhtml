@@ -19,7 +19,8 @@
     xmlns:xxforms="http://orbeon.org/oxf/xml/xforms" xmlns:mods="http://www.loc.gov/mods/v3"
     xmlns:fr="http://orbeon.org/oxf/xml/form-runner"
     xmlns:dl="http://dl.lib.brown.edu/editor/mods/dl" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-    xmlns:sparql="http://www.w3.org/2005/sparql-results#">
+    xmlns:sparql="http://www.w3.org/2005/sparql-results#"
+    xmlns:state="http://stanford.edu/">
 
     <head>
 
@@ -222,10 +223,15 @@
                         ref="mods:identifier[@displayLabel = 'Film Arts Foundation ID']">
                         <xforms:label>Film Art Foundation ID</xforms:label>
                     </xforms:input>
+                    <xforms:input class="fr-summary fr-search fr-email-subject"
+                        ref="mods:extension">
+                        <xforms:label>State Status</xforms:label>
+                    </xforms:input>
                 </div>
 
 
-
+                <xi:include href="oxf:/forms/mods/faf/form/partials/state-info.xml"
+                    xxi:omit-xml-base="true"/>
                 <xi:include href="oxf:/forms/mods/partials/druid_partial.xml"
                     xxi:omit-xml-base="true"/>
                 <xi:include href="oxf:/forms/mods/partials/import_partial.xml"

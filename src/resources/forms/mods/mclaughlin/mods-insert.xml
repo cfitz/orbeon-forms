@@ -84,7 +84,7 @@
   </mods:subject>
  </insert>
  <insert name="singleDate">
-  <mods:temporal encoding="w3cdtf"/>
+  <mods:temporal encoding="w3cdtf" authorityURI=""/>
  </insert>
  <insert name="rangeDate">
   <mods:temporal encoding="w3cdtf" point="start"/>
@@ -148,7 +148,7 @@
   <mods:abstract/>
  </insert>
  <insert name="note">
-  <mods:note displayLabel="general note" type=" "/>
+  <mods:note displayLabel="" type=" "/>
  </insert> > <insert name="typeOfResource">
   <mods:typeOfResource/>
  </insert>

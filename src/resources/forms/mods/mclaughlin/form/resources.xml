@@ -12,8 +12,7 @@
 
     The full text of the license is available at http://www.gnu.org/copyleft/lesser.html
 -->
-<resources xmlns="" xmlns:xi="http://www.w3.org/2001/XInclude"
-    xmlns:xxi="http://orbeon.org/oxf/xml/xinclude" xmlns:mods="http://www.loc.gov/mods/v3">
+<resources xmlns="" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xxi="http://orbeon.org/oxf/xml/xinclude" xmlns:mods="http://www.loc.gov/mods/v3">
     <resource xml:lang="en">
 
         <!--  Hack for summary table headers -->
@@ -76,7 +75,7 @@
                 <accesscondition>Access Condition</accesscondition>
                 <abstract>Abstract</abstract>
                 <subject>Subject</subject>
-                <subjectDate>Subject - Temporal</subjectDate>
+                <subjectDate>Subject - Date</subjectDate>
                 <subjectTopic>Subject - Topic</subjectTopic>
                 <subjectGenre>Subject - Genre</subjectGenre>
                 <subjectName>Subject - Name</subjectName>
@@ -121,7 +120,10 @@
                 <label>Label</label>
                 <manuscript>Manuscript</manuscript>
                 <druid>Druid</druid>
-                <namelink>Name Link</namelink>
+                <namelink>Authority URI</namelink>
+                <scale>Scale</scale>
+                <projection>Projection</projection>
+                <authorityURI>Authority URI</authorityURI>
             </titles>
 
             <!-- Triggers labels -->
@@ -164,7 +166,7 @@
                 <addSubjectTitleInfo>Title</addSubjectTitleInfo>
                 <addGeographic>Geographic</addGeographic>
                 <addCartographics>Cartographics</addCartographics>
-                <notetype>Note Type</notetype>
+                <notetype>Current Note Type</notetype>
                 <!-- Other controls labels -->
                 <origintype>
                     <copyright state="copyright">Copyright</copyright>
@@ -178,6 +180,11 @@
                 <manuscript>Manuscript</manuscript>
                 <label>Label</label>
                 <druid>Druid</druid>
+                <scale>Scale</scale>
+                <projection>Projection</projection>
+                <authorityURI>Authority URI</authorityURI>
+                <notesdisplaylabel>FileMaker Note Field</notesdisplaylabel>
+          
             </labels>
 
             <alerts>
@@ -625,19 +632,19 @@
                     </section>
                     <section>
                         <item>
-                            <label>Original McLaughlin Book Number (1995 edition)</label>
+                            <label>Original McLaughlin book number (1995 edition)</label>
                             <value>Original McLaughlin Book Number (1995 edition)</value>
                         </item>
                         <item>
-                            <label>Updated McLaughlin Book Number</label>
+                            <label>Updated McLaughlin book number</label>
                             <value>Updated McLaughlin Book Number</value>
                         </item>
                         <item>
-                            <label>Call Number</label>
+                            <label>Call number</label>
                             <value>call_number</value>
                         </item>
                         <item>
-                            <label>FileMaker Pro Record Number</label>
+                            <label>FileMaker Pro record number</label>
                             <value>FileMaker Pro Record Number</value>
                         </item>
                         <item>
@@ -799,8 +806,8 @@
                             <value>Bennett, Richard, fl. 1739-1740.</value>
                         </item>
                         <item>
-                            <label>Bernard, Jean Fr&#xE9;d&#xE9;ric, d. 1752</label>
-                            <value>Bernard, Jean Fr&#xE9;d&#xE9;ric, d. 1752</value>
+                            <label>Bernard, Jean Frédéric, d. 1752</label>
+                            <value>Bernard, Jean Frédéric, d. 1752</value>
                         </item>
                         <item>
                             <label>Berry, William, fl. 1669-1708. </label>
@@ -879,8 +886,8 @@
                             <value>Chiswell, Richard. </value>
                         </item>
                         <item>
-                            <label>Cl&#xFC;ver, Philipp, 1580-1622.</label>
-                            <value>Cl&#xFC;ver, Philipp, 1580-1622.</value>
+                            <label>Clüver, Philipp, 1580-1622.</label>
+                            <value>Clüver, Philipp, 1580-1622.</value>
                         </item>
                         <item>
                             <label>Colom, Arnold, 1624-1668. </label>
@@ -907,8 +914,8 @@
                             <value>Cosmant. </value>
                         </item>
                         <item>
-                            <label>C&#xF3;vens, Jean. </label>
-                            <value>C&#xF3;vens, Jean. </value>
+                            <label>Cóvens, Jean. </label>
+                            <value>Cóvens, Jean. </value>
                         </item>
                         <item>
                             <label>Crepy.</label>
@@ -955,8 +962,8 @@
                             <value>Fer, Nicolas de, 1646-1720. </value>
                         </item>
                         <item>
-                            <label>Fern&#xE1;ndez de Medrano, Sebasti&#xE1;n, 1646-1705.</label>
-                            <value>Fern&#xE1;ndez de Medrano, Sebasti&#xE1;n, 1646-1705.</value>
+                            <label>Fernández de Medrano, Sebastián, 1646-1705.</label>
+                            <value>Fernández de Medrano, Sebastián, 1646-1705.</value>
                         </item>
                         <item>
                             <label>Fisher, William.</label>
@@ -1007,8 +1014,8 @@
                             <value>Swift, Jonathan, 1667-1745.</value>
                         </item>
                         <item>
-                            <label>H&#xE4;hn, Johann Friedrich, 1710-1789. </label>
-                            <value>H&#xE4;hn, Johann Friedrich, 1710-1789. </value>
+                            <label>Hähn, Johann Friedrich, 1710-1789. </label>
+                            <value>Hähn, Johann Friedrich, 1710-1789. </value>
                         </item>
                         <item>
                             <label>Halley, Edmond, 1656-1742. </label>
@@ -1023,8 +1030,8 @@
                             <value>Harris, John, 1679 or 80-1738. </value>
                         </item>
                         <item>
-                            <label>Hashimoto, S&#x14D;kichi, 1763-1836. </label>
-                            <value>Hashimoto, S&#x14D;kichi, 1763-1836. </value>
+                            <label>Hashimoto, Sōkichi, 1763-1836. </label>
+                            <value>Hashimoto, Sōkichi, 1763-1836. </value>
                         </item>
                         <item>
                             <label>Hennepin, Louis, 17th cent. </label>
@@ -1179,8 +1186,8 @@
                             <value>Lens, Bernard, 1682-1740.</value>
                         </item>
                         <item>
-                            <label>L&#xE9;pine, Louis de.</label>
-                            <value>L&#xE9;pine, Louis de.</value>
+                            <label>Lépine, Louis de.</label>
+                            <value>Lépine, Louis de.</value>
                         </item>
                         <item>
                             <label>Leth, Andries de, 1662-1731. </label>
@@ -1191,20 +1198,20 @@
                             <value>Lhuilier, Jan.</value>
                         </item>
                         <item>
-                            <label>Li&#xE9;baux, Jean Baptiste. </label>
-                            <value>Li&#xE9;baux, Jean Baptiste. </value>
+                            <label>Liébaux, Jean Baptiste. </label>
+                            <value>Liébaux, Jean Baptiste. </value>
                         </item>
                         <item>
-                            <label>L&#x2019;Isle, Guillaume de, 1675-1726. </label>
-                            <value>L&#x2019;Isle, Guillaume de, 1675-1726. </value>
+                            <label>L’Isle, Guillaume de, 1675-1726. </label>
+                            <value>L’Isle, Guillaume de, 1675-1726. </value>
                         </item>
                         <item>
                             <label>Loon, Gillis van.</label>
                             <value>Loon, Gillis van.</value>
                         </item>
                         <item>
-                            <label>Loon, H. V. &#x1C2;q (Herman van).</label>
-                            <value>Loon, H. V. &#x1C2;q (Herman van).</value>
+                            <label>Loon, H. V. ǂq (Herman van).</label>
+                            <value>Loon, H. V. ǂq (Herman van).</value>
                         </item>
                         <item>
                             <label>Loon, J. van, ca. 1611-1686. </label>
@@ -1235,8 +1242,8 @@
                             <value>Matthysz., Jan, fl. 1654-1685. </value>
                         </item>
                         <item>
-                            <label>Mendoza y Gonz&#xE1;lez, Juan Antonio de. </label>
-                            <value>Mendoza y Gonz&#xE1;lez, Juan Antonio de. </value>
+                            <label>Mendoza y González, Juan Antonio de. </label>
+                            <value>Mendoza y González, Juan Antonio de. </value>
                         </item>
                         <item>
                             <label>Meurs, Jacob van, 1619-1680. </label>
@@ -1295,8 +1302,8 @@
                             <value>Muellers, Johann Bernard.</value>
                         </item>
                         <item>
-                            <label>M&#xFC;ller, Johann Ulrich. </label>
-                            <value>M&#xFC;ller, Johann Ulrich. </value>
+                            <label>Müller, Johann Ulrich. </label>
+                            <value>Müller, Johann Ulrich. </value>
                         </item>
                         <item>
                             <label>Nagakubo, Sekisui, 1717-1801. </label>
@@ -1511,8 +1518,8 @@
                             <value>Swift, Jonathan, 1667-1745. </value>
                         </item>
                         <item>
-                            <label>Tajima, Ry&#x16B;kei.</label>
-                            <value>Tajima, Ry&#x16B;kei.</value>
+                            <label>Tajima, Ryūkei.</label>
+                            <value>Tajima, Ryūkei.</value>
                         </item>
                         <item>
                             <label>Terrafson, H.</label>
@@ -1948,7 +1955,7 @@
                             <value>date</value>
                         </item>
                         <item>
-                            <label>Term Of Address</label>
+                            <label>Term of address</label>
                             <value>termsOfAddress</value>
                         </item>
                     </section>
@@ -1968,15 +1975,15 @@
                             <value>host</value>
                         </item>
                         <item>
-                            <label>Consituent</label>
-                            <value>consituent</value>
+                            <label>Constituent</label>
+                            <value>constituent</value>
                         </item>
                         <item>
                             <label>Series</label>
                             <value>series</value>
                         </item>
                         <item>
-                            <label>Other Version</label>
+                            <label>Other version</label>
                             <value>otherVersion</value>
                         </item>
                     </section>
@@ -2001,15 +2008,15 @@
                             <value>text</value>
                         </item>
                         <item>
-                            <label>Notated Music</label>
+                            <label>Notated music</label>
                             <value>notated music</value>
                         </item>
                         <item>
-                            <label>Still Image</label>
+                            <label>Still image</label>
                             <value>still image</value>
                         </item>
                         <item>
-                            <label>Mixed Material</label>
+                            <label>Mixed material</label>
                             <value>mixed material</value>
                         </item>
                     </section>
@@ -2345,8 +2352,20 @@
                     </section>
                     <section>
                         <item>
+                            <label>African Continent</label>
+                            <value>S350000 N370000 E0510000 W0180000</value>
+                        </item>
+                        <item>
                             <label>California</label>
                             <value>W1243000 W1141500 N420000 N323000</value>
+                        </item>
+                        <item>
+                            <label>Central America</label>
+                            <value>N071000 N183000 W0771000 W0921500</value>
+                        </item>
+                        <item>
+                            <label>Eastern Hemisphere</label>
+                            <value>S900000 N900000 E1590000 W0210000</value>
                         </item>
                         <item>
                             <label>North America</label>
@@ -2364,6 +2383,10 @@
                             <label>Pacific Ocean</label>
                             <value>W0700000 E1100000 N630000 S530000</value>
                         </item>
+			<item>
+				<label>South America</label>
+				<value>S550000 N130000 W0350000 W0820000</value>
+			</item>
                         <item>
                             <label>South Pole (Polar Projection)</label>
                             <value>W0000000 W0000000 S900000 S900000</value>
@@ -2384,9 +2407,10 @@
                             <label>World</label>
                             <value>W1800000 E1800000 N850000 S850000</value>
                         </item>
-                    </section>
+                 
+                </section>
                 </instance>
-            </coordinates>
+                </coordinates>
 
             <form>
                 <instance>
@@ -2402,7 +2426,7 @@
                             <value>atlas</value>
                         </item>
                         <item>
-                            <label>Atlas Map</label>
+                            <label>Atlas map</label>
                             <value>atlas map</value>
                         </item>
                         <item>
@@ -2410,19 +2434,19 @@
                             <value>book map</value>
                         </item>
                         <item>
-                            <label>Celestial Chart</label>
+                            <label>Celestial chart</label>
                             <value>celestial chart</value>
                         </item>
                         <item>
-                            <label>Fake Map</label>
+                            <label>Fake map</label>
                             <value>fake map</value>
                         </item>
                         <item>
-                            <label>Separate Map</label>
+                            <label>Separate map</label>
                             <value>separate map</value>
                         </item>
                         <item>
-                            <label>Title Page</label>
+                            <label>Title page</label>
                             <value>title page</value>
                         </item>
                     </section>
@@ -2456,7 +2480,7 @@
                     </section>
                     <section>
                         <item>
-                            <label>General Notes</label>
+                            <label>General notes</label>
                             <value>content</value>
                         </item>
                         <item>
@@ -2468,16 +2492,12 @@
                             <value>publications</value>
                         </item>
                         <item>
-                            <label>Reference</label>
-                            <value>reference</value>
+                            <label>References</label>
+                            <value>references</value>
                         </item>
                         <item>
-                            <label>Statement Of Responsibility</label>
+                            <label>Statement of responsibility</label>
                             <value>statement_of_responsibility</value>
-                        </item>
-                        <item>
-                            <label>State</label>
-                            <value>state_note</value>
                         </item>
                         <item>
                             <label>State 1</label>
@@ -2602,11 +2622,11 @@
                     </section>
                     <section>
                         <item>
-                            <label>Use and Reproduction</label>
+                            <label>Use and reproduction</label>
                             <value>useAndReproduction</value>
                         </item>
                         <item>
-                            <label>Restriction On Access</label>
+                            <label>Restriction on sccess</label>
                             <value>restrictionOnAccess</value>
                         </item>
                     </section>
@@ -2622,15 +2642,15 @@
                     </section>
                     <section>
                         <item>
-                            <label>General Photo</label>
+                            <label>General photo</label>
                             <value>general photo</value>
                         </item>
                         <item>
-                            <label>Stanford Family</label>
+                            <label>Stanford family</label>
                             <value>stanford family</value>
                         </item>
                         <item>
-                            <label>Biographical Photographs</label>
+                            <label>Biographical photographs</label>
                             <value>biographical photographs</value>
                         </item>
                     </section>
@@ -2664,11 +2684,11 @@
                     </section>
                     <section>
                         <item>
-                            <label>Start Point</label>
+                            <label>Start point</label>
                             <value>start</value>
                         </item>
                         <item>
-                            <label>End Point</label>
+                            <label>End point</label>
                             <value>end</value>
                         </item>
                     </section>
@@ -2726,6 +2746,7 @@
                     </section>
                 </instance>
             </language>
-        </lists>
-    </resource>
+        
+    </lists>
+</resource>
 </resources>
