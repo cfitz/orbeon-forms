@@ -14,10 +14,9 @@
     <fr:section id="coordinates" bind="fr-form-binds">
         <xforms:label ref="$form-resources/detail/titles/coordinates"/>
         <xforms:help ref="$form-resources/detail/help/coordinates"/>
-        <fr:repeat nodeset="mods:subject[position()][child::node()[ name() = 'mods:cartographics']]"
-            id="cartographics-repeat[position()]"
-            origin="xxforms:instance('mods-insert')/insert[@name = 'subjectcartographics']/child::*"
-            appearance="xxforms:table">
+        
+        <xforms:group ref="mods:subject[position()][child::node()[ name() = 'mods:cartographics']]">
+       
             <fr:body>
 
                 <fr:tr>
@@ -40,6 +39,8 @@
                                                 />
                                             </div>
                                         </div>
+                                        <xforms:switch>
+                                            <xforms:case id="coordinate-textboxes">
                                         <xforms:group ref="instance('form-coordinates')"
                                             id="mods-coordinates-group">
                                             <div class="item-row">
@@ -78,6 +79,13 @@
                                                   ref="$form-resources/detail/help/coordinates"/>
                                                   </xforms:input>
                                                 </div>
+                                                <div class="item-cell">
+                                                    <xforms:trigger>
+                                                        <xforms:label>Choose a values from the list</xforms:label>
+                                                        <xforms:toggle ev:event="DOMActivate"
+                                                            case="coordinate-pulldown"/>
+                                                    </xforms:trigger>
+                                                </div>
                                             </div>
                                             <div class="item-row">
                                                 <div class="item-cell">
@@ -94,7 +102,37 @@
                                                   </div>
                                                 </div>
                                             </div>
+                                            
                                         </xforms:group>
+                                            </xforms:case>
+                                            <xforms:case id="coordinate-pulldown" selected="true">
+                                               <div class="item-row">
+                                                <div class="item-cell">
+                                            <xforms:select1 ref="mods:coordinates">
+                                                <xforms:label
+                                                    ref="$form-resources/detail/titles/coordinates"/>
+                                                <xforms:alert
+                                                    ref="$form-resources/detail/alerts/coordinates"/>
+                                                <xforms:help
+                                                    ref="$form-resources/detail/help/coordinates"/>
+                                                <xforms:itemset
+                                                    nodeset="$form-resources/lists/coordinates/instance//(section|item)">
+                                                    <xforms:label ref="label"/>
+                                                    <xforms:value ref="value"/>
+                                                </xforms:itemset>
+                                            </xforms:select1>
+                                                </div>
+                                                   <div class="item-cell">
+                                                       <xforms:trigger>
+                                                           <xforms:label>Enter Coordinates Not Found On The
+                                                               List</xforms:label>
+                                                           <xforms:toggle ev:event="DOMActivate"
+                                                               case="coordinate-textboxes"/>
+                                                       </xforms:trigger>
+                                                   </div>
+                                               </div>
+                                            </xforms:case>
+                                            </xforms:switch>
                                         <div class="item-cell">
                                             <xforms:input incremental="true" ref="mods:scale">
                                                 <xforms:label
@@ -115,14 +153,16 @@
                                                   ref="$form-resources/detail/help/projection"/>
                                             </xforms:input>
                                         </div>
+                                        
                                     </div>
                                 </div>
                             </div>
+                            
                         </xforms:repeat>
                     </fr:td>
                 </fr:tr>
             </fr:body>
-        </fr:repeat>
+        </xforms:group>
 
     </fr:section>
 </html>

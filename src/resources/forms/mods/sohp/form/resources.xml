@@ -74,7 +74,7 @@
                 <physicallocation>Physical Location</physicallocation>
                 <accesscondition>Access Condition</accesscondition>
                 <abstract>Abstract</abstract>
-                <subject>Subject</subject>
+                <subject>LC Subject Heading</subject>
                 <subjectDate>Subject - Temporal</subjectDate>
                 <subjectTopic>Subject - Topic</subjectTopic>
                 <subjectGenre>Subject - Genre</subjectGenre>
@@ -90,11 +90,12 @@
                 <namePart>Name Parts</namePart>
                 <namePartType>Type</namePartType>
                 <seriesInfo>Series Information</seriesInfo>
-                <relatedItemTitle>Series Information</relatedItemTitle>
+                <relatedItem>Related Item</relatedItem>
+                <relatedItemType>Related Item Type</relatedItemType>
+                <relatedItemSubtitle>Series Type</relatedItemSubtitle>
                 <relatedItemSubtitle>Box or Drawer Name</relatedItemSubtitle>
                 <relatedItemPartName>Folder Name</relatedItemPartName>
                 <relatedItemPartNumber>Folder Number</relatedItemPartNumber>
-       
                 <title>Document Title</title>
                 <titletype>Title Type</titletype>
                 <subtitle>Subtitle</subtitle>
@@ -105,6 +106,8 @@
                 <removeidentifier>Remove Identifier</removeidentifier>
                 <identifiertype>Type Of Identifier</identifiertype>
                 <note>Note</note>
+                <label>Label</label>
+                
                 <namePart>Name Part</namePart>
                 <nametype>Name Type</nametype>
                 <roleTerm>Role Term</roleTerm>
@@ -114,7 +117,11 @@
                 <relatedItemSubtitle>Box or Drawer Name</relatedItemSubtitle>
                 <relatedItemPartName>Folder Name</relatedItemPartName>
                 <relatedItemPartNumber>Folder Number</relatedItemPartNumber>
-            
+                <language>Language</language>
+
+
+								  <stateInfo>State Information</stateInfo>
+	                <stateStatus>Status</stateStatus>
             </titles>
 
             <!-- Triggers labels -->
@@ -144,6 +151,13 @@
                 <digitalorigin>Digital Origin</digitalorigin>
                 <location>Location</location>
                 <url>URL</url>
+                <label>Label</label>
+                <relatedItem>Related Item</relatedItem>
+                <relatedItemType>Related Item Type</relatedItemType>
+                <relatedItemSubtitle>Series Type</relatedItemSubtitle>
+                <relatedItemSubtitle>Box or Drawer Name</relatedItemSubtitle>
+                <relatedItemPartName>Folder Name</relatedItemPartName>
+                
                 <physicallocation>Physical Location</physicallocation>
                 <urlaccess>URL Access</urlaccess>
                 <physicallocation>Physical Location</physicallocation>
@@ -164,6 +178,11 @@
                     <creation>Creation</creation>
                     <publication>Publication</publication>
                 </origintype>
+                <language>Language</language>
+
+								  <stateInfo>State Information</stateInfo>
+	                <stateStatus>Status</stateStatus>
+
             </labels>
 
             <alerts>
@@ -506,34 +525,17 @@
                         	<label>-- Select One --</label>
                         	<value></value>
                         </item>
-                        <item>
-                            <label>Composer</label>
-                            <value>composer</value>
-                        </item>
-                        <item>
-                            <label>Engraver</label>
-                            <value>engraver</value>
-                        </item>
-                        <item>
-                            <label>Artists</label>
-                            <value>artists</value>
-                        </item>
-                        <item>
-                            <label>Lyricist</label>
-                            <value>lyricist</value>
-                        </item>
-                        <item>
-                            <label>Author</label>
-                            <value>author</value>
-                        </item>
-                        <item>
-                            <label>Lebretist</label>
-                            <value>lebretist</value>
-                        </item>
-                        <item>
-                            <label>Dedicatee</label>
-                            <value>dedicatee</value>
-                        </item>
+												<item><label>Interviewer</label><value>interviewer</value></item>
+												<item><label>Interviewee</label><value>interviewee</value></item>
+												<item><label>Speaker</label><value>speaker</value></item>
+												<item><label>Performer</label><value>performer</value></item>
+												<item><label>Commentator</label><value>commentator</value></item>
+												<item><label>Host</label><value>host</value></item>
+												<item><label>Moderator</label><value>moderator</value></item>
+												<item><label>Musician</label><value>musician</value></item>
+												<item><label>Narrator</label><value>narrator</value></item>
+												<item><label>Associated Name</label><value>associated name</value></item>
+												<item><label>Producer</label><value>producer</value></item>
                     </section>
                 </instance>
             </roletype>
@@ -574,22 +576,16 @@
                         </item>
                     </section>
                     <section>
-                        <item>
-                            <label>Text</label>
-                            <value>text</value>
-                        </item>
-                        <item>
-                            <label>Notated Music</label>
-                            <value>notated music</value>
-                        </item>
-                        <item>
-                            <label>Still Image</label>
-                            <value>still image</value>
-                        </item>
-                        <item>
-                            <label>Mixed Material</label>
-                            <value>mixed material</value>
-                        </item>
+                        <item><label>Text</label><value>text</value></item>
+												<item><label>Cartographic</label><value>cartographic</value></item>
+												<item><label>Sound recording - Nonmusical</label><value>sound recording - nonmusical</value></item>
+												<item><label>Sound recording - Musical</label><value>sound recording - musical</value></item>
+												<item><label>Moving Image</label><value>moving image</value></item>
+												<item><label>Three Dimensional Object</label><value>three dimensional object</value></item>
+												<item><label>Software, Multimedia</label><value>software, multimedia</value></item>
+												<item><label>Notated Music</label><value>notated music</value></item>
+												<item><label>Still Image</label><value>still image</value></item>
+												<item><label>Mixed Material</label><value>mixed material</value></item>
                     </section>
                 </instance>
             </typeofresource>
@@ -654,13 +650,30 @@
                     </section>
                     <section>
                         <item>
-                            <label>Map</label>
-                            <value>map</value>
+                            <label>Interviews (Sound recordings)</label>
+                            <value>Interviews (Sound recordings)</value>
                         </item>
                     </section>
                 </instance>
             </genre>
-
+						    <statestatus>
+		                <instance> 
+		                    <section>
+		                        <item>
+		                            <label>-- Select One --</label>
+		                            <value></value>
+		                        </item>
+		                        <item>
+		                            <label>In Process</label>
+		                        <value>in process</value>
+		                        </item>
+		                        <item>
+		                            <label>Cataloged</label>
+		                            <value>cataloged</value>
+		                        </item>
+		                    </section>
+		                </instance>
+		            </statestatus>
             <form>
                 <instance>
                     <section>
@@ -703,8 +716,12 @@
                     </section>
                     <section>
                         <item>
-                            <label>TIFF image</label>
-                            <value>image/tiff</value>
+                            <label>MPEG</label>
+                            <value>audio/x-mpeg</value>
+                        </item>
+                        <item>
+                            <label>PDF</label>
+                            <value>application/pdf</value>
                         </item>
                     </section>
                 </instance>
@@ -778,6 +795,35 @@
                     </section>
                 </instance>
             </accessconditiontype>
+            <typeOfRelatedItem>
+                <instance>
+                    <section>
+                        <item>
+                            <label>-- Select One --</label>
+                            <value/>
+                        </item>
+                    </section>
+                    <section>
+                        <item>
+                            <label>Host</label>
+                            <value>host</value>
+                        </item>
+                        <item>
+                            <label>Constituent</label>
+                            <value>constituent</value>
+                        </item>
+                        <item>
+                            <label>Series</label>
+                            <value>series</value>
+                        </item>
+                        <item>
+                            <label>Other version</label>
+                            <value>otherVersion</value>
+                        </item>
+                    </section>
+                </instance>
+                
+            </typeOfRelatedItem>
 
             <relatedItemTitle>
                 <instance>
@@ -802,6 +848,59 @@
                     </section>
                 </instance>
             </relatedItemTitle>
+            <language>
+                <instance>
+                    <section>
+                        <item>
+                            <label>-- Select One --</label>
+                            <value/>
+                        </item>
+                    </section>
+                    <section>
+                        <item>
+                            <label>Arabic</label>
+                            <value>ara</value>
+                        </item>
+                        <item>
+                            <label>Dutch</label>
+                            <value>dut</value>
+                        </item>
+                        <item>
+                            <label>English</label>
+                            <value>eng</value>
+                        </item>
+                        <item>
+                            <label>French</label>
+                            <value>fre</value>
+                        </item>
+                        <item>
+                            <label>German</label>
+                            <value>ger</value>
+                        </item>
+                        <item>
+                            <label>Italian</label>
+                            <value>ita</value>
+                        </item>
+                        <item>
+                            <label>Japanese</label>
+                            <value>jpn</value>
+                        </item>
+                        <item>
+                            <label>Portuguese</label>
+                            <value>por</value>
+                        </item>
+                        <item>
+                            <label>Russian</label>
+                            <value>rus</value>
+                        </item>
+                        <item>
+                            <label>Spanish</label>
+                            <value>spa</value>
+                        </item>
+                    </section>
+                </instance>
+            </language>
+            
         </lists>
     </resource>
 </resources>

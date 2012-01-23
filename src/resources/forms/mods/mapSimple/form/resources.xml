@@ -1456,7 +1456,7 @@
                     <section>
                         <item>
                             <label>African Continent</label>
-                            <value>S350000 N370000 E0510000 W0180000</value>
+                            <value>W0180000 E0510000 N370000 S350000</value>
                         </item>
                         <item>
                             <label>California</label>
@@ -1464,11 +1464,11 @@
                         </item>
                         <item>
                             <label>Central America</label>
-                            <value>N071000 N183000 W0771000 W0921500</value>
+                            <value>W0921500 W0771000 N183000 N071000</value>
                         </item>
                         <item>
                             <label>Eastern Hemisphere</label>
-                            <value>S900000 N900000 E1590000 W0210000</value>
+                            <value>W0210000 E1590000 N900000 S900000</value>
                         </item>
                         <item>
                             <label>North America</label>
@@ -1488,7 +1488,7 @@
                         </item>
                         <item>
                             <label>South America</label>
-                            <value>S550000 N130000 W0350000 W0820000</value>
+                            <value>W0820000 W0350000 N130000 S550000 </value>
                         </item>
                         <item>
                             <label>South Pole (Polar Projection)</label>

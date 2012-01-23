@@ -18,7 +18,7 @@
     xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
     xmlns:mods="http://www.loc.gov/mods/v3" xmlns:fr="http://orbeon.org/oxf/xml/form-runner"
     xmlns:dl="http://dl.lib.brown.edu/editor/mods/dl" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-    xmlns:sparql="http://www.w3.org/2005/sparql-results#">
+    xmlns:sparql="http://www.w3.org/2005/sparql-results#"  xmlns:TEI="http://www.tei-c.org/ns/1.0/">
 
     <head>
 
@@ -60,6 +60,7 @@
             <xforms:instance id="fr-form-instance" xxforms:validation="lax">
                 <xi:include href="oxf:/forms/tei/ms/template.xml" xxi:omit-xml-base="true"/>
             </xforms:instance>
+            
 
             <!-- Dummy instance for SURI IDs -->
             <xforms:instance id="suri-instance">
@@ -151,13 +152,18 @@
             <xforms:label>Metadata Toolkit</xforms:label>
             <xhtml:img src="/apps/fr/style/sulair-banner.gif"/>
             <fr:body>
-
+                
                 <!-- XFORMS Repeats have a hard-time showing up in the summary table. This section exposes values to be populated in the 
                     form's summary table --> 
-                <div style="display:none" >
-                    <xforms:input class="fr-summary fr-search fr-email-subject"  ref="msIdentifier/idno">
+                <div  >
+                    <xforms:input class="fr-summary fr-search fr-email-subject"  ref="TEI:msDesc/TEI:msIdentifier/TEI:idno">
                         <xforms:label>Druid</xforms:label>
                     </xforms:input>
+                   
+                    <xforms:textarea ref="TEI:msDesc/TEI:head" class="fr-summary fr-search fr-email-subject" appearance="xxforms:autosize">
+                            <xforms:label>General Descriptive Title: </xforms:label>
+                        </xforms:textarea>
+                    
                 </div>
                 
 
@@ -170,8 +176,8 @@
 						<div class="repeat-container-body">
 							<div class="repeat-container-item">
 								<div class="item-row">
-									<xforms:group ref="msIdentifier">
-                                        <xforms:group ref="idno">
+								    <xforms:group ref="TEI:msDesc/TEI:msIdentifier">
+                                        <xforms:group ref="TEI:idno">
 										<div class="item-cell bordered">
 											<xforms:output value="."/>
 										</div>
@@ -199,77 +205,77 @@
                     <xforms:help ref="$form-resources/detail/help/identifier"/>
 
 
-                    <xforms:group ref="msIdentifier">
+                    <xforms:group ref="TEI:msDesc/TEI:msIdentifier">
                         <div class="repeat-container">
                             <div class="repeat-container-body">
                                 <div class="repeat-container-item">
                                     <div class="item-row">
-                                        <xforms:input ref="country">
+                                        <xforms:input ref="TEI:country">
                                             <xforms:label>Country: </xforms:label>
                                         </xforms:input>
 
-                                        <xforms:input ref="region">
+                                        <xforms:input ref="TEI:region">
                                             <xforms:label>Region: </xforms:label>
                                         </xforms:input>
 
-                                        <xforms:input ref="settlement">
+                                        <xforms:input ref="TEI:settlement">
                                             <xforms:label>Settlement: </xforms:label>
                                         </xforms:input>
                                     </div>
 
                                     <div class="item-row">
-                                        <xforms:input ref="institution">
+                                        <xforms:input ref="TEI:institution">
                                             <xforms:label>Institution: </xforms:label>
                                         </xforms:input>
 
-                                        <xforms:input ref="repository">
+                                        <xforms:input ref="TEI:repository">
                                             <xforms:label>Repository: </xforms:label>
                                         </xforms:input>
                                     </div>
                                     <div class="item-row">
-                                        <xforms:input ref="collection">
+                                        <xforms:input ref="TEI:collection">
                                             <xforms:label>Collection: </xforms:label>
                                         </xforms:input>
                                     </div>
                                     <div class="item-row">
-                                        <fr:optional-element origin="xxforms:instance('tei-insert')/msBox" ref="msBox"
-                                            nodeset="msIdentifier">
+                                        <fr:optional-element origin="xxforms:instance('tei-insert')/TEI:msBox" ref="TEI:msBox"
+                                            nodeset="TEI:msDesc/TEI:msIdentifier">
                                             <xforms:output
                                                 ref="$form-resources/detail/titles/addBox"
                                                 class="forms-hidden"/>    
-                                            <xforms:input ref="msBox">
+                                            <xforms:input ref="TEI:msBox">
                                                 <xforms:label ref="$form-resources/detail/titles/box" class="forms-hidden"/>
                                             </xforms:input>
                                         </fr:optional-element>
-                                        <fr:optional-element ref="msFolder" origin="xxforms:instance('tei-insert')/msFolder"
-                                            nodeset="msIdentifier">
+                                        <fr:optional-element ref="TEI:msFolder" origin="xxforms:instance('tei-insert')/TEI:msFolder"
+                                            nodeset="TEI:msIdentifier">
                                             <xforms:output   ref="$form-resources/detail/titles/addFolder"
                                                 class="forms-hidden"/>    
-                                            <xforms:input ref="msFolder">
+                                            <xforms:input ref="TEI:msFolder">
                                                 <xforms:label ref="$form-resources/detail/titles/folder" class="forms-hidden"/>
                                             </xforms:input>
                                         </fr:optional-element>
-                                        <fr:optional-element ref="msItemNo" origin="xxforms:instance('tei-insert')/msItemNo"
-                                            nodeset="msIdentifier">
+                                        <fr:optional-element ref="TEI:msItemNo" origin="xxforms:instance('tei-insert')/TEI:msItemNo"
+                                            nodeset="TEI:msIdentifier">
                                             <xforms:output ref="$form-resources/detail/titles/addItemNo"
                                                 class="forms-hidden"/>     
-                                            <xforms:input ref="msItemNo">
+                                            <xforms:input ref="TEI:msItemNo">
                                                 <xforms:label ref="$form-resources/detail/titles/item" class="forms-hidden"/>
                                             </xforms:input>
                                         </fr:optional-element>
                                            
                                        </div>
                                     <div class="item-row">
-                                        <xforms:input ref="idno">
+                                        <xforms:input ref="TEI:idno">
                                             <xforms:label>ID Number: </xforms:label>
                                         </xforms:input>
 
-                                        <xforms:input ref="altIdentifier">
+                                        <xforms:input ref="TEI:altIdentifier">
                                             <xforms:label>Alternate Identifier: </xforms:label>
                                         </xforms:input>
                                     </div>
                                     <div class="item-row">
-                                        <xforms:input ref="msName">
+                                        <xforms:input ref="TEI:msName">
                                             <xforms:label>Manuscript Name: </xforms:label>
                                         </xforms:input>
                                     </div>
@@ -290,12 +296,12 @@
 
 
 
-                    <xforms:group ref=".">
+                    <xforms:group ref="TEI:msDesc">
                         <div class="repeat-container">
                             <div class="repeat-container-body">
                                 <div class="repeat-container-item">
                                     <div class="item-row">
-                                        <xforms:textarea ref="head" class="fr-summary fr-search fr-email-subject" appearance="xxforms:autosize">
+                                        <xforms:textarea ref="TEI:head" appearance="xxforms:autosize">
                                             <xforms:label>General Descriptive Title: </xforms:label>
                                         </xforms:textarea>
                                     </div>
@@ -315,13 +321,13 @@
 
 
 
-                    <xforms:group ref="msContents">
+                    <xforms:group ref="TEI:msDesc/TEI:msContents">
 
                         <div class="repeat-container">
                             <div class="repeat-container-body">
                                 <div class="repeat-container-item">
                                     <div class="item-row">
-                                        <xforms:textarea ref="summary" appearance="xxforms:autosize">
+                                        <xforms:textarea ref="TEI:summary" appearance="xxforms:autosize">
                                             <xforms:label>Summary of contents: </xforms:label>
                                         </xforms:textarea>
                                     </div>
@@ -338,9 +344,9 @@
                                 <span id="label">Items:</span>
                                 <xforms:group ref=".">
                                     <xforms:action ev:event="DOMActivate">
-                                        <xforms:insert nodeset="msItem" position="last()"
-                                            origin="xxforms:instance('tei-insert')/insert[@name = 'msItem']/msItem"/>
-                                        <xforms:setvalue ref="msItem[last()]/itemNo"
+                                        <xforms:insert nodeset="TEI:msItem" position="last()"
+                                            origin="xxforms:instance('tei-insert')/insert[@name = 'msItem']/TEI:msItem"/>
+                                        <xforms:setvalue ref="TEI:msItem[last()]/TEI:itemNo"
                                             value="concat('', ../index('msItem-repeat'))"/>
                                     </xforms:action>
                                     <xforms:trigger ref="." bind="buttons-triggers">
@@ -353,19 +359,19 @@
 
                             </div>
                             <div class="repeat-container-body">
-                                <xforms:repeat nodeset="./msItem[position()]" id="msItem-repeat"
+                                <xforms:repeat nodeset="./TEI:msItem[position()]" id="msItem-repeat"
                                     appearance="xxforms:table">
                                     <div class="repeat-container-item">
                                         <xforms:group ref=".">
 
 
                                             <div class="item-row">
-                                                <xforms:input ref="./itemNo">
+                                                <xforms:input ref="./TEI:itemNo">
                                                   <xforms:label>Item Number: </xforms:label>
                                                 </xforms:input>
 
 
-                                                <xforms:select ref="defective" appearance="full">
+                                                <xforms:select ref="TEI:defective" appearance="full">
                                                   <xforms:choices>
                                                   <xforms:item>
                                                   <xforms:label>Fragment</xforms:label>
@@ -375,47 +381,47 @@
                                                 </xforms:select>
                                             </div>
                                             <div class="item-row">
-                                                <xforms:input ref="locus">
+                                                <xforms:input ref="TEI:locus">
                                                   <xforms:label>Locus: </xforms:label>
                                                 </xforms:input>
 
-                                                <xforms:input ref="author">
+                                                <xforms:input ref="TEI:author">
                                                   <xforms:label>Author: </xforms:label>
                                                 </xforms:input>
 
-                                                <xforms:input ref="title">
+                                                <xforms:input ref="TEI:title">
                                                   <xforms:label>Item Title: </xforms:label>
                                                 </xforms:input>
                                             </div>
                                             <div class="item-row">
-                                                <xforms:input ref="rubric">
+                                                <xforms:input ref="TEI:rubric">
                                                   <xforms:label>Rubric: </xforms:label>
                                                 </xforms:input>
 
-                                                <xforms:input ref="incipit">
+                                                <xforms:input ref="TEI:incipit">
                                                   <xforms:label>Starting Text (or Incipit):
                                                   </xforms:label>
                                                 </xforms:input>
 
-                                                <xforms:input ref="explicit">
+                                                <xforms:input ref="TEI:explicit">
                                                   <xforms:label>Ending Text (or Explicit):
                                                   </xforms:label>
                                                 </xforms:input>
                                             </div>
                                             <div class="item-row">
-                                                <xforms:textarea ref="decoNote"
+                                                <xforms:textarea ref="TEI:decoNote"
                                                   appearance="xxforms:autosize">
                                                   <xforms:label>Item Decoration: </xforms:label>
                                                 </xforms:textarea>
                                             </div>
                                             <div class="item-row">
-                                                <xforms:textarea ref="note"
+                                                <xforms:textarea ref="TEI:note"
                                                   appearance="xxforms:autosize">
                                                   <xforms:label>Other Notes: </xforms:label>
                                                 </xforms:textarea>
                                             </div>
                                             <div class="item-row">
-                                                <xforms:input ref="textLang">
+                                                <xforms:input ref="TEI:textLang">
                                                   <xforms:label>Item Language: </xforms:label>
                                                 </xforms:input>
                                             </div>
@@ -439,7 +445,7 @@
 
 
 
-                    <xforms:group ref="physDesc">
+                    <xforms:group ref="TEI:msDesc/TEI:physDesc">
                         <div class="repeat-container">
 
                             <div class="repeat-container-header">
@@ -447,15 +453,15 @@
                             </div>
                             <div class="repeat-container-body">
 
-                                <xforms:group ref="objectDesc">
+                                <xforms:group ref="TEI:objectDesc">
 
 
 
 
                                     <div class="repeat-container-item">
-                                        <xforms:group ref="supportDesc">
+                                        <xforms:group ref="TEI:supportDesc">
                                             <div class="item-row">
-                                                <xforms:select1 ref="support/p" appearance="minimal">
+                                                <xforms:select1 ref="TEI:support/TEI:p" appearance="minimal">
                                                   <xforms:label>Support Material: </xforms:label>
                                                   <xforms:item>
                                                   <xforms:label>Vellum</xforms:label>
@@ -467,35 +473,35 @@
                                                   </xforms:item>
                                                 </xforms:select1>
 
-                                                <xforms:input ref="extent/p">
+                                                <xforms:input ref="TEI:extent/TEI:p">
                                                   <xforms:label>Extent: </xforms:label>
                                                 </xforms:input>
 
                                             </div>
                                             <div class="item-row">
-                                                <xforms:input ref="extent/dimensions/height">
+                                                <xforms:input ref="TEI:extent/TEI:dimensions/TEI:height">
                                                   <xforms:label>Height: </xforms:label>
                                                 </xforms:input>
 
-                                                <xforms:input ref="extent/dimensions/width">
+                                                <xforms:input ref="TEI:extent/TEI:dimensions/TEI:width">
                                                   <xforms:label>Width: </xforms:label>
                                                 </xforms:input>
                                             </div>
                                             <div class="item-row">
-                                                <xforms:textarea ref="collation/p"
+                                                <xforms:textarea ref="TEI:collation/TEI:p"
                                                   appearance="xxforms:autosize">
                                                   <xforms:label>Collation Statement: </xforms:label>
                                                 </xforms:textarea>
                                             </div>
                                             <div class="item-row">
-                                                <xforms:textarea ref="foliation/p"
+                                                <xforms:textarea ref="TEI:foliation/TEI:p"
                                                   appearance="xxforms:autosize">
                                                   <xforms:label>Foliation Description:
                                                   </xforms:label>
                                                 </xforms:textarea>
                                             </div>
                                             <div class="item-row">
-                                                <xforms:textarea ref="condition/p"
+                                                <xforms:textarea ref="TEI:condition/TEI:p"
                                                   appearance="xxforms:autosize">
                                                   <xforms:label>Condition: </xforms:label>
                                                 </xforms:textarea>
@@ -520,8 +526,8 @@
                             <div class="repeat-container-body">
                                 <div class="repeat-container-item">
                                     <div class="item-row">
-                                        <xforms:group ref="handDesc">
-                                            <xforms:input ref="p">
+                                        <xforms:group ref="TEI:handDesc">
+                                            <xforms:input ref="TEI:p">
                                                 <xforms:label>Hand Description: </xforms:label>
                                             </xforms:input>
 
@@ -537,8 +543,8 @@
                                 
                                 <div class="repeat-container-item">
                                     <div class="item-row">
-                                        <xforms:group ref="musicNotation">
-                                            <xforms:textarea ref="p" appearance="xxforms:autosize">
+                                        <xforms:group ref="TEI:musicNotation">
+                                            <xforms:textarea ref="TEI:p" appearance="xxforms:autosize">
                                                 <xforms:label>Music Notation: </xforms:label>
                                             </xforms:textarea>
                                             
@@ -553,9 +559,9 @@
                                 <div class="repeat-container-item">
                                     <div class="item-row">
 
-                                        <xforms:group ref="decoDesc">
+                                        <xforms:group ref="TEI:decoDesc">
 
-                                            <xforms:input ref="p">
+                                            <xforms:input ref="TEI:p">
                                                 <xforms:label>Decoration Description:
                                                 </xforms:label>
                                             </xforms:input>
@@ -574,8 +580,8 @@
                                 <div class="repeat-container-item">
                                     <div class="item-row">
 
-                                        <xforms:group ref="additions">
-                                            <xforms:textarea ref="p" appearance="xxforms:autosize">
+                                        <xforms:group ref="TEI:additions">
+                                            <xforms:textarea ref="TEI:p" appearance="xxforms:autosize">
                                                 <xforms:label>Additional Material: </xforms:label>
                                             </xforms:textarea>
                                         </xforms:group>
@@ -600,33 +606,33 @@
                     <div class="repeat-container">
                         <div class="repeat-container-body">
                             <div class="repeat-container-item">
-                                <xforms:group ref="history">
+                                <xforms:group ref="TEI:msDesc/TEI:history">
                                     <div class="item-row">
-                                        <xforms:input ref="origin/p/origPlace">
+                                        <xforms:input ref="TEI:origin/TEI:p/TEI:origPlace">
                                             <xforms:label>Place of Origin: </xforms:label>
                                         </xforms:input>
                                     </div>
                                     <div class="item-row">
 
-                                        <xforms:input ref="origin/p/origDate/notBefore">
+                                        <xforms:input ref="TEI:origin/TEI:p/TEI:origDate/TEI:notBefore">
                                             <xforms:label>Date of Origin (not before):
                                             </xforms:label>
                                         </xforms:input>
 
-                                        <xforms:input ref="origin/p/origDate/notAfter">
+                                        <xforms:input ref="TEI:origin/TEI:p/TEI:origDate/TEI:notAfter">
                                             <xforms:label>Date of Origin (not After):
                                             </xforms:label>
                                         </xforms:input>
                                     </div>
                                     <div class="item-row">
-                                        <xforms:textarea ref="provenance/p"
+                                        <xforms:textarea ref="TEI:provenance/TEI:p"
                                             appearance="xxforms:autosize">
                                             <xforms:label>Provenance: </xforms:label>
                                         </xforms:textarea>
                                     </div>
 
                                     <div class="item-row">
-                                        <xforms:textarea ref="acquisition/p"
+                                        <xforms:textarea ref="TEI:acquisition/TEI:p"
                                             appearance="xxforms:autosize">
                                             <xforms:label>Acquisition Information: </xforms:label>
                                         </xforms:textarea>
@@ -651,9 +657,9 @@
                             <div class="repeat-container-item">
 
 
-                                <xforms:group ref="additional">
+                                <xforms:group ref="TEI:msDesc/TEI:additional">
                                     <div class="item-row">
-                                        <xforms:textarea ref="listBibl/bibl"
+                                        <xforms:textarea ref="TEI:listBibl/TEI:bibl"
                                             appearance="xxforms:autosize">
                                             <xforms:label>For further reference: </xforms:label>
                                         </xforms:textarea>
@@ -663,7 +669,7 @@
                         </div>
                     </div>
                 </fr:section>
-
+               
             </fr:body>
         </fr:view>
 

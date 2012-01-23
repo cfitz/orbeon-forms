@@ -25,7 +25,7 @@
                                 <fr:optional-element id="note-label" ref="@displayLabel"
                                     nodeset="mods:note"
                                     origin="xxforms:instance('mods-insert')/insert[@name = 'note']/mods:note/@displayLabel">
-                                    <xforms:output ref="$form-resources/detail/labels/notesdisplaylabel" class="forms-hidden"/>
+                                    <xforms:output ref="$form-resources/detail/labels/notesdisplaylabel"/>
                                     <xforms:input ref="@displayLabel">
                                         <xforms:label ref="$form-resources/detail/labels/notesdisplaylabel"/>
                                         <xforms:alert ref="$form-resources/detail/alerts/label"/>

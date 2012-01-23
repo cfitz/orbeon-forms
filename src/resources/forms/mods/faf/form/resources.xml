@@ -578,16 +578,20 @@
                 </instance>
             </roletype>
             <statestatus>
-                <instance>
+                <instance> 
                     <section>
                         <item>
                             <label>-- Select One --</label>
                             <value></value>
                         </item>
                         <item>
-                            <label>Completed</label>
-                        <value>completed</value>
-                         </item>
+                            <label>In Process</label>
+                        <value>in process</value>
+                        </item>
+                        <item>
+                            <label>Cataloged</label>
+                            <value>cataloged</value>
+                        </item>
                     </section>
                 </instance>
             </statestatus>

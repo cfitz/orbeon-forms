@@ -148,8 +148,9 @@
   <mods:abstract/>
  </insert>
  <insert name="note">
-  <mods:note displayLabel="" type=" "/>
- </insert> > <insert name="typeOfResource">
+  <mods:note displayLabel="" type=""/>
+ </insert> 
+ <insert name="typeOfResource">
   <mods:typeOfResource/>
  </insert>
  <insert name="relatedItem">

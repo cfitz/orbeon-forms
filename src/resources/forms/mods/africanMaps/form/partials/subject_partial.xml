@@ -87,8 +87,8 @@
                                         </xforms:label></fr:button>
                                 </xforms:group>
                             </div>
-                            <!--ADD geographic
-                                In This form this is already taken care of in the coordinate section 
+                            <!--ADD geographic --> 
+                            
                             <div class="item-cell">
                                 <xforms:group ref=".">
                                     <xforms:insert ev:event="DOMActivate" context="."
@@ -100,7 +100,7 @@
                                             <span class="label">Geographic</span>
                                         </xforms:label></fr:button>
                                 </xforms:group>
-                            </div> --> 
+                            </div> 
                             <!--ADD authority-->
                             <div class="item-cell">
                                 <xforms:group ref=".">
@@ -203,6 +203,21 @@
                                                   </xforms:select1>
                                                 </fr:optional-element>
                                             </div>
+                                            <div class="item-cell">
+                                                <fr:optional-element ref="@authorityURI"  nodeset="mods:temporal" origin="instance('mods-insert')/insert[@name =  'singleDate']/mods:temporal/@authorityURI">
+                                                    <xforms:output
+                                                        ref="$form-resources/detail/titles/authorityURI"/>
+                                                    <xforms:input ref="." selection="open"
+                                                        incremental="true">
+                                                        <xforms:label
+                                                            value="$form-resources/detail/titles/authorityURI"/>
+                                                        <xforms:alert
+                                                            ref="$form-resources/detail/alerts/authorityURI"/>
+                                                        <xforms:help
+                                                            ref="$form-resources/detail/help/authorityURI"/>
+                                                    </xforms:input>
+                                                </fr:optional-element>
+                                            </div>
                                         </div>
                                     </div>
                                 </xforms:repeat>
@@ -241,9 +256,23 @@
                                                   ref="$form-resources/detail/help/subjectTopic"/>
                                                 </xforms:input>
                                             </div>
-                                            <div class="item-cell"/>
+                                            <div class="item-cell">
+                                                <fr:optional-element ref="@authorityURI"  nodeset="mods:topic" origin="instance('mods-insert')/insert[@name =  'singleDate']/mods:temporal/@authorityURI">
+                                                    <xforms:output
+                                                        ref="$form-resources/detail/titles/authorityURI"/>
+                                                    <xforms:input ref="." selection="open"
+                                                        incremental="true">
+                                                        <xforms:label
+                                                            value="$form-resources/detail/titles/authorityURI"/>
+                                                        <xforms:alert
+                                                            ref="$form-resources/detail/alerts/authorityURI"/>
+                                                        <xforms:help
+                                                            ref="$form-resources/detail/help/authorityURI"/>
+                                                    </xforms:input>
+                                                </fr:optional-element>
+                                              </div>
                                         </div>
-                                    </div>
+                                      </div>
                                 </xforms:repeat>
                             </div>
                         </div>
@@ -287,7 +316,22 @@
                                                   </xforms:itemset>
                                                 </xforms:select1>
                                             </div>
-                                            <div class="item-cell"/>
+                                            <div class="item-cell">
+                                                <fr:optional-element ref="@authorityURI"  nodeset="mods:genre" origin="instance('mods-insert')/insert[@name =  'singleDate']/mods:temporal/@authorityURI">
+                                                    <xforms:output
+                                                        ref="$form-resources/detail/titles/authorityURI"/>
+                                                    <xforms:input ref="." selection="open"
+                                                        incremental="true">
+                                                        <xforms:label
+                                                            value="$form-resources/detail/titles/authorityURI"/>
+                                                        <xforms:alert
+                                                            ref="$form-resources/detail/alerts/authorityURI"/>
+                                                        <xforms:help
+                                                            ref="$form-resources/detail/help/authorityURI"/>
+                                                    </xforms:input>
+                                                </fr:optional-element>
+                                                
+                                            </div>
                                         </div>
                                     </div>
                                 </xforms:repeat>
@@ -360,6 +404,21 @@
                                                   </xforms:itemset>
                                                 </xforms:select1>
                                             </div>
+                                            <div class="item-cell">
+                                                <fr:optional-element ref="@xlink:href" nodeset="mods:name">
+                                                    <xforms:output
+                                                        ref="$form-resources/detail/titles/namelink"/>
+                                                    <xforms:input ref="." selection="open"
+                                                        incremental="true">
+                                                        <xforms:label
+                                                            value="$form-resources/detail/titles/namelink"/>
+                                                        <xforms:alert
+                                                            ref="$form-resources/detail/alerts/namelink"/>
+                                                        <xforms:help
+                                                            ref="$form-resources/detail/help/namelink"/>
+                                                    </xforms:input>
+                                                </fr:optional-element>
+                                            </div>
                                         </div>
                                     </div>
                                 </xforms:repeat>
@@ -390,6 +449,7 @@
                                                   </xforms:trigger>
                                                 </xforms:group>
                                             </div>
+                                           
                                             <div class="item-cell">
                                                 <xforms:input id="subject-titleinfo-title-control"
                                                   incremental="true" ref="mods:title">
@@ -436,6 +496,22 @@
                                                   </xforms:input>
                                                 </fr:optional-element>
                                             </div>
+                                            <div class="item-cell">
+                                                <fr:optional-element ref="@authorityURI"  nodeset="mods:titleInfo" origin="instance('mods-insert')/insert[@name =  'singleDate']/mods:temporal/@authorityURI">
+                                                    <xforms:output
+                                                        ref="$form-resources/detail/titles/authorityURI"/>
+                                                    <xforms:input ref="." selection="open"
+                                                        incremental="true">
+                                                        <xforms:label
+                                                            value="$form-resources/detail/titles/authorityURI"/>
+                                                        <xforms:alert
+                                                            ref="$form-resources/detail/alerts/authorityURI"/>
+                                                        <xforms:help
+                                                            ref="$form-resources/detail/help/authorityURI"/>
+                                                    </xforms:input>
+                                                </fr:optional-element>
+                                                
+                                            </div>
                                         </div>
                                     </div></xforms:repeat>
                             </div></div>
@@ -469,6 +545,22 @@
                                                   <xforms:help
                                                   ref="$form-resources/detail/help/geographic"/>
                                                 </xforms:input>
+                                            </div>
+                                            <div class="item-cell">
+                                                <fr:optional-element ref="@authorityURI"  nodeset="mods:geographic" origin="instance('mods-insert')/insert[@name =  'singleDate']/mods:temporal/@authorityURI">
+                                                    <xforms:output
+                                                        ref="$form-resources/detail/titles/authorityURI"/>
+                                                    <xforms:input ref="." selection="open"
+                                                        incremental="true">
+                                                        <xforms:label
+                                                            value="$form-resources/detail/titles/authorityURI"/>
+                                                        <xforms:alert
+                                                            ref="$form-resources/detail/alerts/authorityURI"/>
+                                                        <xforms:help
+                                                            ref="$form-resources/detail/help/authorityURI"/>
+                                                    </xforms:input>
+                                                </fr:optional-element>
+                                                
                                             </div>
                                         </div>
                                     </div>

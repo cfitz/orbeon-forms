@@ -15,7 +15,7 @@
 <mods:mods     xmlns:xxforms="http://orbeon.org/oxf/xml/xforms" xmlns:mods="http://www.loc.gov/mods/v3"
     xmlns:xforms="http://www.w3.org/2002/xforms">       
     <mods:identifier type="local" displayLabel="SU DRUID">1234</mods:identifier>
-     <mods:identifier type="local" displayLabel="Collection ID">M0690</mods:identifier>
+ <mods:identifier type="local" displayLabel="Collection ID">M1090</mods:identifier>
 
      <mods:identifier type="local" displayLabel="Item Number"></mods:identifier>  
     
@@ -28,7 +28,6 @@
     <mods:originInfo>
         <mods:place><mods:placeTerm type="text">Stanford, CA</mods:placeTerm></mods:place>
         <mods:publisher>Stanford Special Collections</mods:publisher>
-        <mods:dateCreated encoding="w3cdtf" keyDate="yes" qualifier="" />
        </mods:originInfo> 
  <mods:location>
     	<mods:physicalLocation></mods:physicalLocation>

@@ -511,12 +511,6 @@
                                                   ref="$form-resources/detail/help/place"/>
                                                 </xforms:input>
                                             </div>
-                                            <div class="item-cell">
-                                                <xforms:output
-                                                  ref="$form-resources/detail/titles/placetype"/>
-                                                <xforms:output
-                                                  ref="descendant-or-self::*/attribute::type"/>
-                                            </div>
                                         </div>
                                     </div>
                                 </div></div>

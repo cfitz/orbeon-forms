@@ -8,10 +8,10 @@
  -->
    
 
-<instance>   
+<instance >   
     
     <insert name="msItem">
-        <msItem>
+        <msItem xmlns="http://www.tei-c.org/ns/1.0/" >
             <itemNo></itemNo>
             <defective/>
             <locus/>
@@ -26,8 +26,8 @@
         </msItem>
     </insert>
     
-    <msBox></msBox>
-    <msFolder></msFolder>
-    <msItemNo></msItemNo>
+    <msBox xmlns="http://www.tei-c.org/ns/1.0/" ></msBox>
+    <msFolder xmlns="http://www.tei-c.org/ns/1.0/" ></msFolder>
+    <msItemNo xmlns="http://www.tei-c.org/ns/1.0/" ></msItemNo>
 
 </instance>

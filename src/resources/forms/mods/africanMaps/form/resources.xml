@@ -76,7 +76,7 @@
                 <accesscondition>Access Condition</accesscondition>
                 <abstract>Abstract</abstract>
                 <subject>Subject</subject>
-                <subjectDate>Subject - Temporal</subjectDate>
+                <subjectDate>Subject - Date</subjectDate>
                 <subjectTopic>Subject - Topic</subjectTopic>
                 <subjectGenre>Subject - Genre</subjectGenre>
                 <subjectName>Subject - Name</subjectName>
@@ -95,7 +95,8 @@
                 <namePart>Name Parts</namePart>
                 <namePartType>Type</namePartType>
                 <seriesInfo>Series Information</seriesInfo>
-                <relatedItemType>Type</relatedItemType>
+                <relatedItemTitle>Related Item Title</relatedItemTitle>
+                <relatedItemType>Related Item Type</relatedItemType>
                 <relatedItemSubtitle>Box or Drawer Name</relatedItemSubtitle>
                 <relatedItemPartName>Folder Name</relatedItemPartName>
                 <relatedItemPartNumber>Folder Number</relatedItemPartNumber>
@@ -124,7 +125,13 @@
                 <label>Label</label>
                 <manuscript>Manuscript</manuscript>
                 <druid>Druid</druid>
+                <namelink>Authority URI</namelink>
+                <authorityURI>Authority URI</authorityURI>
+                <druid>Druid</druid>
                 <viewrecord>View Record</viewrecord>
+                <scale>Scale</scale>
+                <projection>Projection</projection>
+                <authorityURI>Authority URI</authorityURI>
             </titles>
 
             <!-- Triggers labels -->
@@ -167,7 +174,7 @@
                 <addSubjectTitleInfo>Title</addSubjectTitleInfo>
                 <addGeographic>Geographic</addGeographic>
                 <addCartographics>Cartographics</addCartographics>
-                <notetype>Note Type</notetype>
+                <notetype>Current Note Type</notetype>
                 <!-- Other controls labels -->
                 <origintype>
                     <copyright state="copyright">Copyright</copyright>
@@ -181,10 +188,13 @@
                 <manuscript>Manuscript</manuscript>
                 <label>Label</label>
                 <druid>Druid</druid>
+                <scale>Scale</scale>
+                <projection>Projection</projection>
+                <authorityURI>Authority URI</authorityURI>
             </labels>
 
             <alerts>
-
+                <namelink>This must point to a valid URI.</namelink>
                 <identifier>Identifier field cannot be empty.</identifier>
                 <identifiertype>Choose an identifier type.</identifiertype>
                 <title>All records must have at least one title</title>
@@ -618,6 +628,46 @@
                     </section>
                 </instance>
             </identifiertype>
+            <identifierDisplayLabels>
+                <instance>
+                    <section>
+                        <item>
+                            <label>-- Select One --</label>
+                            <value/>
+                        </item>
+                    </section>
+                    <section>
+                        <item>
+                            <label>Original McLaughlin book number (1995 edition)</label>
+                            <value>Original McLaughlin Book Number (1995 edition)</value>
+                        </item>
+                        <item>
+                            <label>Updated McLaughlin book number</label>
+                            <value>Updated McLaughlin Book Number</value>
+                        </item>
+                        <item>
+                            <label>Call number</label>
+                            <value>call_number</value>
+                        </item>
+                        <item>
+                            <label>FileMaker Pro record number</label>
+                            <value>FileMaker Pro Record Number</value>
+                        </item>
+                        <item>
+                            <label>Post publication map number</label>
+                            <value>Post publication map number</value>
+                        </item>
+                        <item>
+                            <label>Stanford University DRUID</label>
+                            <value>SU DRUID</value>
+                        </item>
+                    </section>
+
+
+                </instance>
+
+
+            </identifierDisplayLabels>
             <titletype>
                 <instance>
                     <section>
@@ -702,6 +752,888 @@
                     </section>
                 </instance>
             </authority>
+            <names>
+                <instance>
+                    <section>
+                        <item>
+                            <label>-- Select One --</label>
+                            <value/>
+                        </item>
+                        <item>
+                            <label>Aa, Pieter van der, 1659-1733.</label>
+                            <value>Aa, Pieter van der, 1659-1733.</value>
+                        </item>
+                        <item>
+                            <label>Acerra, Domenico dell'.</label>
+                            <value>Acerra, Domenico dell'.</value>
+                        </item>
+                        <item>
+                            <label>Allard, Carel, 1648-ca. 1709.</label>
+                            <value>Allard, Carel, 1648-ca. 1709.</value>
+                        </item>
+                        <item>
+                            <label>Allardt, Hugo, d. 1691.</label>
+                            <value>Allardt, Hugo, d. 1691.</value>
+                        </item>
+                        <item>
+                            <label>Anonymous</label>
+                            <value>Anonymous</value>
+                        </item>
+                        <item>
+                            <label>Asano.</label>
+                            <value>Asano.</value>
+                        </item>
+                        <item>
+                            <label>Ashley, Anthony, Sir, 1551-1628. </label>
+                            <value>Ashley, Anthony, Sir, 1551-1628. </value>
+                        </item>
+                        <item>
+                            <label>Baeck, Elias, 1679-1747.</label>
+                            <value>Baeck, Elias, 1679-1747.</value>
+                        </item>
+                        <item>
+                            <label>Bakewell, Thomas.</label>
+                            <value>Bakewell, Thomas.</value>
+                        </item>
+                        <item>
+                            <label>Baptist, John. </label>
+                            <value>Baptist, John. </value>
+                        </item>
+                        <item>
+                            <label>Bassett, Thomas, bookseller. </label>
+                            <value>Bassett, Thomas, bookseller. </value>
+                        </item>
+                        <item>
+                            <label>Bellin, Jacques Nicolas, 1703-1772. </label>
+                            <value>Bellin, Jacques Nicolas, 1703-1772. </value>
+                        </item>
+                        <item>
+                            <label>Bennett, Richard, fl. 1739-1740.</label>
+                            <value>Bennett, Richard, fl. 1739-1740.</value>
+                        </item>
+                        <item>
+                            <label>Bernard, Jean Frédéric, d. 1752</label>
+                            <value>Bernard, Jean Frédéric, d. 1752</value>
+                        </item>
+                        <item>
+                            <label>Berry, William, fl. 1669-1708. </label>
+                            <value>Berry, William, fl. 1669-1708. </value>
+                        </item>
+                        <item>
+                            <label>Blaeu, Joan, 1596-1673.</label>
+                            <value>Blaeu, Joan, 1596-1673.</value>
+                        </item>
+                        <item>
+                            <label>Blome, Richard, d. 1705.</label>
+                            <value>Blome, Richard, d. 1705.</value>
+                        </item>
+                        <item>
+                            <label>Bockini.</label>
+                            <value>Bockini.</value>
+                        </item>
+                        <item>
+                            <label>Bodenehr, Gabriel, 17th/18th cent. </label>
+                            <value>Bodenehr, Gabriel, 17th/18th cent. </value>
+                        </item>
+                        <item>
+                            <label>Bowles, John, 1701-1779.</label>
+                            <value>Bowles, John, 1701-1779.</value>
+                        </item>
+                        <item>
+                            <label>Bowles, Thomas, 1694-1773. </label>
+                            <value>Bowles, Thomas, 1694-1773. </value>
+                        </item>
+                        <item>
+                            <label>Bowyer, William, 1663-1737. </label>
+                            <value>Bowyer, William, 1663-1737. </value>
+                        </item>
+                        <item>
+                            <label>Briet, Philip, 1601-1668. </label>
+                            <value>Briet, Philip, 1601-1668. </value>
+                        </item>
+                        <item>
+                            <label>Briggs, Henry, 1561-1630. </label>
+                            <value>Briggs, Henry, 1561-1630. </value>
+                        </item>
+                        <item>
+                            <label>Broedelet, Guilielmus.</label>
+                            <value>Broedelet, Guilielmus.</value>
+                        </item>
+                        <item>
+                            <label>Burghers, M. </label>
+                            <value>Burghers, M. </value>
+                        </item>
+                        <item>
+                            <label>Burnet, Thomas, 1635?-1715. </label>
+                            <value>Burnet, Thomas, 1635?-1715. </value>
+                        </item>
+                        <item>
+                            <label>Canali, Giovanni Battista.</label>
+                            <value>Canali, Giovanni Battista.</value>
+                        </item>
+                        <item>
+                            <label>Carte, John. </label>
+                            <value>Carte, John. </value>
+                        </item>
+                        <item>
+                            <label>Chatelain, Henri Abraham.</label>
+                            <value>Chatelain, Henri Abraham.</value>
+                        </item>
+                        <item>
+                            <label>Chetwind, Philip. </label>
+                            <value>Chetwind, Philip. </value>
+                        </item>
+                        <item>
+                            <label>Chiquet, Jacques, d. 1721. </label>
+                            <value>Chiquet, Jacques, d. 1721. </value>
+                        </item>
+                        <item>
+                            <label>Chiswell, Richard. </label>
+                            <value>Chiswell, Richard. </value>
+                        </item>
+                        <item>
+                            <label>Clüver, Philipp, 1580-1622.</label>
+                            <value>Clüver, Philipp, 1580-1622.</value>
+                        </item>
+                        <item>
+                            <label>Colom, Arnold, 1624-1668. </label>
+                            <value>Colom, Arnold, 1624-1668. </value>
+                        </item>
+                        <item>
+                            <label>Colom, Jacob Aertsz, 1599-1673. </label>
+                            <value>Colom, Jacob Aertsz, 1599-1673. </value>
+                        </item>
+                        <item>
+                            <label>Colson, John.</label>
+                            <value>Colson, John.</value>
+                        </item>
+                        <item>
+                            <label>Cordier, Robert.</label>
+                            <value>Cordier, Robert.</value>
+                        </item>
+                        <item>
+                            <label>Coronelli, Vincenzo, 1650-1718. </label>
+                            <value>Coronelli, Vincenzo, 1650-1718. </value>
+                        </item>
+                        <item>
+                            <label>Cosmant. </label>
+                            <value>Cosmant. </value>
+                        </item>
+                        <item>
+                            <label>Cóvens, Jean. </label>
+                            <value>Cóvens, Jean. </value>
+                        </item>
+                        <item>
+                            <label>Crepy.</label>
+                            <value>Crepy.</value>
+                        </item>
+                        <item>
+                            <label>Danckerts, Cornelis, 1664-1717.</label>
+                            <value>Danckerts, Cornelis, 1664-1717.</value>
+                        </item>
+                        <item>
+                            <label>Danckerts, Justus, 1635-1701. </label>
+                            <value>Danckerts, Justus, 1635-1701. </value>
+                        </item>
+                        <item>
+                            <label>Danet, Guillaume, 1670?-1732.</label>
+                            <value>Danet, Guillaume, 1670?-1732.</value>
+                        </item>
+                        <item>
+                            <label>Degler, Johann.</label>
+                            <value>Degler, Johann.</value>
+                        </item>
+                        <item>
+                            <label>Dom, S.</label>
+                            <value>Dom, S.</value>
+                        </item>
+                        <item>
+                            <label>Doncker, Hendrick, 1626-1699. </label>
+                            <value>Doncker, Hendrick, 1626-1699. </value>
+                        </item>
+                        <item>
+                            <label>Du Tralage, Jean Nicolas, d. 1699. </label>
+                            <value>Du Tralage, Jean Nicolas, d. 1699. </value>
+                        </item>
+                        <item>
+                            <label>Dundee, engraver.</label>
+                            <value>Dundee, engraver.</value>
+                        </item>
+                        <item>
+                            <label>Duval, P. (Pierre), 1619-1682. </label>
+                            <value>Duval, P. (Pierre), 1619-1682. </value>
+                        </item>
+                        <item>
+                            <label>Fer, Nicolas de, 1646-1720. </label>
+                            <value>Fer, Nicolas de, 1646-1720. </value>
+                        </item>
+                        <item>
+                            <label>Fernández de Medrano, Sebastián, 1646-1705.</label>
+                            <value>Fernández de Medrano, Sebastián, 1646-1705.</value>
+                        </item>
+                        <item>
+                            <label>Fisher, William.</label>
+                            <value>Fisher, William.</value>
+                        </item>
+                        <item>
+                            <label>Foster, George, fl. 1737-1739. </label>
+                            <value>Foster, George, fl. 1737-1739. </value>
+                        </item>
+                        <item>
+                            <label>Foxe, Luke, 1586-1635. </label>
+                            <value>Foxe, Luke, 1586-1635. </value>
+                        </item>
+                        <item>
+                            <label>Gallus, Antonius Donzel.</label>
+                            <value>Gallus, Antonius Donzel.</value>
+                        </item>
+                        <item>
+                            <label>Garrett, John.</label>
+                            <value>Garrett, John.</value>
+                        </item>
+                        <item>
+                            <label>Giannini, Agapitus.</label>
+                            <value>Giannini, Agapitus.</value>
+                        </item>
+                        <item>
+                            <label>Goeree, Jan, 1670-1731. </label>
+                            <value>Goeree, Jan, 1670-1731. </value>
+                        </item>
+                        <item>
+                            <label>Goos, Abraham. </label>
+                            <value>Goos, Abraham. </value>
+                        </item>
+                        <item>
+                            <label>Goos, Pieter, ca. 1616-1675. </label>
+                            <value>Goos, Pieter, ca. 1616-1675. </value>
+                        </item>
+                        <item>
+                            <label>Gouwen, Gilliam van der. </label>
+                            <value>Gouwen, Gilliam van der. </value>
+                        </item>
+                        <item>
+                            <label>Grierson, George, d. 1753. </label>
+                            <value>Grierson, George, d. 1753. </value>
+                        </item>
+                        <item>
+                            <label>Swift, Jonathan, 1667-1745.</label>
+                            <value>Swift, Jonathan, 1667-1745.</value>
+                        </item>
+                        <item>
+                            <label>Hähn, Johann Friedrich, 1710-1789. </label>
+                            <value>Hähn, Johann Friedrich, 1710-1789. </value>
+                        </item>
+                        <item>
+                            <label>Halley, Edmond, 1656-1742. </label>
+                            <value>Halley, Edmond, 1656-1742. </value>
+                        </item>
+                        <item>
+                            <label>Happel, Eberhard Werner, 1647-1690. </label>
+                            <value>Happel, Eberhard Werner, 1647-1690. </value>
+                        </item>
+                        <item>
+                            <label>Harris, John, 1679 or 80-1738. </label>
+                            <value>Harris, John, 1679 or 80-1738. </value>
+                        </item>
+                        <item>
+                            <label>Hashimoto, Sōkichi, 1763-1836. </label>
+                            <value>Hashimoto, Sōkichi, 1763-1836. </value>
+                        </item>
+                        <item>
+                            <label>Hennepin, Louis, 17th cent. </label>
+                            <value>Hennepin, Louis, 17th cent. </value>
+                        </item>
+                        <item>
+                            <label>Hensel, Gottfried.</label>
+                            <value>Hensel, Gottfried.</value>
+                        </item>
+                        <item>
+                            <label>Heylyn, Peter, 1600-1662. </label>
+                            <value>Heylyn, Peter, 1600-1662. </value>
+                        </item>
+                        <item>
+                            <label>Hoffman, Johannes, 1629-1698.</label>
+                            <value>Hoffman, Johannes, 1629-1698.</value>
+                        </item>
+                        <item>
+                            <label>Hollar, Wenceslaus, 1607-1677. </label>
+                            <value>Hollar, Wenceslaus, 1607-1677. </value>
+                        </item>
+                        <item>
+                            <label>Holm, Thomas Campanius, ca. 1670-1702. </label>
+                            <value>Holm, Thomas Campanius, ca. 1670-1702. </value>
+                        </item>
+                        <item>
+                            <label>Homann, Johann Baptist, 1663-1724. </label>
+                            <value>Homann, Johann Baptist, 1663-1724. </value>
+                        </item>
+                        <item>
+                            <label>Homann Erben (Firm). </label>
+                            <value>Homann Erben (Firm). </value>
+                        </item>
+                        <item>
+                            <label>Hondius, Hendrik, 1597-1651. </label>
+                            <value>Hondius, Hendrik, 1597-1651. </value>
+                        </item>
+                        <item>
+                            <label>Humble, George, d. 1640. </label>
+                            <value>Humble, George, d. 1640. </value>
+                        </item>
+                        <item>
+                            <label>Humble, William.</label>
+                            <value>Humble, William.</value>
+                        </item>
+                        <item>
+                            <label>Inselin, C.</label>
+                            <value>Inselin, C.</value>
+                        </item>
+                        <item>
+                            <label>Irnsingerus, Heinricus.</label>
+                            <value>Irnsingerus, Heinricus.</value>
+                        </item>
+                        <item>
+                            <label>Jaillot, Alexis Hubert, 1632?-1712. </label>
+                            <value>Jaillot, Alexis Hubert, 1632?-1712. </value>
+                        </item>
+                        <item>
+                            <label>Jansson, Jan, 1588-1664. </label>
+                            <value>Jansson, Jan, 1588-1664. </value>
+                        </item>
+                        <item>
+                            <label>Jenner, Thomas, 1606 or 7-1676. </label>
+                            <value>Jenner, Thomas, 1606 or 7-1676. </value>
+                        </item>
+                        <item>
+                            <label>Jonghe, Clement de.</label>
+                            <value>Jonghe, Clement de.</value>
+                        </item>
+                        <item>
+                            <label>Keere, Pieter van den, 1571-ca. 1646. </label>
+                            <value>Keere, Pieter van den, 1571-ca. 1646. </value>
+                        </item>
+                        <item>
+                            <label>Keith, William, Sir, 1680-1749. </label>
+                            <value>Keith, William, Sir, 1680-1749. </value>
+                        </item>
+                        <item>
+                            <label>Keizer, Jacob, fl. 1706-1750. </label>
+                            <value>Keizer, Jacob, fl. 1706-1750. </value>
+                        </item>
+                        <item>
+                            <label>Keulen, Gerard van.</label>
+                            <value>Keulen, Gerard van.</value>
+                        </item>
+                        <item>
+                            <label>Keulen, Johannes van, fl. 1726-1753. </label>
+                            <value>Keulen, Johannes van, fl. 1726-1753. </value>
+                        </item>
+                        <item>
+                            <label>Kilian, Georg Christophe, 1709-1780.</label>
+                            <value>Kilian, Georg Christophe, 1709-1780.</value>
+                        </item>
+                        <item>
+                            <label>King, John.</label>
+                            <value>King, John.</value>
+                        </item>
+                        <item>
+                            <label>Kino, Eusebio Francisco, 1644-1711. </label>
+                            <value>Kino, Eusebio Francisco, 1644-1711. </value>
+                        </item>
+                        <item>
+                            <label>Kitazawa.</label>
+                            <value>Kitazawa.</value>
+                        </item>
+                        <item>
+                            <label>Kitchin, Thomas, d. 1784. </label>
+                            <value>Kitchin, Thomas, d. 1784. </value>
+                        </item>
+                        <item>
+                            <label>Kobayashi, Heihachi.</label>
+                            <value>Kobayashi, Heihachi.</value>
+                        </item>
+                        <item>
+                            <label>Labat, Jean Baptiste, 1663-1738. </label>
+                            <value>Labat, Jean Baptiste, 1663-1738. </value>
+                        </item>
+                        <item>
+                            <label>La Feuille, Daniel de. </label>
+                            <value>La Feuille, Daniel de. </value>
+                        </item>
+                        <item>
+                            <label>La Feuille, Jacob de.</label>
+                            <value>La Feuille, Jacob de.</value>
+                        </item>
+                        <item>
+                            <label>Lamb, Francis. </label>
+                            <value>Lamb, Francis. </value>
+                        </item>
+                        <item>
+                            <label>Landeck, Zacharias.</label>
+                            <value>Landeck, Zacharias.</value>
+                        </item>
+                        <item>
+                            <label>Lat, Jan de. </label>
+                            <value>Lat, Jan de. </value>
+                        </item>
+                        <item>
+                            <label>Lea, Philip, fl. 1683-1700. </label>
+                            <value>Lea, Philip, fl. 1683-1700. </value>
+                        </item>
+                        <item>
+                            <label>Leclerc, Jean, 1560-1621. </label>
+                            <value>Leclerc, Jean, 1560-1621. </value>
+                        </item>
+                        <item>
+                            <label>Le Clerc, Chrestian.</label>
+                            <value>Le Clerc, Chrestian.</value>
+                        </item>
+                        <item>
+                            <label>Lens, Bernard, 1682-1740.</label>
+                            <value>Lens, Bernard, 1682-1740.</value>
+                        </item>
+                        <item>
+                            <label>Lépine, Louis de.</label>
+                            <value>Lépine, Louis de.</value>
+                        </item>
+                        <item>
+                            <label>Leth, Andries de, 1662-1731. </label>
+                            <value>Leth, Andries de, 1662-1731. </value>
+                        </item>
+                        <item>
+                            <label>Lhuilier, Jan.</label>
+                            <value>Lhuilier, Jan.</value>
+                        </item>
+                        <item>
+                            <label>Liébaux, Jean Baptiste. </label>
+                            <value>Liébaux, Jean Baptiste. </value>
+                        </item>
+                        <item>
+                            <label>L’Isle, Guillaume de, 1675-1726. </label>
+                            <value>L’Isle, Guillaume de, 1675-1726. </value>
+                        </item>
+                        <item>
+                            <label>Loon, Gillis van.</label>
+                            <value>Loon, Gillis van.</value>
+                        </item>
+                        <item>
+                            <label>Loon, H. V. ǂq (Herman van).</label>
+                            <value>Loon, H. V. ǂq (Herman van).</value>
+                        </item>
+                        <item>
+                            <label>Loon, J. van, ca. 1611-1686. </label>
+                            <value>Loon, J. van, ca. 1611-1686. </value>
+                        </item>
+                        <item>
+                            <label>Lopez de Sequeira, Diego.</label>
+                            <value>Lopez de Sequeira, Diego.</value>
+                        </item>
+                        <item>
+                            <label>Lotter, Tobias Conrad, 1717-1777. </label>
+                            <value>Lotter, Tobias Conrad, 1717-1777. </value>
+                        </item>
+                        <item>
+                            <label>Macquart, Denise. </label>
+                            <value>Macquart, Denise. </value>
+                        </item>
+                        <item>
+                            <label>Manesson-Mallet, Allain, 1630?-1706? </label>
+                            <value>Manesson-Mallet, Allain, 1630?-1706? </value>
+                        </item>
+                        <item>
+                            <label>Marriette, Pierre.</label>
+                            <value>Marriette, Pierre.</value>
+                        </item>
+                        <item>
+                            <label>Matthysz., Jan, fl. 1654-1685. </label>
+                            <value>Matthysz., Jan, fl. 1654-1685. </value>
+                        </item>
+                        <item>
+                            <label>Mendoza y González, Juan Antonio de. </label>
+                            <value>Mendoza y González, Juan Antonio de. </value>
+                        </item>
+                        <item>
+                            <label>Meurs, Jacob van, 1619-1680. </label>
+                            <value>Meurs, Jacob van, 1619-1680. </value>
+                        </item>
+                        <item>
+                            <label>Moll, Herman, d. 1732. </label>
+                            <value>Moll, Herman, d. 1732. </value>
+                        </item>
+                        <item>
+                            <label>Monath, P. C. (Peter Conrad), 1683-1747.</label>
+                            <value>Monath, P. C. (Peter Conrad), 1683-1747.</value>
+                        </item>
+                        <item>
+                            <label>Montalegre, Joseph de. </label>
+                            <value>Montalegre, Joseph de. </value>
+                        </item>
+                        <item>
+                            <label>Montanus, Petrus, ca. 1560-1625. </label>
+                            <value>Montanus, Petrus, ca. 1560-1625. </value>
+                        </item>
+                        <item>
+                            <label>Moore, Jonas, Sir, 1617-1679. </label>
+                            <value>Moore, Jonas, Sir, 1617-1679. </value>
+                        </item>
+                        <item>
+                            <label>Morden, Robert, d. 1703. </label>
+                            <value>Morden, Robert, d. 1703. </value>
+                        </item>
+                        <item>
+                            <label>Mortier, Corneille.</label>
+                            <value>Mortier, Corneille.</value>
+                        </item>
+                        <item>
+                            <label>Mortier, Pierre. </label>
+                            <value>Mortier, Pierre. </value>
+                        </item>
+                        <item>
+                            <label>Mosting, Herman.</label>
+                            <value>Mosting, Herman.</value>
+                        </item>
+                        <item>
+                            <label>Moulart-Sanson, Pierre, d. 1730. </label>
+                            <value>Moulart-Sanson, Pierre, d. 1730. </value>
+                        </item>
+                        <item>
+                            <label>Mount, Richard, d. 1722. </label>
+                            <value>Mount, Richard, d. 1722. </value>
+                        </item>
+                        <item>
+                            <label>Moxon, James, fl. 1647-1651. </label>
+                            <value>Moxon, James, fl. 1647-1651. </value>
+                        </item>
+                        <item>
+                            <label>Muellers, Johann Bernard.</label>
+                            <value>Muellers, Johann Bernard.</value>
+                        </item>
+                        <item>
+                            <label>Müller, Johann Ulrich. </label>
+                            <value>Müller, Johann Ulrich. </value>
+                        </item>
+                        <item>
+                            <label>Nagakubo, Sekisui, 1717-1801. </label>
+                            <value>Nagakubo, Sekisui, 1717-1801. </value>
+                        </item>
+                        <item>
+                            <label>Nicolosi, Giovanni Battista, 1610-1670. </label>
+                            <value>Nicolosi, Giovanni Battista, 1610-1670. </value>
+                        </item>
+                        <item>
+                            <label>Nolin, Jean Baptiste, 1648-1708. </label>
+                            <value>Nolin, Jean Baptiste, 1648-1708. </value>
+                        </item>
+                        <item>
+                            <label>Ogawa, Tazaemon, fl. 1721. </label>
+                            <value>Ogawa, Tazaemon, fl. 1721. </value>
+                        </item>
+                        <item>
+                            <label>Ogier, Mathieu, fl. 1676-1710. </label>
+                            <value>Ogier, Mathieu, fl. 1676-1710. </value>
+                        </item>
+                        <item>
+                            <label>Ogilby, John, 1600-1676. </label>
+                            <value>Ogilby, John, 1600-1676. </value>
+                        </item>
+                        <item>
+                            <label>Okada Shinjiro.</label>
+                            <value>Okada Shinjiro.</value>
+                        </item>
+                        <item>
+                            <label>Osborne, Thomas, d. 1767.</label>
+                            <value>Osborne, Thomas, d. 1767.</value>
+                        </item>
+                        <item>
+                            <label>R. J. Ottens. </label>
+                            <value>R. J. Ottens. </value>
+                        </item>
+                        <item>
+                            <label>Overton, Henry, fl. 1751-1764. </label>
+                            <value>Overton, Henry, fl. 1751-1764. </value>
+                        </item>
+                        <item>
+                            <label>Overton, John, 1640-1708? </label>
+                            <value>Overton, John, 1640-1708? </value>
+                        </item>
+                        <item>
+                            <label>Overton, Philip, d. 1751. </label>
+                            <value>Overton, Philip, d. 1751. </value>
+                        </item>
+                        <item>
+                            <label>Page, Thomas, d. 1733. </label>
+                            <value>Page, Thomas, d. 1733. </value>
+                        </item>
+                        <item>
+                            <label>Peeters, Jacques.</label>
+                            <value>Peeters, Jacques.</value>
+                        </item>
+                        <item>
+                            <label>Petrini, Paolo. </label>
+                            <value>Petrini, Paolo. </value>
+                        </item>
+                        <item>
+                            <label>Peyrounin, A. </label>
+                            <value>Peyrounin, A. </value>
+                        </item>
+                        <item>
+                            <label>Pietra Santa, Gasparo.</label>
+                            <value>Pietra Santa, Gasparo.</value>
+                        </item>
+                        <item>
+                            <label>Piskart, P.</label>
+                            <value>Piskart, P.</value>
+                        </item>
+                        <item>
+                            <label>Probst, Johann Michael, d. 1809. </label>
+                            <value>Probst, Johann Michael, d. 1809. </value>
+                        </item>
+                        <item>
+                            <label>Ram, Johannes de, 1648-1693. </label>
+                            <value>Ram, Johannes de, 1648-1693. </value>
+                        </item>
+                        <item>
+                            <label>Rea, Roger.</label>
+                            <value>Rea, Roger.</value>
+                        </item>
+                        <item>
+                            <label>Renard, Louis, b. ca. 1678. </label>
+                            <value>Renard, Louis, b. ca. 1678. </value>
+                        </item>
+                        <item>
+                            <label>Robert de Vaugondy, Didier, 1723-1786. </label>
+                            <value>Robert de Vaugondy, Didier, 1723-1786. </value>
+                        </item>
+                        <item>
+                            <label>Roberts, Lewes, 1596-1640. </label>
+                            <value>Roberts, Lewes, 1596-1640. </value>
+                        </item>
+                        <item>
+                            <label>Robijn, Jacobus, d. ca. 1710. </label>
+                            <value>Robijn, Jacobus, d. ca. 1710. </value>
+                        </item>
+                        <item>
+                            <label>Rogg, Gottfried.</label>
+                            <value>Rogg, Gottfried.</value>
+                        </item>
+                        <item>
+                            <label>Rossi, Giovanni Giacomo de, 17th cent. </label>
+                            <value>Rossi, Giovanni Giacomo de, 17th cent. </value>
+                        </item>
+                        <item>
+                            <label>Saiko, Ishizuka.</label>
+                            <value>Saiko, Ishizuka.</value>
+                        </item>
+                        <item>
+                            <label>Sandrart, Jakob von, 1630-1708. </label>
+                            <value>Sandrart, Jakob von, 1630-1708. </value>
+                        </item>
+                        <item>
+                            <label>Sanson, Guillaume. </label>
+                            <value>Sanson, Guillaume. </value>
+                        </item>
+                        <item>
+                            <label>Sanson, Nicolas, 1600-1667. </label>
+                            <value>Sanson, Nicolas, 1600-1667. </value>
+                        </item>
+                        <item>
+                            <label>Sato, Shuzo Sato.</label>
+                            <value>Sato, Shuzo Sato.</value>
+                        </item>
+                        <item>
+                            <label>Schagen, Gerrit Lucaszoon van.</label>
+                            <value>Schagen, Gerrit Lucaszoon van.</value>
+                        </item>
+                        <item>
+                            <label>Schenk, Pieter, ca. 1698-1775. </label>
+                            <value>Schenk, Pieter, ca. 1698-1775. </value>
+                        </item>
+                        <item>
+                            <label>Scherer, Heinrich, 1628-1704. </label>
+                            <value>Scherer, Heinrich, 1628-1704. </value>
+                        </item>
+                        <item>
+                            <label>Schreiber, Johann Georg.</label>
+                            <value>Schreiber, Johann Georg.</value>
+                        </item>
+                        <item>
+                            <label>Seale, Richard William. </label>
+                            <value>Seale, Richard William. </value>
+                        </item>
+                        <item>
+                            <label>Seile, Anne, d. 1678.</label>
+                            <value>Seile, Anne, d. 1678.</value>
+                        </item>
+                        <item>
+                            <label>Seile, Henry, 1595-1660. </label>
+                            <value>Seile, Henry, 1595-1660. </value>
+                        </item>
+                        <item>
+                            <label>Seller, John, fl. 1658-1698. </label>
+                            <value>Seller, John, fl. 1658-1698. </value>
+                        </item>
+                        <item>
+                            <label>Senex, John, d. 1740. </label>
+                            <value>Senex, John, d. 1740. </value>
+                        </item>
+                        <item>
+                            <label>Seutter, Albrecht Carl.</label>
+                            <value>Seutter, Albrecht Carl.</value>
+                        </item>
+                        <item>
+                            <label>Seutter, Matthaeus, 1678-1756.</label>
+                            <value>Seutter, Matthaeus, 1678-1756.</value>
+                        </item>
+                        <item>
+                            <label>Someren, A. van. </label>
+                            <value>Someren, A. van. </value>
+                        </item>
+                        <item>
+                            <label>Somer, Jan.</label>
+                            <value>Somer, Jan.</value>
+                        </item>
+                        <item>
+                            <label>Sornique, J., 16..-17..?, graveur.</label>
+                            <value>Sornique, J., 16..-17..?, graveur.</value>
+                        </item>
+                        <item>
+                            <label>Sotani, Osho.</label>
+                            <value>Sotani, Osho.</value>
+                        </item>
+                        <item>
+                            <label>Sotani, Rinzo Soya</label>
+                            <value>Sotani, Rinzo Soya</value>
+                        </item>
+                        <item>
+                            <label>Rinzo Soya.</label>
+                            <value>Rinzo Soya.</value>
+                        </item>
+                        <item>
+                            <label>Speed, John, 1552?-1629.</label>
+                            <value>Speed, John, 1552?-1629.</value>
+                        </item>
+                        <item>
+                            <label>Starckman, P. </label>
+                            <value>Starckman, P. </value>
+                        </item>
+                        <item>
+                            <label>Stridbeck, Johann, 1640-1716.</label>
+                            <value>Stridbeck, Johann, 1640-1716.</value>
+                        </item>
+                        <item>
+                            <label>Swift, Jonathan, 1667-1745. </label>
+                            <value>Swift, Jonathan, 1667-1745. </value>
+                        </item>
+                        <item>
+                            <label>Tajima, Ryūkei.</label>
+                            <value>Tajima, Ryūkei.</value>
+                        </item>
+                        <item>
+                            <label>Terrafson, H.</label>
+                            <value>Terrafson, H.</value>
+                        </item>
+                        <item>
+                            <label>Thornton, John, 1641-1708. </label>
+                            <value>Thornton, John, 1641-1708. </value>
+                        </item>
+                        <item>
+                            <label> Tidemann, Philipp, 1657-1705. </label>
+                            <value> Tidemann, Philipp, 1657-1705. </value>
+                        </item>
+                        <item>
+                            <label>Du Tralage, Jean Nicolas, d. 1699. </label>
+                            <value>Du Tralage, Jean Nicolas, d. 1699. </value>
+                        </item>
+                        <item>
+                            <label>Tirion, Isaak.</label>
+                            <value>Tirion, Isaak.</value>
+                        </item>
+                        <item>
+                            <label>Trevethen, William.</label>
+                            <value>Trevethen, William.</value>
+                        </item>
+                        <item>
+                            <label>Valck, G. (Gerard), 1651 or 2-1726. </label>
+                            <value>Valck, G. (Gerard), 1651 or 2-1726. </value>
+                        </item>
+                        <item>
+                            <label>Valck, Leonard, 1675-1746. </label>
+                            <value>Valck, Leonard, 1675-1746. </value>
+                        </item>
+                        <item>
+                            <label>Varenius, Heinrich.</label>
+                            <value>Varenius, Heinrich.</value>
+                        </item>
+                        <item>
+                            <label>Vaughn, Robert, fl. 1625.</label>
+                            <value>Vaughn, Robert, fl. 1625.</value>
+                        </item>
+                        <item>
+                            <label>Velde, Jan van den.</label>
+                            <value>Velde, Jan van den.</value>
+                        </item>
+                        <item>
+                            <label>Verbiest, Ferdinand, 1623-1688. </label>
+                            <value>Verbiest, Ferdinand, 1623-1688. </value>
+                        </item>
+                        <item>
+                            <label>Vertue, George, 1684-1756. </label>
+                            <value>Vertue, George, 1684-1756. </value>
+                        </item>
+                        <item>
+                            <label>Van Vianen, Jan, b. ca. 1660. </label>
+                            <value>Van Vianen, Jan, b. ca. 1660. </value>
+                        </item>
+                        <item>
+                            <label>Visscher, Nicolaes, 1618-1679. </label>
+                            <value>Visscher, Nicolaes, 1618-1679. </value>
+                        </item>
+                        <item>
+                            <label>Vogel, Johann Jacob, 1660-1729.</label>
+                            <value>Vogel, Johann Jacob, 1660-1729.</value>
+                        </item>
+                        <item>
+                            <label>Walton, Robert, 1618-1688.</label>
+                            <value>Walton, Robert, 1618-1688.</value>
+                        </item>
+                        <item>
+                            <label>Weigel, Christoph, 1654-1725. </label>
+                            <value>Weigel, Christoph, 1654-1725. </value>
+                        </item>
+                        <item>
+                            <label>Wells, Edward, 1667-1727. </label>
+                            <value>Wells, Edward, 1667-1727. </value>
+                        </item>
+                        <item>
+                            <label>Widman, Georgio. </label>
+                            <value>Widman, Georgio. </value>
+                        </item>
+                        <item>
+                            <label>Willdey, George. </label>
+                            <value>Willdey, George. </value>
+                        </item>
+                        <item>
+                            <label>Winter, Anthonie de, 17th cent. </label>
+                            <value>Winter, Anthonie de, 17th cent. </value>
+                        </item>
+                        <item>
+                            <label>Wit, Frederik de. </label>
+                            <value>Wit, Frederik de. </value>
+                        </item>
+                        <item>
+                            <label>Witsen, Nicolaas, 1641-1717. </label>
+                            <value>Witsen, Nicolaas, 1641-1717. </value>
+                        </item>
+                        <item>
+                            <label>Zahn, Johannes.</label>
+                            <value>Zahn, Johannes.</value>
+                        </item>
+                        <item>
+                            <label>Zuerner, Adam Friedrich, 1680-1742. </label>
+                            <value>Zuerner, Adam Friedrich, 1680-1742. </value>
+                        </item>
+                    </section>
+                </instance>
+            </names>
             <roletype>
                 <instance>
                     <section>
@@ -772,6 +1704,10 @@
                         <item>
                             <label>Bookseller</label>
                             <value>bookseller</value>
+                        </item>
+                        <item>
+                            <label>Cartographer</label>
+                            <value>cartographer</value>
                         </item>
                         <item>
                             <label>Censor</label>
@@ -1025,7 +1961,7 @@
                             <value>date</value>
                         </item>
                         <item>
-                            <label>Term Of Address</label>
+                            <label>Term of address</label>
                             <value>termsOfAddress</value>
                         </item>
                     </section>
@@ -1045,15 +1981,15 @@
                             <value>host</value>
                         </item>
                         <item>
-                            <label>Consituent</label>
-                            <value>consituent</value>
+                            <label>Constituent</label>
+                            <value>constituent</value>
                         </item>
                         <item>
                             <label>Series</label>
                             <value>series</value>
                         </item>
                         <item>
-                            <label>Other Version</label>
+                            <label>Other version</label>
                             <value>otherVersion</value>
                         </item>
                     </section>
@@ -1078,15 +2014,15 @@
                             <value>text</value>
                         </item>
                         <item>
-                            <label>Notated Music</label>
+                            <label>Notated music</label>
                             <value>notated music</value>
                         </item>
                         <item>
-                            <label>Still Image</label>
+                            <label>Still image</label>
                             <value>still image</value>
                         </item>
                         <item>
-                            <label>Mixed Material</label>
+                            <label>Mixed material</label>
                             <value>mixed material</value>
                         </item>
                     </section>
@@ -1104,21 +2040,27 @@
                     </section>
                     <section>
                         <item>
-                            <label>Approximate</label>
+                            <label>Exact</label>
+                            <value/>
+                        </item>
+                    </section>
+                    <section>
+                        <item>
+                            <label>Approximate (ca., date range, dashed date)</label>
                             <value>approximate</value>
                         </item>
                     </section>
                     <section>
 
                         <item>
-                            <label>Inferred</label>
+                            <label>Inferred (firm date given in brackets)</label>
                             <value>inferred</value>
                         </item>
                     </section>
                     <section>
 
                         <item>
-                            <label>Questionable</label>
+                            <label>Questionable (question mark at end of date)</label>
                             <value>questionable</value>
                         </item>
                     </section>
@@ -1288,7 +2230,7 @@
                         </item>
                         <item>
                             <label>Maps</label>
-                            <value>Maps</value>
+                            <value>map</value>
                         </item>
                         <item>
                             <label>Meteorological charts</label>
@@ -1353,6 +2295,10 @@
                         <item>
                             <label>Road maps</label>
                             <value>Road maps</value>
+                        </item>
+                        <item>
+                            <label>Separate Map</label>
+                            <value>Separate Map</value>
                         </item>
                         <item>
                             <label>Statistical maps</label>
@@ -1445,6 +2391,7 @@
 
 
             </identifierDisplayLabels>
+           
             <coordinates>
                 <instance>
                     <section>
@@ -1455,8 +2402,20 @@
                     </section>
                     <section>
                         <item>
+                            <label>African Continent</label>
+                            <value>W0180000 E0510000 N370000 S350000</value>
+                        </item>
+                        <item>
                             <label>California</label>
                             <value>W1243000 W1141500 N420000 N323000</value>
+                        </item>
+                        <item>
+                            <label>Central America</label>
+                            <value>W0921500 W0771000 N183000 N071000</value>
+                        </item>
+                        <item>
+                            <label>Eastern Hemisphere</label>
+                            <value>W0210000 E1590000 N900000 S900000</value>
                         </item>
                         <item>
                             <label>North America</label>
@@ -1474,6 +2433,10 @@
                             <label>Pacific Ocean</label>
                             <value>W0700000 E1100000 N630000 S530000</value>
                         </item>
+			<item>
+				<label>South America</label>
+			    <value>W0820000 W0350000 N130000 S550000 </value>
+			</item>
                         <item>
                             <label>South Pole (Polar Projection)</label>
                             <value>W0000000 W0000000 S900000 S900000</value>
@@ -1494,9 +2457,10 @@
                             <label>World</label>
                             <value>W1800000 E1800000 N850000 S850000</value>
                         </item>
-                    </section>
+                 
+                </section>
                 </instance>
-            </coordinates>
+                </coordinates>
 
             <form>
                 <instance>
@@ -1512,7 +2476,7 @@
                             <value>atlas</value>
                         </item>
                         <item>
-                            <label>Atlas Map</label>
+                            <label>Atlas map</label>
                             <value>atlas map</value>
                         </item>
                         <item>
@@ -1520,19 +2484,19 @@
                             <value>book map</value>
                         </item>
                         <item>
-                            <label>Celestial Chart</label>
+                            <label>Celestial chart</label>
                             <value>celestial chart</value>
                         </item>
                         <item>
-                            <label>Fake Map</label>
+                            <label>Fake map</label>
                             <value>fake map</value>
                         </item>
                         <item>
-                            <label>Separate Map</label>
+                            <label>Separate map</label>
                             <value>separate map</value>
                         </item>
                         <item>
-                            <label>Title Page</label>
+                            <label>Title page</label>
                             <value>title page</value>
                         </item>
                     </section>
@@ -1566,24 +2530,92 @@
                     </section>
                     <section>
                         <item>
-                            <label>State Note</label>
-                            <value>state_note</value>
-                        </item>
-                        <item>
-                            <label>Reference Note</label>
-                            <value>reference</value>
-                        </item>
-                        <item>
-                            <label>Publication Note</label>
-                            <value>publications</value>
+                            <label>General Note</label>
+                            <value>general note</value>
                         </item>
                         <item>
                             <label>Language Note</label>
                             <value>language</value>
                         </item>
                         <item>
-                            <label>General Note</label>
-                            <value>content</value>
+                            <label>Provenance</label>
+                            <value>provenance</value>
+                        </item>
+                        <item>
+                            <label>Publication Note</label>
+                            <value>publications</value>
+                        </item>
+                        <item>
+                            <label>Reference Note</label>
+                            <value>reference</value>
+                        </item>
+                        <item>
+                            <label>Statement of Responsibility</label>
+                            <value>statement_of_responsibility</value>
+                        </item>
+                        <item>
+                            <label>State 1</label>
+                            <value>state 1</value>
+                        </item>
+                        <item>
+                            <label>State 2</label>
+                            <value>state 2</value>
+                        </item>
+                        <item>
+                            <label>State 3</label>
+                            <value>state 3</value>
+                        </item>
+                        <item>
+                            <label>State 3</label>
+                            <value>state 3</value>
+                        </item>
+                        <item>
+                            <label>State 4</label>
+                            <value>state 4</value>
+                        </item>
+                        <item>
+                            <label>State 5</label>
+                            <value>state 5</value>
+                        </item>
+                        <item>
+                            <label>State 6</label>
+                            <value>state 6</value>
+                        </item>
+                        <item>
+                            <label>State 7</label>
+                            <value>state 7</value>
+                        </item>
+                        <item>
+                            <label>State 8</label>
+                            <value>state 8</value>
+                        </item>
+                        <item>
+                            <label>State 9</label>
+                            <value>state 9</value>
+                        </item>
+                        <item>
+                            <label>State 10</label>
+                            <value>state 10</value>
+                        </item>
+                        <item>
+                            <label>State 11</label>
+                            <value>state 11</value>
+                        </item>
+                        <item>
+                            <label>State 12</label>
+                            <value>state 12</value>
+                        </item>
+                        <item>
+                            <label>State 13</label>
+                            <value>state 13</value>
+                        </item>
+                        <item>
+                            <label>State 14</label>
+                            <value>state 14</value>
+                        </item>
+                        <item>
+                            <label>State 15</label>
+                            <value>state 15</value>
                         </item>
                     </section>
                 </instance>
@@ -1648,7 +2680,7 @@
                     </section>
                     <section>
                         <item>
-                            <label>Use and Reproduction</label>
+                            <label>Use and reproduction</label>
                             <value>useAndReproduction</value>
                         </item>
                         <item>
@@ -1668,15 +2700,15 @@
                     </section>
                     <section>
                         <item>
-                            <label>General Photo</label>
+                            <label>General photo</label>
                             <value>general photo</value>
                         </item>
                         <item>
-                            <label>Stanford Family</label>
+                            <label>Stanford family</label>
                             <value>stanford family</value>
                         </item>
                         <item>
-                            <label>Biographical Photographs</label>
+                            <label>Biographical photographs</label>
                             <value>biographical photographs</value>
                         </item>
                     </section>
@@ -1710,11 +2742,11 @@
                     </section>
                     <section>
                         <item>
-                            <label>Start Point</label>
+                            <label>Start point</label>
                             <value>start</value>
                         </item>
                         <item>
-                            <label>End Point</label>
+                            <label>End point</label>
                             <value>end</value>
                         </item>
                     </section>
@@ -1772,6 +2804,6 @@
                     </section>
                 </instance>
             </language>
-        </lists>
-    </resource>
+    </lists>
+</resource>
 </resources>

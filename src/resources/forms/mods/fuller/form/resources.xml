@@ -49,7 +49,7 @@
                 <dateend>Date End</dateend>
                 <keydate>Key Date</keydate>
                 <dateIssued>Date Issued</dateIssued>
-                <dateOther>Acquisition Date</dateOther>
+                <dateOther>Date</dateOther>
                 <copyrightDate>Copyright Date</copyrightDate>
                 <dateCreated>Creation Date </dateCreated>
                 <place>Place</place>
@@ -115,7 +115,7 @@
                 <relatedItemSubtitle>Box or Drawer Name</relatedItemSubtitle>
                 <relatedItemPartName>Folder Name</relatedItemPartName>
                 <relatedItemPartNumber>Folder Number</relatedItemPartNumber>
-            
+                <point>Duration Point</point>
             </titles>
 
             <!-- Triggers labels -->
@@ -132,7 +132,7 @@
                 <addcreationDate>Creation Date</addcreationDate>
                 <addcopyrightDate>Copyright Date</addcopyrightDate>
                 <adddateIssued>Date Issued</adddateIssued>
-                <adddateOther>Acquisition Date</adddateOther>
+                <adddateOther>Date</adddateOther>
                 <keydate>KeyDate</keydate>
                 <addplace>Place</addplace>
                 <addpublisher>Publisher</addpublisher>
@@ -350,6 +350,24 @@
         </detail>
         <lists>
 
+            <point>
+                <instance>
+                    <section>
+                        <item>
+                            <label>None</label>
+                            <value></value>
+                        </item>
+                        <item>
+                            <label>Start point</label>
+                            <value>start</value>
+                        </item>
+                        <item>
+                            <label>End point</label>
+                            <value>end</value>
+                        </item>
+                    </section>
+                </instance>
+            </point>
             <displayLabel>
                 <instance>
                     <section>

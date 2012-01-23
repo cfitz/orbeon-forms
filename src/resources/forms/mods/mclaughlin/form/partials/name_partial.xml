@@ -99,8 +99,15 @@
                                                     <xforms:switch>
                                                         <xforms:case id="namelist">
                                                             <div class="item-row">
+  								<div class="item-cell">
+                                                                   <label class="xforms-label">Current Value:</label> 
+								   <xforms:output ref="." /> 
+                                                                </div>
+								</div>
+								 <div class="item-row">
                                                                 <div class="item-cell">
-                                                                    <xforms:select1 ref="." class="drop-down">
+
+									<xforms:select1 ref="." class="drop-down">
                                                                         <xforms:label
                                                                             value="$form-resources/detail/titles/nameParts"/>
                                                                         <xforms:alert

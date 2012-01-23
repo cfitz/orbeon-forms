@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<instance xmlns:mods="http://www.loc.gov/mods/v3" type=" ">   
+<instance xmlns:mods="http://www.loc.gov/mods/v3" point=" " type=" "  xmlns:state="http://stanford.edu/"  > 
 
  <insert name="identifier">
   <mods:identifier type="local"></mods:identifier> 
@@ -166,5 +166,10 @@
  <insert name="typeOfResource">
   <mods:typeOfResource/>
   </insert>
+	<insert name="extension">
+	  <mods:extension>
+	   <state:status></state:status>
+	  </mods:extension>
+	 </insert>
 
 </instance>

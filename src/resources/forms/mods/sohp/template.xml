@@ -1,8 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mods:mods     xmlns:xxforms="http://orbeon.org/oxf/xml/xforms" xmlns:mods="http://www.loc.gov/mods/v3"
     xmlns:xforms="http://www.w3.org/2002/xforms">       
-    
-    
+    <mods:identifier displayLabel="SU DRUID" type="local"/>
+    <mods:identifier displayLabel="Stanford University Archives ID" type="local">SC1017_ s1_</mods:identifier>
+    <mods:relatedItem type="host">
+        <mods:titleInfo>
+            <mods:title>Stanford Oral History Project interviews</mods:title>
+        </mods:titleInfo>
+        <mods:identifier>SC1017</mods:identifier>
+        <mods:location>
+            <mods:url usage="primary display">http://www.oac.cdlib.org/findaid/ark:/13030/kt3c603546</mods:url>
+        </mods:location>
+    </mods:relatedItem>
     <mods:titleInfo>        
         <mods:nonSort />
         <mods:title />
@@ -10,12 +19,26 @@
         <mods:partNumber />
         <mods:partName /> 
     </mods:titleInfo> 
+    <mods:name type="corporate">
+        <mods:namePart>Stanford Historical Society</mods:namePart>
+        <mods:role>
+            <mods:roleTerm authority="marcrelator" type="text">producer</mods:roleTerm>
+        </mods:role>
+    </mods:name>
+    <mods:typeOfResource>mixed material</mods:typeOfResource>
+    
     <mods:originInfo>
-        <mods:place><mods:placeTerm type="text">Stanford, CA</mods:placeTerm></mods:place>
+        <mods:place><mods:placeTerm type="text">Stanford (Calif.)</mods:placeTerm></mods:place>
         <mods:publisher>Stanford University Archives</mods:publisher>
         <mods:dateCreated encoding="w3cdtf" keyDate="yes" qualifier="" />
-       </mods:originInfo> 
-  <mods:recordInfo>
+    </mods:originInfo> 
+    <mods:genre authority="local">Interviews (Sound recordings)</mods:genre>
+    <mods:language><mods:languageTerm type="code" authority="iso639- 2b">eng</mods:languageTerm></mods:language>
+    <mods:physicalDescription><mods:extent>2 sound files</mods:extent><mods:extent>1 text file</mods:extent><mods:internetMediaType>audio/x-mpeg</mods:internetMediaType><mods:internetMediaType>application/pdf</mods:internetMediaType></mods:physicalDescription>
+    <mods:accessCondition displayLabel="Copyright Stanford University. Stanford, CA 94305. (650) 723-2300." type="useAndReproduction">
+        Digital recordings from the Stanford Oral History Project may be accessed freely. These files may not be reproduced or used for any purpose without permission. For permission requests, please contact Stanford University Department of Special Collections ( speccollref@stanford.edu ).
+    </mods:accessCondition>
+    <mods:recordInfo>
     <mods:recordContentSource>Lyberteam Metadata ToolKit</mods:recordContentSource> 
     <mods:recordIdentifier source="Suri UUID"></mods:recordIdentifier>  
     <mods:recordCreationDate encoding="iso8601"></mods:recordCreationDate>

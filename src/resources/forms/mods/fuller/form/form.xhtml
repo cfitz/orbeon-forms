@@ -101,7 +101,7 @@
                 <xforms:bind id="locationBind" readonly="true()" required="true()"
                     nodeset="mods:location"/>
              
-
+                <xforms:bind id="dateOther" nodeset="mods:originInfo/mods:dateOther" type="xs:gYear" /> 
                 <xforms:bind id="titletype" nodeset="mods:titleInfo/@type" type="xs:string"/>
 
 
@@ -175,6 +175,8 @@
                 <xi:include href="oxf:/forms/mods/fuller/form/partials/location_partial.xml"
                     xxi:omit-xml-base="true"/>
                 <xi:include href="oxf:/forms/mods/fuller/form/partials/identifier_partial.xml"
+                    xxi:omit-xml-base="true"/>
+                <xi:include href="oxf:/forms/mods/fuller/form/partials/origin_info_partial.xml"
                     xxi:omit-xml-base="true"/>
 
 

@@ -636,9 +636,18 @@
                             <value>Original McLaughlin Book Number (1995 edition)</value>
                         </item>
                         <item>
+                            <label>Original McLaughlin book number (1995 edition) with latest state information</label>
+                            <value>Original McLaughlin book number (1995 edition) with latest state information</value>
+                        </item>
+                        <item>
                             <label>Updated McLaughlin book number</label>
                             <value>Updated McLaughlin Book Number</value>
                         </item>
+                        <item>
+                            <label>Updated McLaughlin book number with latest state information</label>
+                            <value>Updated McLaughlin book number with latest state information</value>
+                        </item>
+                        
                         <item>
                             <label>Call number</label>
                             <value>call_number</value>
@@ -647,9 +656,21 @@
                             <label>FileMaker Pro record number</label>
                             <value>FileMaker Pro Record Number</value>
                         </item>
-                        <item>
+			<item>
                             <label>Post publication map number</label>
                             <value>Post publication map number</value>
+                        </item>
+                        <item>
+                            <label>Post publication map number with latest state information</label>
+                            <value>Post publication map number with latest state information</value>                      
+                        </item>
+                        <item>
+                            <label>New Stanford map number</label>
+                            <value>New Stanford map number</value>
+                        </item>
+                        <item>
+                            <label>New Stanford map number with latest state information</label>
+                            <value>New Stanford map number with latest state information</value>
                         </item>
                         <item>
                             <label>Stanford University DRUID</label>
@@ -724,6 +745,10 @@
                         <item>
                             <label>VIAF</label>
                             <value>viaf</value>
+                        </item>
+                        <item>
+                            <label>NAF</label>
+                            <value>naf</value>
                         </item>
                     </section>
                 </instance>
@@ -2353,7 +2378,7 @@
                     <section>
                         <item>
                             <label>African Continent</label>
-                            <value>S350000 N370000 E0510000 W0180000</value>
+                            <value>W0180000 E0510000 N370000 S350000</value>
                         </item>
                         <item>
                             <label>California</label>
@@ -2361,11 +2386,11 @@
                         </item>
                         <item>
                             <label>Central America</label>
-                            <value>N071000 N183000 W0771000 W0921500</value>
+                            <value>W0921500 W0771000 N183000 N071000</value>
                         </item>
                         <item>
                             <label>Eastern Hemisphere</label>
-                            <value>S900000 N900000 E1590000 W0210000</value>
+                            <value>W0210000 E1590000 N900000 S900000</value>
                         </item>
                         <item>
                             <label>North America</label>
@@ -2383,10 +2408,10 @@
                             <label>Pacific Ocean</label>
                             <value>W0700000 E1100000 N630000 S530000</value>
                         </item>
-			<item>
-				<label>South America</label>
-				<value>S550000 N130000 W0350000 W0820000</value>
-			</item>
+                        <item>
+                            <label>South America</label>
+                            <value>W0820000 W0350000 N130000 S550000 </value>
+                        </item>
                         <item>
                             <label>South Pole (Polar Projection)</label>
                             <value>W0000000 W0000000 S900000 S900000</value>
@@ -2407,10 +2432,10 @@
                             <label>World</label>
                             <value>W1800000 E1800000 N850000 S850000</value>
                         </item>
-                 
-                </section>
+                        
+                    </section>
                 </instance>
-                </coordinates>
+            </coordinates>
 
             <form>
                 <instance>
@@ -2477,8 +2502,6 @@
                             <label>-- Select One --</label>
                             <value/>
                         </item>
-                    </section>
-                    <section>
                         <item>
                             <label>General notes</label>
                             <value>content</value>

@@ -20,7 +20,7 @@
  <mods:partNumber/>
  <mods:role><mods:roleTerm/></mods:role>
  <insert name="originInfo">
-  <mods:originInfo/>
+  <mods:originInfo><mods:dateOther  encoding="w3cdtf" keyDate="no" qualifier="" point="" /></mods:originInfo>
  </insert>
  <insert name="name">
   <mods:name type="" authority="">

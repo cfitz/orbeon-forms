@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<instance xmlns:mods="http://www.loc.gov/mods/v3" point=" " type=" ">
+<instance xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink"
+ point=" " type=" " xlink:href="">
  <insert name="identifierdruid">
   <mods:identifier type="local" displayLabel="SU DRUID"/>
  </insert>
@@ -68,21 +69,22 @@
   </publisherNode>
   <editionNode>
    <mods:edition/>
-  </editionNode> </insert>
+  </editionNode>
+ </insert>
  <insert name="subject">
-  <mods:subject authority=""></mods:subject>
+  <mods:subject authority=""/>
  </insert>
  <insert name="subjectcartographics">
   <mods:subject authority="">
-  <mods:cartographics>
-   <mods:scale/>
-   <mods:coordinates/>
-   <mods:projection/>
-  </mods:cartographics>
+   <mods:cartographics>
+    <mods:scale/>
+    <mods:coordinates/>
+    <mods:projection/>
+   </mods:cartographics>
   </mods:subject>
-  </insert>
+ </insert>
  <insert name="singleDate">
-  <mods:temporal encoding="w3cdtf"/>
+  <mods:temporal encoding="w3cdtf" authorityURI=""/>
  </insert>
  <insert name="rangeDate">
   <mods:temporal encoding="w3cdtf" point="start"/>
@@ -146,8 +148,21 @@
   <mods:abstract/>
  </insert>
  <insert name="note">
-  <mods:note displayLabel="general note" type=" "/>
+  <mods:note displayLabel="" type=" "/>
  </insert> > <insert name="typeOfResource">
   <mods:typeOfResource/>
+ </insert>
+ <insert name="relatedItem">
+  <mods:relatedItem type="">
+   <mods:titleInfo>
+    <mods:title type=""></mods:title>
+   </mods:titleInfo>
+   <mods:typeOfResource collection="yes"/>
+   <mods:location>
+    <mods:url></mods:url>
+   </mods:location>
+   <mods:identifier type="local" displayLabel="SU DRUID"></mods:identifier>
+  </mods:relatedItem> 
+ 
  </insert>
 </instance>
