@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mods:mods     xmlns:xxforms="http://orbeon.org/oxf/xml/xforms" xmlns:mods="http://www.loc.gov/mods/v3"
+    xmlns:xforms="http://www.w3.org/2002/xforms">       
+    <mods:identifier displayLabel="SU DRUID" type="local"/>
+    <mods:identifier displayLabel="Source ID" type="local"/>
+    <mods:identifier displayLabel="" type='local'/>
+    <mods:abstract type="scope and content"/>
+    <mods:titleInfo>        
+        <mods:nonSort />
+        <mods:title />
+        <mods:subTitle />
+        <mods:partNumber />
+        <mods:partName /> 
+    </mods:titleInfo> 
+    <mods:name type="" authority="">
+        <mods:namePart/>
+        <mods:role>
+            <mods:roleTerm type="text"/>
+        </mods:role>
+    </mods:name>
+    <mods:typeOfResource></mods:typeOfResource>
+    <mods:subject><mods:topic/></mods:subject>
+    <mods:originInfo>
+        <mods:place><mods:placeTerm type="text"></mods:placeTerm></mods:place>
+        <mods:publisher></mods:publisher>
+        <mods:dateCreated encoding="w3cdtf" keyDate="yes" qualifier="" />
+    </mods:originInfo> 
+    <mods:language><mods:languageTerm type="code" authority="iso639- 2b">eng</mods:languageTerm></mods:language>
+    <mods:physicalDescription><mods:extent></mods:extent><mods:extent></mods:extent><mods:internetMediaType></mods:internetMediaType></mods:physicalDescription>
+    <mods:accessCondition displayLabel="Copyright Stanford University. Stanford, CA 94305. (650) 723-2300." type=""/>
+</mods:mods>

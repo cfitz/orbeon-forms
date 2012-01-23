@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mods:mods          xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+    xmlns:mods="http://www.loc.gov/mods/v3"
+    xmlns:xforms="http://www.w3.org/2002/xforms"
+    xmlns:xlink="http://www.w3.org/1999/xlink">       
+    <mods:identifier type="local" displayLabel="SU DRUID">1234</mods:identifier>
+    <mods:identifier type="local" displayLabel="book_number"></mods:identifier>    
+    <mods:titleInfo type='main'>        
+        <mods:nonSort />
+        <mods:title />
+        <mods:subTitle />
+        <mods:partNumber />
+        <mods:partName /> 
+    </mods:titleInfo> 
+    <mods:typeOfResource>cartographic</mods:typeOfResource>
+    <mods:originInfo>
+        <mods:place><mods:placeTerm type="text"></mods:placeTerm></mods:place>
+        <mods:dateCreated encoding="w3cdtf" keyDate="yes" qualifier="" />
+        
+    </mods:originInfo> 
+    <mods:name type="personal" authority="local">
+        <mods:namePart type=""/>
+        <mods:role>
+            <mods:roleTerm type="text" authority="marcrelator"></mods:roleTerm>
+        </mods:role>                       
+    </mods:name>    
+    <mods:genre></mods:genre>  
+    <mods:physicalDescription>
+        <mods:form  authority="marcform"/>
+        <mods:internetMediaType>image/tiff</mods:internetMediaType>
+        <mods:extent></mods:extent>
+        <mods:digitalOrigin>digitized other analog</mods:digitalOrigin> 
+    </mods:physicalDescription>  
+    <mods:location>
+        <mods:physicalLocation></mods:physicalLocation>
+        <mods:url usage="primary display" access=""></mods:url>
+    </mods:location>      
+    <mods:subject authority="keyword"><mods:topic/></mods:subject>
+    <mods:recordInfo>
+        <mods:recordContentSource>Lyberteam Metadata ToolKit</mods:recordContentSource>
+        <mods:recordCreationDate encoding="iso8601"></mods:recordCreationDate>
+    </mods:recordInfo>
+    <mods:accessCondition displayLabel="Copyright Stanford University. Stanford, CA 94305. (650) 723-2300." type="useAndReproduction">
+        Stanford University Libraries and Academic Information Resources - Terms of
+        Use SULAIR Web sites are subject to Stanford University's standard Terms of
+        Use (See http://www.stanford.edu/home/atoz/terms.html) These terms include a
+        limited personal, non-exclusive, non-transferable license to access and use
+        the sites, and to download - where permitted - material for personal,
+        non-commercial, non-display use only. Please contact the University
+        Librarian to request permission to use SULAIR Web sites and contents beyond
+        the scope of the above license, including but not limited to republication
+        to a group or republishing the Web site or parts of the Web site. SULAIR
+        provides access to a variety of external databases and resources, which
+        sites are governed by their own Terms of Use, as well as contractual access
+        restrictions. The Terms of Use on these external sites always govern the
+        data available there. Please consult with library staff if you have
+        questions about data access and availability.
+    </mods:accessCondition>
+    <mods:genre>Early Maps</mods:genre><mods:genre>Digital Maps</mods:genre>
+    <mods:relatedItem type="host">
+        <mods:titleInfo>
+            <mods:nonSort>The</mods:nonSort>
+            <mods:title>mapping of California as an island</mods:title>
+            <mods:subTitle>an illustrated checklist</mods:subTitle>
+        </mods:titleInfo>
+        <mods:titleInfo type="alternative">
+            
+            <mods:title>California as an island</mods:title>
+        </mods:titleInfo>
+        <mods:name type="personal">
+            <mods:namePart>McLaughlin, Glen</mods:namePart>
+            <mods:namePart type="date">1934-</mods:namePart>
+            <mods:role>
+                <mods:roleTerm authority="marcrelator" type="text">creator</mods:roleTerm>
+                
+            </mods:role>
+        </mods:name>
+        <mods:name type="personal">
+            <mods:namePart>Mayo, Nancy H.</mods:namePart>
+        </mods:name>
+        <mods:name type="corporate">
+            <mods:namePart>California Map Society</mods:namePart>
+        </mods:name>
+        
+        <mods:typeOfResource>text</mods:typeOfResource>
+        <mods:genre authority="marcgt">bibliography</mods:genre>
+        <mods:originInfo>
+            <mods:place>
+                <mods:placeTerm type="code" authority="marccountry">cau</mods:placeTerm>
+            </mods:place>
+            <mods:place>
+                
+                <mods:placeTerm type="text">[Saratoga, CA]</mods:placeTerm>
+            </mods:place>
+            <mods:publisher>California Map Society</mods:publisher>
+            <mods:dateIssued>c1995</mods:dateIssued>
+            <mods:dateIssued encoding="marc" keyDate="yes">1995</mods:dateIssued>
+            <mods:edition>1st ed.</mods:edition>
+            
+            <mods:issuance>monographic</mods:issuance>
+        </mods:originInfo>
+        <mods:physicalDescription>
+            <mods:form authority="marcform">print</mods:form>
+            
+            <mods:extent>xvi, 134, [7] p. : ill., maps ; 28 cm.</mods:extent>
+        </mods:physicalDescription>
+        <mods:note displayLabel="statement of responsibility">Glen McLaughlin with Nancy H. Mayo.</mods:note>
+        <mods:note>Includes bibliographical references (p. xv-xvi) and indexes.</mods:note>
+        <mods:subject>
+            <mods:geographicCode authority="marcgac">n-us-ca</mods:geographicCode>
+        </mods:subject>
+        
+        <mods:subject authority="lcsh">
+            <mods:topic>Cartography</mods:topic>
+            <mods:geographic>California</mods:geographic>
+            <mods:topic>History</mods:topic>
+            <mods:genre>Sources</mods:genre>
+        </mods:subject>
+        <mods:subject authority="lcsh">
+            
+            <mods:geographic>California</mods:geographic>
+            <mods:topic>Maps</mods:topic>
+            <mods:topic>Early works to 1800</mods:topic>
+            <mods:genre>Bibliography</mods:genre>
+            <mods:genre>Catalogs</mods:genre>
+        </mods:subject>
+        
+        <mods:classification authority="lcc">GA413 .M38 1995</mods:classification>
+        <mods:classification authority="ddc" edition="21">912.794</mods:classification>
+        <mods:identifier type="local" displayLabel="Symphony Catalog Key">3306259</mods:identifier> 
+        
+        <mods:identifier type="isbn" invalid="yes">01888126000</mods:identifier>
+        <mods:identifier type="lccn">97119748</mods:identifier>
+        <mods:identifier type="uri">http://collections.stanford.edu/bookreader-public/view.jsp?id=00021264#1</mods:identifier>
+        <mods:location>
+            <mods:url usage="primary display">http://collections.stanford.edu/bookreader-public/view.jsp?id=00021264#1</mods:url>
+        </mods:location>
+        
+       
+        
+        <mods:recordInfo>
+            
+            <mods:descriptionStandard>aacr2</mods:descriptionStandard>
+            <mods:recordContentSource authority="marcorg">DNA</mods:recordContentSource>
+            <mods:recordCreationDate encoding="marc">960319</mods:recordCreationDate>
+            <mods:recordIdentifier>a3306259</mods:recordIdentifier>
+        </mods:recordInfo>
+        
+    </mods:relatedItem>
+</mods:mods>
