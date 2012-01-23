@@ -895,6 +895,14 @@
                             <value>Interviews (Sound recordings)</value>
                         </item>
                         <item>
+                            <label>Lectures (Sound recordings)</label>
+                            <value>Lectures (Sound recordings)</value>
+                        </item>
+                        <item>
+                            <label>Literary readings (Sound recordings)</label>
+                            <value>Literary readings (Sound recordings)</value>
+                        </item>
+                         <item>
                             <label>Live sound recordings </label>
                             <value>Live sound recordings </value>
                         </item>
@@ -903,8 +911,12 @@
                             <value>Oral histories</value>
                         </item>
                         <item>
-                            <label>Outtakes </label>
-                            <value>Outtakes </value>
+                            <label>Outtakes</label>
+                            <value>Outtakes</value>
+                        </item>
+                        <item>
+                            <label>Panel discussions (Sound recordings)</label>
+                            <value>Panel discussions (Sound recordings)</value>
                         </item>
                         <item>
                             <label>Rushes (Motion pictures)</label>
